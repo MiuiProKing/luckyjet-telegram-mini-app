@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#07050b">
+  <title>AllPredictor Admin</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="app-config.js?v=20260724-10"></script>
+  <style>
+    *{box-sizing:border-box}body{margin:0;min-height:100vh;padding:calc(18px + env(safe-area-inset-top)) 14px calc(24px + env(safe-area-inset-bottom));background:#07050b;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}.shell{width:min(980px,100%);margin:auto}.head{display:flex;align-items:center;gap:11px;margin-bottom:16px}.logo{width:46px;height:46px;border-radius:15px;background:linear-gradient(135deg,#6d28d9,#f97316);display:grid;place-items:center;font-weight:1000}.title{font-size:20px;font-weight:1000}.sub{color:#918a9f;font-size:11px;margin-top:3px}.back{margin-left:auto;width:auto;height:40px;padding:0 14px;border:1px solid rgba(255,255,255,.14);border-radius:13px;background:#211a2a;color:#fff;font-weight:900}.notice{padding:14px;border:1px solid rgba(250,204,21,.38);border-radius:17px;background:rgba(250,204,21,.08);color:#ffe27a;font-size:12px;line-height:1.5;margin-bottom:13px}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:13px}.stat,.card{padding:14px;border:1px solid rgba(255,255,255,.1);border-radius:18px;background:rgba(255,255,255,.05)}.label{color:#8f879c;font-size:10px;text-transform:uppercase;letter-spacing:.8px}.value{font-size:23px;font-weight:1000;margin-top:5px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.card h2{font-size:15px;margin:0 0 12px}.row{display:flex;gap:8px;flex-wrap:wrap}.field{flex:1;min-width:130px;height:44px;padding:0 11px;border:1px solid rgba(255,255,255,.14);border-radius:12px;background:#0c0911;color:#fff;font-weight:800}.btn{height:44px;padding:0 14px;border:0;border-radius:12px;background:linear-gradient(135deg,#6d28d9,#8b5cf6);color:#fff;font-weight:1000}.gold{background:linear-gradient(135deg,#fde047,#fb923c);color:#241500}.danger{background:#7f1d1d}.muted{color:#9991a4;font-size:11px;line-height:1.45}.list{display:grid;gap:8px;margin-top:12px;max-height:430px;overflow:auto}.item{padding:11px;border:1px solid rgba(255,255,255,.09);border-radius:14px;background:#0d0912}.item-head{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:900}.item-sub{margin-top:5px;color:#91899e;font-size:10px;line-height:1.45;overflow-wrap:anywhere}.actions{display:flex;gap:6px;margin-top:8px}.actions button{height:34px;padding:0 9px;border:0;border-radius:9px;background:#282031;color:#fff;font-size:10px;font-weight:900}.actions .danger{background:#7f1d1d}.status{min-height:20px;margin-top:8px;color:#ffe27a;font-size:11px;font-weight:800}.hidden{display:none!important}@media(max-width:720px){.stats{grid-template-columns:repeat(2,1fr)}.grid{grid-template-columns:1fr}.value{font-size:19px}}
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="head"><div class="logo">AP</div><div><div class="title">AllPredictor Admin</div><div class="sub">@V0xFF3</div></div><button class="back" id="backButton">← APP</button></header>
+    <div class="notice" id="notice">Проверка защищённого доступа…</div>
+    <section id="adminContent" class="hidden">
+      <div class="stats" id="stats"></div>
+      <div class="grid">
+        <article class="card">
+          <h2 data-i18n="plans">Лицензии</h2>
+          <div class="row">
+            <select class="field" id="plan"><option value="pro_1">PRO 1 DAY</option><option value="pro_7">PRO 7 DAYS</option><option value="pro_30" selected>PRO 30 DAYS</option><option value="pro_90">PRO 90 DAYS</option><option value="lifetime">LIFETIME</option></select>
+            <input class="field" id="note" placeholder="Комментарий">
+            <button class="btn gold" id="createLicense">CREATE KEY</button>
+          </div>
+          <div class="status" id="licenseStatus"></div>
+          <div class="list" id="licenses"></div>
+        </article>
+        <article class="card">
+          <h2 data-i18n="profile">Пользователи</h2>
+          <button class="btn" id="refresh">REFRESH</button>
+          <div class="status" id="userStatus"></div>
+          <div class="list" id="users"></div>
+        </article>
+      </div>
+    </section>
+  </main>
+  <script src="i18n.js?v=20260724-10"></script>
+  <script>
+    (()=>{
+      const config=window.ALLPREDICTOR_CONFIG||{};
+      const tg=window.Telegram&&window.Telegram.WebApp;
+      try{tg?.ready();tg?.expand()}catch(_e){}
+      const $=s=>document.querySelector(s);
+      const notice=$("#notice"),content=$("#adminContent");
+      $("#backButton").onclick=()=>location.href="index.html";
+      function esc(v){return String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;")}
+      function serverReady(){return Boolean(config.supabaseUrl&&config.supabaseAnonKey&&tg?.initData)}
+      async function api(action,payload={}){
+        if(!serverReady())throw new Error("SERVER_NOT_CONFIGURED");
+        const r=await fetch(String(config.supabaseUrl).replace(/\/$/,"")+"/functions/v1/admin-api",{method:"POST",headers:{"Content-Type":"application/json",apikey:config.supabaseAnonKey,Authorization:"Bearer "+config.supabaseAnonKey},body:JSON.stringify({initData:tg.initData,action,payload}),cache:"no-store"});
+        const d=await r.json().catch(()=>({}));if(!r.ok||!d.ok)throw new Error(d.message||"ADMIN_API_"+r.status);return d
+      }
+      function statsHtml(s){return [["Users",s.users],["New today",s.newToday],["Active 7d",s.activeWeek],["Active 30d",s.activeMonth],["Keys",s.licenses],["Active PRO",s.activeLicenses]].map(x=>`<div class="stat"><div class="label">${x[0]}</div><div class="value">${x[1]??0}</div></div>`).join("")}
+      function userHtml(u){const name=[u.first_name,u.last_name].filter(Boolean).join(" ")||"—";return `<div class="item"><div class="item-head">${esc(name)} ${u.username?"@"+esc(u.username):""}</div><div class="item-sub">ID: ${esc(u.telegram_id)} · ${esc(u.language_code||"—")} · launches: ${esc(u.launch_count)}<br>Last: ${esc(u.last_seen_at||"—")} · ${u.is_blocked?"BLOCKED":"ACTIVE"}</div><div class="actions"><button data-block="${esc(u.telegram_id)}" data-value="${u.is_blocked?"0":"1"}" class="${u.is_blocked?"":"danger"}">${u.is_blocked?"UNBLOCK":"BLOCK"}</button></div></div>`}
+      function licenseHtml(l){return `<div class="item"><div class="item-head">${esc(l.license_key)} · ${esc(l.plan)}</div><div class="item-sub">${esc(l.status)} · activations ${esc(l.activation_count)}/${esc(l.max_activations)}<br>User: ${esc(l.bound_telegram_id||"—")} · created ${esc(l.created_at||"—")}</div><div class="actions"><button data-copy="${esc(l.license_key)}">COPY</button><button data-extend="${esc(l.id)}">+30 DAYS</button><button data-revoke="${esc(l.id)}" class="danger">REVOKE</button></div></div>`}
+      async function load(){
+        const [s,u,l]=await Promise.all([api("stats"),api("list_users",{limit:100}),api("list_licenses",{limit:100})]);
+        $("#stats").innerHTML=statsHtml(s.stats||{});$("#users").innerHTML=(u.users||[]).map(userHtml).join("")||'<div class="muted">No users</div>';$("#licenses").innerHTML=(l.licenses||[]).map(licenseHtml).join("")||'<div class="muted">No licenses</div>';bindItems()
+      }
+      function bindItems(){
+        document.querySelectorAll("[data-copy]").forEach(b=>b.onclick=async()=>{await navigator.clipboard.writeText(b.dataset.copy);$("#licenseStatus").textContent="COPIED: "+b.dataset.copy});
+        document.querySelectorAll("[data-revoke]").forEach(b=>b.onclick=async()=>{await api("revoke_license",{licenseId:b.dataset.revoke});await load()});
+        document.querySelectorAll("[data-extend]").forEach(b=>b.onclick=async()=>{await api("extend_license",{licenseId:b.dataset.extend,days:30});await load()});
+        document.querySelectorAll("[data-block]").forEach(b=>b.onclick=async()=>{await api("block_user",{telegramId:Number(b.dataset.block),blocked:b.dataset.value==="1"});await load()});
+      }
+      $("#createLicense").onclick=async()=>{try{const d=await api("create_license",{plan:$("#plan").value,note:$("#note").value,maxActivations:1});$("#licenseStatus").textContent="CREATED: "+(d.license?.license_key||"");await load()}catch(e){$("#licenseStatus").textContent=e.message}};
+      $("#refresh").onclick=()=>load().catch(e=>$("#userStatus").textContent=e.message);
+      async function boot(){
+        if(!serverReady()){notice.textContent="Сервер Supabase ещё не подключён. Добавьте supabaseUrl, supabaseAnonKey, TELEGRAM_BOT_TOKEN и ADMIN_TELEGRAM_IDS.";return}
+        try{await api("stats");notice.textContent="Защищённый доступ подтверждён.";content.classList.remove("hidden");await load()}catch(e){notice.textContent=e.message==="ADMIN_ACCESS_DENIED"?"Доступ запрещён: Telegram ID не добавлен в ADMIN_TELEGRAM_IDS.":"Ошибка: "+e.message}
+      }
+      boot();
+    })();
+  </script>
+</body>
+</html>
