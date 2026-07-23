@@ -18,7 +18,7 @@ jobs:
           from pathlib import Path
           import re
 
-          version = "20260724-19"
+          version = "20260724-21"
           module_names = [
               "app-config.js",
               "i18n-runtime.js",
@@ -35,6 +35,9 @@ jobs:
               return re.sub(pattern, "", s, flags=re.I)
 
           for p in Path('.').glob('*.html'):
+              if p.name == 'setup-server.html':
+                  continue
+
               s = p.read_text(encoding='utf-8')
 
               if p.name == 'index.html':
@@ -70,5 +73,5 @@ jobs:
             echo "No changes needed"
             exit 0
           fi
-          git commit -m "Refresh Supabase client authentication cache"
+          git commit -m "Refresh single API clients and setup page"
           git push
