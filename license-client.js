@@ -69,8 +69,7 @@
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        apikey: config.supabaseAnonKey,
-        Authorization: `Bearer ${config.supabaseAnonKey}`
+        apikey: config.supabaseAnonKey
       },
       body: JSON.stringify(body),
       cache: "no-store"
