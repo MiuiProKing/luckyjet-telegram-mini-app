@@ -1,0 +1,16 @@
+project_id = "lcgewatmbpfxzoiqneoa"
+
+[functions.track-user]
+verify_jwt = false
+
+[functions.activate-license]
+verify_jwt = false
+
+[functions.check-license]
+verify_jwt = false
+
+[functions.admin-api]
+verify_jwt = false
+
+[functions.notify-expiring]
+verify_jwt = false
