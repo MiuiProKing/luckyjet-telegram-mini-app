@@ -1,0 +1,35 @@
+name: Force UI refresh
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  patch-index:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch index cache key and PRO label
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+          s = s.replace('<script src="telegram.js"></script>', '<script src="telegram.js?v=20260724-4"></script>')
+          s = s.replace('data-app-tab="pro">PRO</button>', 'data-app-tab="pro">⚡ PRO</button>')
+          p.write_text(s, encoding='utf-8')
+          PY
+      - name: Commit patch if needed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          if git diff --cached --quiet; then
+            echo "No changes needed"
+            exit 0
+          fi
+          git commit -m "Force Telegram UI refresh"
+          git push
