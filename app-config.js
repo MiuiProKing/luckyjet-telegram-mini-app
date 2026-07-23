@@ -1,15 +1,15 @@
 window.ALLPREDICTOR_CONFIG = Object.freeze({
   appName: "AllPredictor 1Win",
-  version: "3.1.0",
+  version: "3.1.1",
   botUsername: "AllPredictorVrs2_bot",
   creatorUsername: "V0xFF3",
   creatorUrl: "https://t.me/V0xFF3",
   trialLimit: 10,
   supportedLanguages: ["ru", "en", "id"],
 
-  // Public Supabase project values will be inserted after the project is created.
-  supabaseUrl: "",
-  supabaseAnonKey: "",
+  // Public Supabase project values. These are safe for the browser.
+  supabaseUrl: "https://lcgewatmbpfxzoiqneoa.supabase.co",
+  supabaseAnonKey: "sb_publishable_UkPgmNkmrIYds4psoUW7-g_7I8k_Q25",
 
   // Add the owner's numeric Telegram ID after it is confirmed.
   adminTelegramIds: [],
