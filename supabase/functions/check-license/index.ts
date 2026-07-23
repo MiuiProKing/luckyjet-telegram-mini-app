@@ -1,6 +1,12 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders, jsonResponse, verifyTelegramInitData } from "../_shared/telegram.ts";
 
+async function sha256(value: string): Promise<string> {
+  const bytes = new TextEncoder().encode(value);
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  return Array.from(new Uint8Array(digest)).map((byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
 Deno.serve(async (request) => {
   const origin = request.headers.get("origin");
   if (request.method === "OPTIONS") return new Response("ok", { headers: corsHeaders(origin) });
@@ -10,14 +16,24 @@ Deno.serve(async (request) => {
     const body = await request.json();
     const activationToken = String(body?.activationToken || "").trim();
     const initData = String(body?.initData || "");
+    const rawDeviceId = String(body?.deviceId || "").trim();
     if (!activationToken) return jsonResponse({ ok: false, message: "ACTIVATION_TOKEN_REQUIRED" }, 400, origin);
+    if (rawDeviceId.length < 8) return jsonResponse({ ok: false, message: "DEVICE_ID_REQUIRED" }, 400, origin);
 
     const user = await verifyTelegramInitData(initData, Deno.env.get("TELEGRAM_BOT_TOKEN") || "");
+    const deviceHash = await sha256(rawDeviceId);
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL") || "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "",
       { auth: { persistSession: false } }
     );
+
+    const { data: appUser } = await supabase
+      .from("app_users")
+      .select("is_blocked")
+      .eq("telegram_id", user.id)
+      .maybeSingle();
+    if (appUser?.is_blocked) return jsonResponse({ ok: false, message: "USER_BLOCKED" }, 403, origin);
 
     const { data: activation, error } = await supabase
       .from("license_activations")
@@ -27,6 +43,7 @@ Deno.serve(async (request) => {
 
     if (error || !activation) return jsonResponse({ ok: false, message: "LICENSE_NOT_FOUND" }, 404, origin);
     if (Number(activation.telegram_id) !== user.id) return jsonResponse({ ok: false, message: "LICENSE_USER_MISMATCH" }, 403, origin);
+    if (activation.device_hash !== deviceHash) return jsonResponse({ ok: false, message: "LICENSE_DEVICE_MISMATCH" }, 403, origin);
     if (!activation.is_active) return jsonResponse({ ok: false, message: "LICENSE_REVOKED" }, 403, origin);
     if (activation.license_keys?.status === "revoked") return jsonResponse({ ok: false, message: "LICENSE_REVOKED" }, 403, origin);
     if (activation.expires_at && new Date(activation.expires_at).getTime() <= Date.now()) {
@@ -46,7 +63,8 @@ Deno.serve(async (request) => {
         plan: activation.license_keys?.plan || "pro",
         expiresAt: activation.expires_at,
         telegramId: user.id,
-        activatedAt: activation.activated_at
+        activatedAt: activation.activated_at,
+        deviceHash
       }
     }, 200, origin);
   } catch (error) {
