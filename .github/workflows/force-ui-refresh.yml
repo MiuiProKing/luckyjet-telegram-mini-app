@@ -18,15 +18,16 @@ jobs:
           from pathlib import Path
           import re
 
-          version = "20260724-12"
+          version = "20260724-14"
           module_names = [
               "app-config.js",
-              "i18n.js",
+              "i18n-runtime.js",
               "license-client.js",
               "access.js",
               "analytics-client.js",
               "app-center.js",
           ]
+          obsolete_names = ["i18n.js"]
 
           def remove_module(s, name):
               pattern = rf'<script\s+src="{re.escape(name)}(?:\?v=[^"]*)?"></script>'
@@ -44,13 +45,13 @@ jobs:
                   )
                   s = s.replace('data-app-tab="pro">PRO</button>', 'data-app-tab="pro">⚡ PRO</button>')
 
-              for name in module_names:
+              for name in module_names + obsolete_names:
                   s = remove_module(s, name)
 
               if p.name == 'admin.html':
                   bundle = (
                       f'<script src="app-config.js?v={version}"></script>'
-                      f'<script src="i18n.js?v={version}"></script>'
+                      f'<script src="i18n-runtime.js?v={version}"></script>'
                   )
               else:
                   bundle = ''.join(f'<script src="{name}?v={version}"></script>' for name in module_names)
@@ -67,5 +68,5 @@ jobs:
             echo "No changes needed"
             exit 0
           fi
-          git commit -m "Build multilingual app modules into all pages"
+          git commit -m "Build stable multilingual app modules into all pages"
           git push
