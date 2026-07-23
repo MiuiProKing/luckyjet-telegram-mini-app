@@ -1,0 +1,15 @@
+html.telegram-mini-app {
+  overscroll-behavior: none;
+  background: var(--tg-theme-bg-color, #000);
+}
+
+html.telegram-mini-app body {
+  min-height: var(--tg-viewport-stable-height, 100vh);
+}
+
+html.telegram-mini-app .pro-app-back {
+  top: max(
+    calc(10px + env(safe-area-inset-top, 0px)),
+    calc(10px + var(--tg-content-safe-area-inset-top, 0px))
+  );
+}
