@@ -6,9 +6,9 @@
   const UNLOCK_KEY = "allpredictor_full_access_v1";
   const DEVICE_KEY = "allpredictor_device_id_v1";
 
-  function endpoint(name) {
+  function endpoint() {
     const base = String(config.supabaseUrl || "").replace(/\/$/, "");
-    return base ? `${base}/functions/v1/${name}` : "";
+    return base ? `${base}/functions/v1/allpredictor-api` : "";
   }
 
   function deviceId() {
@@ -30,7 +30,6 @@
     const webApp = window.Telegram && window.Telegram.WebApp;
     return {
       initData: webApp?.initData || "",
-      user: webApp?.initDataUnsafe?.user || null,
       deviceId: deviceId(),
       platform: webApp?.platform || navigator.platform || "unknown"
     };
@@ -61,20 +60,20 @@
     window.dispatchEvent(new CustomEvent("allpredictor:licensechange", { detail: null }));
   }
 
-  async function request(functionName, body) {
-    const url = endpoint(functionName);
+  async function request(action, body) {
+    const url = endpoint();
     if (!url || !config.supabaseAnonKey) throw new Error("LICENSE_SERVER_NOT_CONFIGURED");
-
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        apikey: config.supabaseAnonKey
-      },
-      body: JSON.stringify(body),
-      cache: "no-store"
-    });
-
+    let response;
+    try {
+      response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", apikey: config.supabaseAnonKey },
+        body: JSON.stringify({ action, ...body }),
+        cache: "no-store"
+      });
+    } catch (_error) {
+      throw new Error("LICENSE_SERVER_NOT_DEPLOYED");
+    }
     let data = null;
     try { data = await response.json(); } catch (_error) {}
     if (!response.ok || !data?.ok) throw new Error(data?.message || `LICENSE_SERVER_${response.status}`);
@@ -84,7 +83,7 @@
   async function activate(key) {
     const cleanKey = String(key || "").trim().toUpperCase();
     if (!cleanKey) throw new Error("EMPTY_LICENSE_KEY");
-    const data = await request("activate-license", { key: cleanKey, ...telegramPayload() });
+    const data = await request("activate_license", { key: cleanKey, ...telegramPayload() });
     storeLicense(data.license);
     return data;
   }
@@ -93,10 +92,7 @@
     const license = getStoredLicense();
     if (!license?.activationToken) return { ok: false, license: null };
     try {
-      const data = await request("check-license", {
-        activationToken: license.activationToken,
-        ...telegramPayload()
-      });
+      const data = await request("check_license", { activationToken: license.activationToken, ...telegramPayload() });
       storeLicense(data.license);
       return data;
     } catch (error) {
@@ -109,9 +105,8 @@
     const license = getStoredLicense();
     if (!license) return { active: false, plan: "trial", expiresAt: null };
     const expiresAt = license.expiresAt ? new Date(license.expiresAt) : null;
-    const active = !expiresAt || expiresAt.getTime() > Date.now();
     return {
-      active,
+      active: !expiresAt || expiresAt.getTime() > Date.now(),
       plan: license.plan || "pro",
       expiresAt: expiresAt?.toISOString() || null,
       deviceId: deviceId(),
