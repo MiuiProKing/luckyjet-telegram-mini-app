@@ -1,4 +1,4 @@
-name: Force UI refresh
+name: Build mini app pages
 
 on:
   push:
@@ -8,35 +8,57 @@ permissions:
   contents: write
 
 jobs:
-  patch-index:
+  patch-pages:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Patch cache keys and install access gate
+      - name: Install global application modules and refresh cache
         run: |
           python - <<'PY'
           from pathlib import Path
           import re
 
-          version = "20260724-6"
-          access_tag = f'<script src="access.js?v={version}"></script>'
+          version = "20260724-12"
+          module_names = [
+              "app-config.js",
+              "i18n.js",
+              "license-client.js",
+              "access.js",
+              "analytics-client.js",
+              "app-center.js",
+          ]
+
+          def remove_module(s, name):
+              pattern = rf'<script\s+src="{re.escape(name)}(?:\?v=[^"]*)?"></script>'
+              return re.sub(pattern, "", s, flags=re.I)
 
           for p in Path('.').glob('*.html'):
               s = p.read_text(encoding='utf-8')
 
               if p.name == 'index.html':
-                  s = re.sub(r'<script src="telegram\.js(?:\?v=[^"]*)?"></script>',
-                             f'<script src="telegram.js?v={version}"></script>', s)
-                  s = s.replace('data-app-tab="pro">PRO</button>',
-                                'data-app-tab="pro">⚡ PRO</button>')
+                  s = re.sub(
+                      r'<script src="telegram\.js(?:\?v=[^"]*)?"></script>',
+                      f'<script src="telegram.js?v={version}"></script>',
+                      s,
+                      flags=re.I,
+                  )
+                  s = s.replace('data-app-tab="pro">PRO</button>', 'data-app-tab="pro">⚡ PRO</button>')
 
-              s = re.sub(r'<script src="access\.js(?:\?v=[^"]*)?"></script>', access_tag, s)
-              if 'src="access.js' not in s:
-                  s = s.replace('</head>', access_tag + '</head>', 1)
+              for name in module_names:
+                  s = remove_module(s, name)
 
+              if p.name == 'admin.html':
+                  bundle = (
+                      f'<script src="app-config.js?v={version}"></script>'
+                      f'<script src="i18n.js?v={version}"></script>'
+                  )
+              else:
+                  bundle = ''.join(f'<script src="{name}?v={version}"></script>' for name in module_names)
+
+              s = s.replace('</head>', bundle + '</head>', 1)
               p.write_text(s, encoding='utf-8')
           PY
-      - name: Commit patch if needed
+      - name: Commit generated page updates
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -45,5 +67,5 @@ jobs:
             echo "No changes needed"
             exit 0
           fi
-          git commit -m "Install trial access gate and refresh UI cache"
+          git commit -m "Build multilingual app modules into all pages"
           git push
