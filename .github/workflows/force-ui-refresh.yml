@@ -18,8 +18,9 @@ jobs:
           from pathlib import Path
           import re
 
-          version = "20260724-21"
+          version = "20260724-22"
           module_names = [
+              "owner-tools.js",
               "app-config.js",
               "i18n-runtime.js",
               "language-onboarding.js",
@@ -53,7 +54,14 @@ jobs:
                   s = remove_module(s, name)
 
               if p.name == 'admin.html':
+                  if 'http-equiv="Cache-Control"' not in s:
+                      s = s.replace(
+                          '<meta name="theme-color" content="#07050b">',
+                          '<meta name="theme-color" content="#07050b">\n  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">\n  <meta http-equiv="Pragma" content="no-cache">\n  <meta http-equiv="Expires" content="0">',
+                          1,
+                      )
                   bundle = (
+                      f'<script src="owner-tools.js?v={version}"></script>'
                       f'<script src="app-config.js?v={version}"></script>'
                       f'<script src="i18n-runtime.js?v={version}"></script>'
                       f'<script src="admin-devices.js?v={version}"></script>'
@@ -73,5 +81,5 @@ jobs:
             echo "No changes needed"
             exit 0
           fi
-          git commit -m "Refresh single API clients and setup page"
+          git commit -m "Force fresh admin page and refresh all modules"
           git push
