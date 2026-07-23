@@ -2,6 +2,7 @@
   "use strict";
 
   const ADMIN_IDS = Object.freeze([8016237913]);
+  const ADMIN_PAGE_VERSION = "20260724-22";
 
   function currentTelegramId() {
     const value = window.Telegram?.WebApp?.initDataUnsafe?.user?.id;
@@ -13,8 +14,17 @@
     return id !== null && ADMIN_IDS.includes(id);
   }
 
+  function isAdminPage() {
+    const path = location.pathname.toLowerCase();
+    return path.endsWith("/admin.html") || path.endsWith("/setup-server.html");
+  }
+
+  function freshAdminUrl() {
+    return `admin.html?v=${ADMIN_PAGE_VERSION}&refresh=${Date.now()}`;
+  }
+
   function installAdminButton() {
-    if (!isAdmin() || document.getElementById("allPredictorAdminButton")) return;
+    if (isAdminPage() || !isAdmin() || document.getElementById("allPredictorAdminButton")) return;
 
     const style = document.createElement("style");
     style.id = "allPredictorAdminStyles";
@@ -30,7 +40,7 @@
     button.type = "button";
     button.textContent = "🔑 ADMIN";
     button.addEventListener("click", () => {
-      location.href = "admin.html";
+      location.href = freshAdminUrl();
     });
     document.body.appendChild(button);
   }
@@ -38,7 +48,8 @@
   window.AllPredictorOwner = Object.freeze({
     adminTelegramIds: ADMIN_IDS.slice(),
     currentTelegramId,
-    isAdmin
+    isAdmin,
+    freshAdminUrl
   });
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", installAdminButton, { once: true });
