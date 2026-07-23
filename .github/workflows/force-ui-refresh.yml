@@ -18,7 +18,7 @@ jobs:
           from pathlib import Path
           import re
 
-          version = "20260724-15"
+          version = "20260724-16"
           module_names = [
               "app-config.js",
               "i18n-runtime.js",
@@ -28,7 +28,7 @@ jobs:
               "analytics-client.js",
               "app-center.js",
           ]
-          obsolete_names = ["i18n.js"]
+          obsolete_names = ["i18n.js", "admin-devices.js"]
 
           def remove_module(s, name):
               pattern = rf'<script\s+src="{re.escape(name)}(?:\?v=[^"]*)?"></script>'
@@ -53,6 +53,7 @@ jobs:
                   bundle = (
                       f'<script src="app-config.js?v={version}"></script>'
                       f'<script src="i18n-runtime.js?v={version}"></script>'
+                      f'<script src="admin-devices.js?v={version}"></script>'
                   )
               else:
                   bundle = ''.join(f'<script src="{name}?v={version}"></script>' for name in module_names)
@@ -69,5 +70,5 @@ jobs:
             echo "No changes needed"
             exit 0
           fi
-          git commit -m "Build language onboarding and global modules into all pages"
+          git commit -m "Build device-aware multilingual modules into all pages"
           git push
