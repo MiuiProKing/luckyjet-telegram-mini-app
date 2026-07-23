@@ -11,28 +11,29 @@
 
   async function send(eventName, data = {}) {
     if (!configured()) return { ok: false, skipped: true };
-
-    const url = `${String(config.supabaseUrl).replace(/\/$/, "")}/functions/v1/track-user`;
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        apikey: config.supabaseAnonKey
-      },
-      body: JSON.stringify({
-        initData: webApp.initData,
-        startParam: webApp.initDataUnsafe?.start_param || "",
-        platform: webApp.platform || "",
-        version: webApp.version || "",
-        appVersion: config.version || "",
-        eventName,
-        page: location.pathname,
-        game: document.body?.dataset?.game || "",
-        data
-      }),
-      keepalive: true
-    });
-
+    const url = `${String(config.supabaseUrl).replace(/\/$/, "")}/functions/v1/allpredictor-api`;
+    let response;
+    try {
+      response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", apikey: config.supabaseAnonKey },
+        body: JSON.stringify({
+          action: "track_user",
+          initData: webApp.initData,
+          startParam: webApp.initDataUnsafe?.start_param || "",
+          platform: webApp.platform || "",
+          version: webApp.version || "",
+          appVersion: config.version || "",
+          eventName,
+          page: location.pathname,
+          game: document.body?.dataset?.game || "",
+          data
+        }),
+        keepalive: true
+      });
+    } catch (_error) {
+      return { ok: false, skipped: true };
+    }
     let result = null;
     try { result = await response.json(); } catch (_error) {}
     if (!response.ok) throw new Error(result?.message || `TRACK_${response.status}`);
@@ -47,7 +48,7 @@
     await send("app_open").catch(() => {});
   }
 
-  document.addEventListener("click", (event) => {
+  document.addEventListener("click", event => {
     const target = event.target?.closest?.("[data-open-game],[data-open-pro],#generateButton,#signalButton,#grandButton,#trainedButton,[data-generate-signal]");
     if (!target) return;
     let eventName = "interaction";
@@ -66,7 +67,6 @@
   }, true);
 
   window.AllPredictorAnalytics = Object.freeze({ send, configured: configured() });
-
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", trackOpenOnce, { once: true });
   else trackOpenOnce();
 })();
