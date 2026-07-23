@@ -18,7 +18,7 @@ jobs:
           from pathlib import Path
           import re
 
-          version = "20260724-17"
+          version = "20260724-19"
           module_names = [
               "app-config.js",
               "i18n-runtime.js",
@@ -70,5 +70,5 @@ jobs:
             echo "No changes needed"
             exit 0
           fi
-          git commit -m "Refresh Supabase-connected application modules"
+          git commit -m "Refresh Supabase client authentication cache"
           git push
