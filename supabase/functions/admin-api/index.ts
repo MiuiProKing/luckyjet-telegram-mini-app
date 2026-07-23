@@ -32,7 +32,6 @@ Deno.serve(async (request) => {
       today.setUTCHours(0, 0, 0, 0);
       const week = new Date(Date.now() - 7 * 86400000).toISOString();
       const month = new Date(Date.now() - 30 * 86400000).toISOString();
-
       const [users, todayUsers, weekUsers, monthUsers, licenses, activeActivations] = await Promise.all([
         supabase.from("app_users").select("telegram_id", { count: "exact", head: true }),
         supabase.from("app_users").select("telegram_id", { count: "exact", head: true }).gte("first_seen_at", today.toISOString()),
@@ -41,25 +40,21 @@ Deno.serve(async (request) => {
         supabase.from("license_keys").select("id", { count: "exact", head: true }),
         supabase.from("license_activations").select("id", { count: "exact", head: true }).eq("is_active", true)
       ]);
-
-      return jsonResponse({
-        ok: true,
-        stats: {
-          users: users.count || 0,
-          newToday: todayUsers.count || 0,
-          activeWeek: weekUsers.count || 0,
-          activeMonth: monthUsers.count || 0,
-          licenses: licenses.count || 0,
-          activeLicenses: activeActivations.count || 0
-        }
-      }, 200, origin);
+      return jsonResponse({ ok: true, stats: {
+        users: users.count || 0,
+        newToday: todayUsers.count || 0,
+        activeWeek: weekUsers.count || 0,
+        activeMonth: monthUsers.count || 0,
+        licenses: licenses.count || 0,
+        activeLicenses: activeActivations.count || 0
+      } }, 200, origin);
     }
 
     if (action === "list_users") {
       const limit = Math.min(200, Math.max(1, Number(payload.limit) || 50));
       const { data, error } = await supabase
         .from("app_users")
-        .select("telegram_id,username,first_name,last_name,language_code,first_seen_at,last_seen_at,launch_count,is_blocked,referral_code")
+        .select("telegram_id,username,first_name,last_name,language_code,first_seen_at,last_seen_at,launch_count,is_blocked,referral_code,referred_by")
         .order("last_seen_at", { ascending: false })
         .limit(limit);
       if (error) throw error;
@@ -70,7 +65,7 @@ Deno.serve(async (request) => {
       const limit = Math.min(200, Math.max(1, Number(payload.limit) || 100));
       const { data, error } = await supabase
         .from("license_keys")
-        .select("id,license_key,plan,duration_days,max_activations,activation_count,bound_telegram_id,status,created_at,expires_at,activated_at,note")
+        .select("id,license_key,plan,duration_days,max_devices,max_activations,activation_count,bound_telegram_id,status,created_at,expires_at,activated_at,note")
         .order("created_at", { ascending: false })
         .limit(limit);
       if (error) throw error;
@@ -79,17 +74,31 @@ Deno.serve(async (request) => {
 
     if (action === "create_license") {
       const plan = String(payload.plan || "pro_30");
-      const maxActivations = Math.min(10, Math.max(1, Number(payload.maxActivations) || 1));
+      const maxDevices = Math.min(2, Math.max(1, Number(payload.maxDevices) || 1));
       const note = String(payload.note || "").slice(0, 500) || null;
       const { data, error } = await supabase.rpc("create_license", {
         p_plan: plan,
         p_duration_days: payload.durationDays ? Number(payload.durationDays) : null,
-        p_max_activations: maxActivations,
+        p_max_activations: maxDevices,
         p_note: note,
         p_created_by: user.id
       });
       if (error) throw error;
-      return jsonResponse({ ok: true, license: data }, 200, origin);
+      const licenseId = Array.isArray(data) ? data[0]?.id : data?.id;
+      if (licenseId) {
+        const { error: deviceError } = await supabase.from("license_keys").update({
+          max_devices: maxDevices,
+          max_activations: maxDevices
+        }).eq("id", licenseId);
+        if (deviceError) throw deviceError;
+      }
+      const { data: created, error: createdError } = await supabase
+        .from("license_keys")
+        .select("*")
+        .eq("id", licenseId)
+        .single();
+      if (createdError) throw createdError;
+      return jsonResponse({ ok: true, license: created }, 200, origin);
     }
 
     if (action === "revoke_license") {
@@ -114,7 +123,9 @@ Deno.serve(async (request) => {
         const base = activation.expires_at && new Date(activation.expires_at).getTime() > Date.now()
           ? new Date(activation.expires_at).getTime()
           : Date.now();
-        await supabase.from("license_activations").update({ expires_at: new Date(base + days * 86400000).toISOString() }).eq("id", activation.id);
+        await supabase.from("license_activations").update({
+          expires_at: new Date(base + days * 86400000).toISOString()
+        }).eq("id", activation.id);
       }
       return jsonResponse({ ok: true, message: "LICENSE_EXTENDED" }, 200, origin);
     }
