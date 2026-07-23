@@ -1,0 +1,33 @@
+name: Validate mini app
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  javascript:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check JavaScript syntax
+        run: |
+          set -e
+          for file in *.js; do
+            echo "Checking $file"
+            node --check "$file"
+          done
+      - name: Verify required files
+        run: |
+          test -f index.html
+          test -f app-config.js
+          test -f i18n-runtime.js
+          test -f language-onboarding.js
+          test -f access.js
+          test -f license-client.js
+          test -f analytics-client.js
+          test -f app-center.js
+          test -f admin.html
