@@ -50,7 +50,7 @@
       function serverReady(){return Boolean(config.supabaseUrl&&config.supabaseAnonKey&&tg?.initData)}
       async function api(action,payload={}){
         if(!serverReady())throw new Error("SERVER_NOT_CONFIGURED");
-        const r=await fetch(String(config.supabaseUrl).replace(/\/$/,"")+"/functions/v1/admin-api",{method:"POST",headers:{"Content-Type":"application/json",apikey:config.supabaseAnonKey,Authorization:"Bearer "+config.supabaseAnonKey},body:JSON.stringify({initData:tg.initData,action,payload}),cache:"no-store"});
+        const r=await fetch(String(config.supabaseUrl).replace(/\/$/,"")+"/functions/v1/admin-api",{method:"POST",headers:{"Content-Type":"application/json",apikey:config.supabaseAnonKey},body:JSON.stringify({initData:tg.initData,action,payload}),cache:"no-store"});
         const d=await r.json().catch(()=>({}));if(!r.ok||!d.ok)throw new Error(d.message||"ADMIN_API_"+r.status);return d
       }
       function statsHtml(s){return [["Users",s.users],["New today",s.newToday],["Active 7d",s.activeWeek],["Active 30d",s.activeMonth],["Keys",s.licenses],["Active PRO",s.activeLicenses]].map(x=>`<div class="stat"><div class="label">${x[0]}</div><div class="value">${x[1]??0}</div></div>`).join("")}
