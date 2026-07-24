@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Install modules, preserve Beta Classic API and refresh cache
+      - name: Install modules, restore Beta Classic and refresh cache
         run: |
           python - <<'PY'
           from pathlib import Path
@@ -20,7 +20,7 @@ jobs:
           import base64
           import gzip
 
-          version = "20260724-31"
+          version = "20260724-32"
           lucky_api = "https://crash-gateway-grm-cr.100hp.app/state"
           lucky_customer = "077dee8d-c923-4c02-9bee-757573662e69"
           lucky_session = "933841e0-8e4f-4513-9ef1-852096c0e566"
@@ -41,15 +41,6 @@ jobs:
               pattern = rf'<script\s+src="{re.escape(name)}(?:\?v=[^"]*)?"></script>'
               return re.sub(pattern, "", s, flags=re.I)
 
-          def unpack_beta_classic(s):
-              if "DecompressionStream" not in s or "const b64=" not in s:
-                  return s
-              match = re.search(r"const b64=['\"]([A-Za-z0-9+/=]+)['\"]", s)
-              if not match:
-                  raise RuntimeError("Beta Classic compressed payload was not found")
-              raw = gzip.decompress(base64.b64decode(match.group(1)))
-              return raw.decode("utf-8")
-
           def sync_luckyjet_connection(s):
               lower = s.lower()
               if not ("lucky" in lower and "jet" in lower):
@@ -60,6 +51,13 @@ jobs:
               s = re.sub(r'(["\']customer-id["\']\s*:\s*)["\'][^"\']*["\']', lambda m: m.group(1) + '"' + lucky_customer + '"', s, flags=re.I)
               s = re.sub(r'(["\']session-id["\']\s*:\s*)["\'][^"\']*["\']', lambda m: m.group(1) + '"' + lucky_session + '"', s, flags=re.I)
               return s
+
+          payload = Path('beta-classic.payload.b64')
+          beta_path = Path('beta-classic.html')
+          if payload.exists():
+              beta_html = gzip.decompress(base64.b64decode(payload.read_text(encoding='utf-8').strip())).decode('utf-8')
+              beta_path.write_text(beta_html, encoding='utf-8')
+              print('Beta Classic restored from payload:', len(beta_html), 'characters')
 
           beta_card = '''
                 <button class="game-card has-art" type="button" data-open-pro="luckyjet-beta" aria-label="Open Lucky Jet Beta PRO">
@@ -73,13 +71,7 @@ jobs:
                   continue
 
               s = p.read_text(encoding='utf-8')
-
-              # Swiftgram cannot decode the compressed wrapper used earlier.
-              # Convert Beta Classic to a normal standalone HTML file once.
-              if p.name == 'beta-classic.html':
-                  s = unpack_beta_classic(s)
-              else:
-                  # Keep the original API credentials inside Beta Classic exactly as supplied.
+              if p.name != 'beta-classic.html':
                   s = sync_luckyjet_connection(s)
 
               if p.name == 'index.html':
@@ -121,5 +113,5 @@ jobs:
             echo "No changes needed"
             exit 0
           fi
-          git commit -m "Fix Swiftgram Beta Classic decoding and preserve original connection"
+          git commit -m "Restore plain Beta Classic HTML and refresh cache"
           git push
