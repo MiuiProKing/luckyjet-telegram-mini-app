@@ -1,0 +1,1 @@
+Trigger secure Telegram Ed25519 signature verification patch.
