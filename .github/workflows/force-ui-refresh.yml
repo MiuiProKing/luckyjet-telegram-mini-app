@@ -18,7 +18,7 @@ jobs:
           from pathlib import Path
           import re
 
-          version = "20260724-22"
+          version = "20260724-23"
           module_names = [
               "owner-tools.js",
               "app-config.js",
@@ -29,7 +29,7 @@ jobs:
               "analytics-client.js",
               "app-center.js",
           ]
-          obsolete_names = ["i18n.js", "admin-devices.js"]
+          obsolete_names = ["i18n.js", "admin-devices.js", "admin-auth-bridge.js"]
 
           def remove_module(s, name):
               pattern = rf'<script\s+src="{re.escape(name)}(?:\?v=[^"]*)?"></script>'
@@ -63,6 +63,7 @@ jobs:
                   bundle = (
                       f'<script src="owner-tools.js?v={version}"></script>'
                       f'<script src="app-config.js?v={version}"></script>'
+                      f'<script src="admin-auth-bridge.js?v={version}"></script>'
                       f'<script src="i18n-runtime.js?v={version}"></script>'
                       f'<script src="admin-devices.js?v={version}"></script>'
                   )
@@ -81,5 +82,5 @@ jobs:
             echo "No changes needed"
             exit 0
           fi
-          git commit -m "Force fresh admin page and refresh all modules"
+          git commit -m "Preserve Telegram auth when opening admin page"
           git push
