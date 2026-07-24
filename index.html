@@ -319,8 +319,8 @@
 <link rel="stylesheet" href="theme.css">
 <link rel="stylesheet" href="telegram.css">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
-<script src="telegram.js?v=20260724-28"></script>
-<script src="theme.js"></script><script src="owner-tools.js?v=20260724-28"></script><script src="app-config.js?v=20260724-28"></script><script src="i18n-runtime.js?v=20260724-28"></script><script src="language-onboarding.js?v=20260724-28"></script><script src="license-client.js?v=20260724-28"></script><script src="access.js?v=20260724-28"></script><script src="analytics-client.js?v=20260724-28"></script><script src="app-center.js?v=20260724-28"></script></head>
+<script src="telegram.js?v=20260724-29"></script>
+<script src="theme.js"></script><script src="owner-tools.js?v=20260724-29"></script><script src="app-config.js?v=20260724-29"></script><script src="i18n-runtime.js?v=20260724-29"></script><script src="language-onboarding.js?v=20260724-29"></script><script src="license-client.js?v=20260724-29"></script><script src="access.js?v=20260724-29"></script><script src="analytics-client.js?v=20260724-29"></script><script src="app-center.js?v=20260724-29"></script></head>
 <body class="catalog-active">
   <section class="catalog-view" id="selectorView" aria-label="Game selector">
     <div class="catalog-shell">
@@ -354,7 +354,7 @@
     <div class="pro-shell">
       <div class="pro-kicker">PREMIUM LIVE</div>
       <h1 class="pro-title">PRO</h1>
-      <p class="pro-subtitle">Два локальных LIVE-анализатора. Выберите игру — код откроется прямо внутри приложения.</p>
+      <p class="pro-subtitle">Три локальных LIVE-анализатора. Выберите игру — код откроется прямо внутри приложения.</p>
       <div class="pro-grid">
         <button class="game-card has-art" type="button" data-open-pro="luckyjet" aria-label="Open Lucky Jet PRO">
           <img class="card-art" src="pro-luckyjet.jpg" alt="Lucky Jet">
@@ -366,6 +366,11 @@
           <span class="pro-badge">PRO</span>
           <span class="card-copy"><span class="card-name">ROCKET QUEEN</span><span class="card-studio">LOCAL LIVE API</span></span>
         </button>
+      <button class="game-card has-art" type="button" data-open-pro="luckyjet-beta" aria-label="Open Lucky Jet Beta PRO">
+        <img class="card-art" src="pro-luckyjet.jpg" alt="Lucky Jet Beta">
+        <span class="pro-badge">BETA</span>
+        <span class="card-copy"><span class="card-name">LUCKY JET BETA</span><span class="card-studio">NEW LIVE CONNECTION</span></span>
+      </button>
       </div>
     </div>
   </section>
@@ -562,6 +567,7 @@
   document.querySelector('[data-open-game="rocketqueen"]').addEventListener("click", () => { window.location.href = "rocketqueen.html"; });
   document.querySelector('[data-open-pro="luckyjet"]').addEventListener("click", () => { window.location.href = "pro-luckyjet.html"; });
   document.querySelector('[data-open-pro="rocketqueen"]').addEventListener("click", () => { window.location.href = "pro-rocketqueen.html"; });
+  document.querySelector('[data-open-pro="luckyjet-beta"]').addEventListener("click", () => { window.location.href = "beta-luckyjet.html"; });
   appTabs.forEach(tab => tab.addEventListener("click", () => tab.dataset.appTab === "pro" ? openPro() : openCatalog()));
   document.getElementById("backToCatalog").addEventListener("click", openCatalog);
   document.querySelectorAll("[data-locked-game]").forEach(card => {
@@ -578,7 +584,7 @@
   const apiURL = "https://crash-gateway-grm-cr.100hp.app/state";
   const headers = {
     "customer-id": "077dee8d-c923-4c02-9bee-757573662e69",
-    "session-id": "ba47ba53-8ac6-4ed5-9bda-3d7d033acffc",
+    "session-id": "933841e0-8e4f-4513-9ef1-852096c0e566",
     "accept": "application/json"
   };
 
