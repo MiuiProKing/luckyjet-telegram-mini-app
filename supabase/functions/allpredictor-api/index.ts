@@ -2,19 +2,18 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const encoder = new TextEncoder();
 
-function cors(origin: string | null) {
-  const allowed = Deno.env.get("APP_ORIGIN") || "https://miuiproking.github.io";
+function cors() {
   return {
-    "Access-Control-Allow-Origin": origin && origin.startsWith(allowed) ? origin : allowed,
-    "Access-Control-Allow-Headers": "content-type, apikey, authorization",
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Headers": "content-type, apikey, authorization, x-client-info",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Content-Type": "application/json; charset=utf-8",
-    "Vary": "Origin"
+    "Access-Control-Max-Age": "86400",
+    "Content-Type": "application/json; charset=utf-8"
   };
 }
 
-function reply(origin: string | null, body: unknown, status = 200) {
-  return new Response(JSON.stringify(body), { status, headers: cors(origin) });
+function reply(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), { status, headers: cors() });
 }
 
 async function hmac(key: Uint8Array, value: string): Promise<ArrayBuffer> {
@@ -120,17 +119,16 @@ async function activateLicense(supabase: ReturnType<typeof createClient>, user: 
     activation_count: Number(license.activation_count || 0) + 1,
     status: "active"
   }).eq("id", license.id);
-  await supabase.from("app_events").insert({ telegram_id: user.id, event_name: "license_activated", page: "license", data: { plan: license.plan } });
   return { activationToken: activation.activation_token, plan: license.plan, expiresAt: activation.expires_at, telegramId: user.id, activatedAt: activation.activated_at };
 }
 
 async function checkLicense(supabase: ReturnType<typeof createClient>, user: any, body: any) {
-  const token = String(body.activationToken || "").trim();
+  const activationToken = String(body.activationToken || "").trim();
   const deviceId = String(body.deviceId || "").trim();
-  if (!token || deviceId.length < 8) throw new Error("ACTIVATION_DATA_REQUIRED");
-  await ensureUser(supabase, user);
+  if (!activationToken) throw new Error("ACTIVATION_TOKEN_REQUIRED");
+  if (deviceId.length < 8) throw new Error("DEVICE_ID_REQUIRED");
   const deviceHash = await sha256(deviceId);
-  const { data: activation, error } = await supabase.from("license_activations").select("*,license_keys(*)").eq("activation_token", token).single();
+  const { data: activation, error } = await supabase.from("license_activations").select("*,license_keys(*)").eq("activation_token", activationToken).single();
   if (error || !activation) throw new Error("LICENSE_NOT_FOUND");
   if (Number(activation.telegram_id) !== user.id) throw new Error("LICENSE_USER_MISMATCH");
   if (activation.device_hash !== deviceHash) throw new Error("LICENSE_DEVICE_MISMATCH");
@@ -216,9 +214,8 @@ async function adminAction(supabase: ReturnType<typeof createClient>, action: st
 }
 
 Deno.serve(async request => {
-  const origin = request.headers.get("origin");
-  if (request.method === "OPTIONS") return new Response("ok", { headers: cors(origin) });
-  if (request.method !== "POST") return reply(origin, { ok: false, message: "METHOD_NOT_ALLOWED" }, 405);
+  if (request.method === "OPTIONS") return new Response("ok", { headers: cors() });
+  if (request.method !== "POST") return reply({ ok: false, message: "METHOD_NOT_ALLOWED" }, 405);
   try {
     const body = await request.json();
     const action = String(body.action || "");
@@ -229,11 +226,11 @@ Deno.serve(async request => {
     else if (action === "check_license") result = { license: await checkLicense(supabase, user, body) };
     else if (action === "track_user") result = { user: await trackUser(supabase, user, body) };
     else result = await adminAction(supabase, action, body, user);
-    return reply(origin, { ok: true, ...result });
+    return reply({ ok: true, ...result });
   } catch (error) {
     console.error(error);
     const message = error instanceof Error ? error.message : "UNKNOWN_ERROR";
     const status = message.startsWith("TELEGRAM_") ? 401 : message === "ADMIN_ACCESS_DENIED" || message === "USER_BLOCKED" ? 403 : message.includes("NOT_FOUND") ? 404 : message.includes("LIMIT") || message.includes("BOUND") ? 409 : 400;
-    return reply(origin, { ok: false, message }, status);
+    return reply({ ok: false, message }, status);
   }
 });
