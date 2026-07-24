@@ -1,46 +1,6 @@
-(() => {
-  const path = String(location.pathname || "").toLowerCase();
-  if (!path.endsWith("/beta-classic.html") && !path.endsWith("beta-classic.html")) return;
-
-  // The original Beta Classic file is stored in a compressed wrapper.
-  // Some Swiftgram WebViews expose DecompressionStream but fail to decode gzip.
-  // Load pako synchronously while the document is still being parsed and replace
-  // only this page's decoder with a Web Streams compatible implementation.
-  document.write('<script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js"><\/script>');
-  document.write(`<script>
-    (() => {
-      if (!window.pako || typeof window.TransformStream !== "function") return;
-      window.DecompressionStream = class SwiftgramGzipDecoder {
-        constructor(format) {
-          if (String(format).toLowerCase() !== "gzip") {
-            throw new TypeError("Only gzip is supported");
-          }
-          const parts = [];
-          return new TransformStream({
-            transform(chunk) {
-              parts.push(chunk instanceof Uint8Array ? chunk : new Uint8Array(chunk));
-            },
-            flush(controller) {
-              let length = 0;
-              for (const part of parts) length += part.byteLength;
-              const input = new Uint8Array(length);
-              let offset = 0;
-              for (const part of parts) {
-                input.set(part, offset);
-                offset += part.byteLength;
-              }
-              controller.enqueue(window.pako.ungzip(input));
-            }
-          });
-        }
-      };
-    })();
-  <\/script>`);
-})();
-
 window.ALLPREDICTOR_CONFIG = Object.freeze({
   appName: "AllPredictor 1Win",
-  version: "3.1.1",
+  version: "3.1.2",
   botUsername: "AllPredictorVrs2_bot",
   creatorUsername: "V0xFF3",
   creatorUrl: "https://t.me/V0xFF3",
@@ -51,7 +11,6 @@ window.ALLPREDICTOR_CONFIG = Object.freeze({
   supabaseUrl: "https://lcgewatmbpfxzoiqneoa.supabase.co",
   supabaseAnonKey: "sb_publishable_UkPgmNkmrIYds4psoUW7-g_7I8k_Q25",
 
-  // Add the owner's numeric Telegram ID after it is confirmed.
   adminTelegramIds: [],
 
   plans: [
