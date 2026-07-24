@@ -18,7 +18,7 @@ jobs:
           from pathlib import Path
           import re
 
-          version = "20260724-23"
+          version = "20260724-24"
           module_names = [
               "owner-tools.js",
               "app-config.js",
@@ -82,5 +82,5 @@ jobs:
             echo "No changes needed"
             exit 0
           fi
-          git commit -m "Preserve Telegram auth when opening admin page"
+          git commit -m "Add persistent Swiftgram admin authentication"
           git push
