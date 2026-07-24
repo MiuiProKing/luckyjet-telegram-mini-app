@@ -12,13 +12,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Install modules, sync LuckyJet API and refresh cache
+      - name: Install modules, preserve Beta Classic API and refresh cache
         run: |
           python - <<'PY'
           from pathlib import Path
           import re
+          import base64
+          import gzip
 
-          version = "20260724-30"
+          version = "20260724-31"
           lucky_api = "https://crash-gateway-grm-cr.100hp.app/state"
           lucky_customer = "077dee8d-c923-4c02-9bee-757573662e69"
           lucky_session = "933841e0-8e4f-4513-9ef1-852096c0e566"
@@ -38,6 +40,15 @@ jobs:
           def remove_module(s, name):
               pattern = rf'<script\s+src="{re.escape(name)}(?:\?v=[^"]*)?"></script>'
               return re.sub(pattern, "", s, flags=re.I)
+
+          def unpack_beta_classic(s):
+              if "DecompressionStream" not in s or "const b64=" not in s:
+                  return s
+              match = re.search(r"const b64=['\"]([A-Za-z0-9+/=]+)['\"]", s)
+              if not match:
+                  raise RuntimeError("Beta Classic compressed payload was not found")
+              raw = gzip.decompress(base64.b64decode(match.group(1)))
+              return raw.decode("utf-8")
 
           def sync_luckyjet_connection(s):
               lower = s.lower()
@@ -60,13 +71,20 @@ jobs:
           for p in Path('.').glob('*.html'):
               if p.name == 'setup-server.html':
                   continue
+
               s = p.read_text(encoding='utf-8')
-              s = sync_luckyjet_connection(s)
+
+              # Swiftgram cannot decode the compressed wrapper used earlier.
+              # Convert Beta Classic to a normal standalone HTML file once.
+              if p.name == 'beta-classic.html':
+                  s = unpack_beta_classic(s)
+              else:
+                  # Keep the original API credentials inside Beta Classic exactly as supplied.
+                  s = sync_luckyjet_connection(s)
 
               if p.name == 'index.html':
                   s = re.sub(r'<script src="telegram\.js(?:\?v=[^"]*)?"></script>', f'<script src="telegram.js?v={version}"></script>', s, flags=re.I)
                   s = s.replace('data-app-tab="pro">PRO</button>', 'data-app-tab="pro">⚡ PRO</button>')
-                  s = s.replace('Два локальных LIVE-анализатора.', 'Три локальных LIVE-анализатора.')
                   if 'data-open-pro="luckyjet-beta"' not in s:
                       pattern = r'(<button class="game-card has-art" type="button" data-open-pro="rocketqueen"[\s\S]*?</button>)'
                       s, count = re.subn(pattern, lambda m: m.group(1) + beta_card, s, count=1)
@@ -78,9 +96,6 @@ jobs:
                       if marker not in s:
                           raise RuntimeError('PRO handler marker was not found')
                       s = s.replace(marker, marker + '\n' + handler, 1)
-
-              if p.name == 'beta-luckyjet.html' and 'telegram-web-app.js' not in s:
-                  s = s.replace('</head>', '<script src="https://telegram.org/js/telegram-web-app.js"></script></head>', 1)
 
               for name in all_known_modules + obsolete_names:
                   s = remove_module(s, name)
@@ -106,5 +121,5 @@ jobs:
             echo "No changes needed"
             exit 0
           fi
-          git commit -m "Refresh Beta Classic card and application cache"
+          git commit -m "Fix Swiftgram Beta Classic decoding and preserve original connection"
           git push
