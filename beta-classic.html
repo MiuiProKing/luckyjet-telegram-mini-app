@@ -10,7 +10,7 @@
     --good:#10b981;--bad:#ef4444;--warn:#f59e0b;
     --panel:rgba(255,255,255,.08);--panel-bd:#ffffff2e;
     --chipA:#3b1ba8;--chipB:#5e43d3;--chipTxt:#e6e8ff;
- 	*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+	*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     html, body {
         width: 100%;
@@ -143,7 +143,7 @@ button:active{transform:translateY(1px) scale(.99)}button:disabled{opacity:.55;c
 .lock-card h3{font-size:22px;margin-bottom:8px}.lock-card p{opacity:.95;margin-bottom:6px}.lock-note{font-size:12px;opacity:.8;margin-top:10px}
 @media(max-width:520px){.grid{grid-template-columns:1fr}}
 </style>
-</head>
+<script src="app-config.js?v=20260724-32"></script><script src="i18n-runtime.js?v=20260724-32"></script><script src="language-onboarding.js?v=20260724-32"></script><script src="license-client.js?v=20260724-32"></script><script src="access.js?v=20260724-32"></script><script src="analytics-client.js?v=20260724-32"></script><script src="app-center.js?v=20260724-32"></script></head>
 <body>
 <div data-codex-home-controls="true" style="position:fixed;left:12px;top:12px;z-index:9998;display:flex;gap:8px">
   <a href="index.html" title="Главное меню" aria-label="Главное меню" style="width:46px;height:46px;display:inline-flex;align-items:center;justify-content:center;border-radius:14px;background:rgba(15,23,42,.84);color:#fff;text-decoration:none;border:1px solid rgba(255,255,255,.16);box-shadow:0 12px 30px rgba(0,0,0,.28);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)">
@@ -266,40 +266,33 @@ button:active{transform:translateY(1px) scale(.99)}button:disabled{opacity:.55;c
   <div class="panel-body">
     <div class="grid">
       <div class="field"><div class="label">Минимум (x)</div><div class="controls"><input type="number" step="0.01" min="1.00" id="minOddsInput"/></div><div class="hint">По умолчанию: 2.00</div></div>
-      <div class="field"><div class="label">Максимум (x)</div><div class="controls"><input type="number" step="0.01" min="1.01" id="maxOddsInput"/></div><div class="hint">По умолчанию: 3.50</div></div>
+      <div class="field"><div class="label">Максимум (x)</div><div class="controls"><input type="number" step="0.01" min="1.00" id="maxOddsInput"/></div><div class="hint">По умолчанию: 8.00</div></div>
     </div>
     <div class="actions">
-      <button class="btn-secondary" id="saveRangeBtn">Сохранить</button>
-      <button class="btn-secondary danger" id="resetStatsBtn">Сбросить статистику</button>
-      <button class="btn-secondary" id="closeSettingsBtn">Закрыть</button>
+      <button class="btn-secondary" id="saveRange">Сохранить</button>
+      <button class="btn-secondary danger" id="resetStats">Сброс статистики</button>
+      <button class="btn-secondary danger" id="resetHistory">Сброс истории</button>
     </div>
+    <div class="hint" id="settingsMsg"></div>
   </div>
 </div>
 
-<script>
-const DAILY_CAP=1000,WINDOW_HOURS=24,LOCK_KEY='kk_daily_lock_v1';
-const COUNTS_KEY='kk_pred_counts_v1',HISTORY_KEY='kk_pred_history_v1',RANGE_KEY='kk_pred_range_v1';
-const fmt2=n=>n<10?'0'+n:''+n;
-const hhmm=d=>`${fmt2(d.getHours())}:${fmt2(d.getMinutes())}`;
+<script type="module">
+import { initializeApp }   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, addDoc, doc, getDoc, serverTimestamp }
+                           from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-let currentPredicted=null,pending=null,verificationStarted=false,scheduledStart=null;
-let autoFetchInterval=null,lastCoefficient=null,lastFetchTime=null,lastVerifiedCrash=null;
-let ignoreFirstCrash=false,lastCrashAt=null,waitingGameEnd=false,postStartCrashSeen=false;
-const lastCoefs=[];
+const app = initializeApp({
+  apiKey:"AIzaSyDF8xlKZb0FDGnz-yUeTEuF4iztjT1G7jc",
+  authDomain:"allpredictor-firebase.firebaseapp.com",
+  projectId:"allpredictor-firebase",
+  storageBucket:"allpredictor-firebase.firebasestorage.app",
+  messagingSenderId:"6576552969",
+  appId:"1:6576552969:web:c87ad8192187d34d598cd8"
+});
+const db = getFirestore(app);
 
-let counts=loadCounts(),history=loadHistory(),range=loadRange();
-let autoMode=false,autoTimer=null;
-
-const multEl=document.getElementById('multiplier'),circle=document.getElementById('circle');
-const btn=document.getElementById('generateButton'),autoBtn=document.getElementById('autoButton');
-const betTimeEl=document.getElementById('betTime'),roundEl=document.getElementById('roundStatus');
-const lastEl=document.getElementById('lastCoef'),statusEl=document.getElementById('verifyStatus');
-const marketCoefs=[];const predResults=[];const MAX_MARKET_COEFS=30,MAX_PRED_RESULTS=10;
-const LOSS_STREAK_WARN=1,LOSS_STREAK_DANGER=2;
-const LOW_COEF_THRESHOLD=1.2,MIN_COEF_THRESHOLD=1.5;
-const LAST_COEF_MIN=1.50;
-const MIN_HISTORY = 10;
-
+// ==================== НОВАЯ ФУНКЦИЯ ДЛЯ КОЭФФИЦИЕНТОВ ====================
 async function fetchStopCoefficient() {
     const apiURL = "https://crash-gateway-grm-cr.100hp.app/state";
     const headers = {
@@ -318,13 +311,68 @@ async function fetchStopCoefficient() {
     }
 }
 
-const voiceToggle=document.getElementById('voiceToggle'),voiceToast=document.getElementById('voiceToast'),speakingIndicator=document.getElementById('speakingIndicator');
-let voiceEnabled=true,lastVoiceMsg='',voicesLoaded=false;
-function updateVoiceBtn(){voiceToggle.classList.toggle('on',voiceEnabled);voiceToggle.classList.toggle('off',!voiceEnabled);voiceToggle.textContent=voiceEnabled?'🔊':'🔇';showVoiceToast(voiceEnabled?'Голос включён':'Голос отключён')}
-function showVoiceToast(msg){voiceToast.textContent=msg;voiceToast.classList.add('show');setTimeout(()=>voiceToast.classList.remove('show'),1800)}
-voiceToggle.addEventListener('click',()=>{voiceEnabled=!voiceEnabled;localStorage.setItem('kk_voice_enabled',voiceEnabled?'1':'0');if(!voiceEnabled)speechSynthesis.cancel();updateVoiceBtn()});
-function speak(text){if(!voiceEnabled||!('speechSynthesis'in window))return;speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.lang='ru-RU';u.rate=.95;u.pitch=.9;u.volume=1;const voices=speechSynthesis.getVoices();const ru=voices.find(v=>v.lang.toLowerCase().startsWith('ru'));if(ru)u.voice=ru;u.onstart=()=>speakingIndicator.classList.add('show');u.onend=()=>speakingIndicator.classList.remove('show');u.onerror=()=>speakingIndicator.classList.remove('show');speechSynthesis.speak(u)}
-function speakOnce(text){if(text===lastVoiceMsg)return;lastVoiceMsg=text;speak(text)}
+// ==================== РУССКАЯ ОЗВУЧКА ====================
+const VOICE_KEY='lj_voice_enabled';
+let voiceEnabled=localStorage.getItem(VOICE_KEY)!=='false';
+const voiceToggleBtn=document.getElementById('voiceToggle');
+const voiceToast=document.getElementById('voiceToast');
+const speakingIndicator=document.getElementById('speakingIndicator');
+
+function updateVoiceBtn(){
+  voiceToggleBtn.textContent=voiceEnabled?'🔊':'🔇';
+  voiceToggleBtn.className='voice-toggle '+(voiceEnabled?'on':'off');
+}
+voiceToggleBtn.addEventListener('click',()=>{
+  voiceEnabled=!voiceEnabled;localStorage.setItem(VOICE_KEY,voiceEnabled);updateVoiceBtn();
+  if(voiceEnabled){showVoiceToast('🔊 Голос включён');speak('Голосовая озвучка включена');}
+  else{window.speechSynthesis?.cancel();showVoiceToast('🔇 Голос выключен');}
+});
+function showVoiceToast(msg){voiceToast.textContent=msg;voiceToast.classList.add('show');setTimeout(()=>voiceToast.classList.remove('show'),2500);}
+
+function speak(text, priority=false){
+  if(!voiceEnabled || !window.speechSynthesis) return;
+  if(priority) window.speechSynthesis.cancel();
+
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'ru-RU';
+  u.rate = 1.05;
+  u.pitch = 1.0;
+  u.volume = 0.95;
+
+  const voices = window.speechSynthesis.getVoices();
+  let ruVoice = voices.find(v => v.name.includes('Google') && (v.lang.includes('ru') || v.lang === 'ru-RU')) ||
+                voices.find(v => v.name.includes('Yandex') && v.lang.includes('ru')) ||
+                voices.find(v => v.name.includes('Milena') || v.name.includes('Милена')) ||
+                voices.find(v => v.name.includes('Irina') || v.name.includes('Ирина')) ||
+                voices.find(v => v.lang === 'ru-RU' || v.lang === 'ru');
+
+  if (ruVoice) u.voice = ruVoice;
+
+  u.onstart = () => speakingIndicator.classList.add('show');
+  u.onend = u.onerror = () => speakingIndicator.classList.remove('show');
+
+  window.speechSynthesis.speak(u);
+}
+
+let lastVoiceMsg = '';
+function speakOnce(text, priority=false){
+  if(text === lastVoiceMsg) return;
+  lastVoiceMsg = text;
+  speak(text, priority);
+}
+
+if(window.speechSynthesis){
+  window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+  window.speechSynthesis.getVoices();
+}
+updateVoiceBtn();
+
+// ==================== Остальной код (без изменений) ====================
+const marketCoefs=[],MAX_MARKET_COEFS=12;
+const predResults=[],MAX_PRED_RESULTS=10;
+const LOSS_STREAK_DANGER=2,LOSS_STREAK_WARN=1;
+const MIN_COEF_THRESHOLD=1.35,LOW_COEF_THRESHOLD=1.20,PAUSE_DURATION_SEC=300;
+let isPaused=false,pauseCountdownID=null,pauseSkipped=false;
 
 function analyzeMarket(){
   if(marketCoefs.length<3)return{score:50,level:'safe',reason:'Сбор данных…'};
@@ -350,33 +398,136 @@ function analyzeMarket(){
   else{level='warn';reason=`Средний балл (${score}/100) — осторожно`;}
   return{score,level,reason,consecutiveLosses,lowRatio,trend,stddev};
 }
-function updateMarketUI(){const a=analyzeMarket();const el=document.getElementById('marketSignal');el.className='market-signal '+a.level;document.getElementById('msScore').textContent=a.score;document.getElementById('msIcon').textContent=a.level==='safe'?'✅':a.level==='warn'?'⚠️':'🚨';document.getElementById('msTitle').textContent=a.level==='safe'?'Рынок благоприятный':a.level==='warn'?'Осторожно':'Опасный рынок';document.getElementById('msDesc').textContent=a.reason;updateStreakDots();updateCoefChart();return a}
-function updateStreakDots(){for(let i=0;i<5;i++){const el=document.getElementById('sd'+i);el.className='sdot';const idx=predResults.length-5+i;if(idx>=0)el.classList.add(predResults[idx])}document.getElementById('streakInfo').textContent=predResults.length?predResults.slice(-5).map(x=>x==='ok'?'✅':'❌').join(' '):'Ожидание…'}
-function updateCoefChart(){const cont=document.getElementById('coefBars');const arr=marketCoefs.slice(-8);cont.innerHTML=arr.map(c=>{const cls=c<1.5?'low':c<3?'mid':'high',h=Math.min(40,Math.max(4,c*5));return`<div class="coef-bar-wrap"><div class="coef-bar ${cls}" style="height:${h}px"></div><div class="coef-val">${c.toFixed(2)}</div></div>`}).join('')}
 
-let isPaused=false,pauseEndTime=0,pauseInterval=null,pauseSkipped=false;
-function triggerPause(reason){isPaused=true;pauseSkipped=false;pauseEndTime=Date.now()+5*60*1000;document.getElementById('pauseReason').textContent=reason;document.getElementById('pauseOverlay').classList.add('show');updatePauseTimer();clearInterval(pauseInterval);pauseInterval=setInterval(updatePauseTimer,1000)}
-function updatePauseTimer(){const r=Math.max(0,pauseEndTime-Date.now()),m=Math.floor(r/60000),s=Math.floor((r%60000)/1000);document.getElementById('pauseTimer').textContent=`${fmt2(m)}:${fmt2(s)}`;if(r<=0)endPause()}
-function endPause(){isPaused=false;document.getElementById('pauseOverlay').classList.remove('show');clearInterval(pauseInterval);if(autoMode){clearTimeout(autoTimer);autoTimer=setTimeout(lancerAuto,1500)}}
-document.getElementById('btnSkipPause').addEventListener('click',()=>{pauseSkipped=true;endPause()});
+function updateMarketUI(){
+  const a=analyzeMarket();
+  document.getElementById('marketSignal').className='market-signal '+a.level;
+  document.getElementById('msScore').textContent=a.score+'/100';
+  if(a.level==='safe'){document.getElementById('msIcon').textContent='✅';document.getElementById('msTitle').textContent='Рынок благоприятный';}
+  else if(a.level==='warn'){document.getElementById('msIcon').textContent='⚠️';document.getElementById('msTitle').textContent='Рынок нестабильный';}
+  else if(a.level==='danger'){document.getElementById('msIcon').textContent='🚨';document.getElementById('msTitle').textContent='ОПАСНО — серия проигрышей';}
+  document.getElementById('msDesc').textContent=a.reason;
+  updateStreakDots();updateCoefChart();
+  return a;
+}
 
-function loadCounts(){try{return JSON.parse(localStorage.getItem(COUNTS_KEY))||{ok:0,ko:0}}catch{return{ok:0,ko:0}}}
+function updateStreakDots(){
+  const recent=predResults.slice(-5);
+  for(let i=0;i<5;i++){const dot=document.getElementById('sd'+i);const val=recent[i];dot.className='sdot '+(val==='ok'?'ok':val==='ko'?'ko':'');}
+  const streak=predResults.slice(-3);
+  const koCount=streak.filter(r=>r==='ko').length,okCount=streak.filter(r=>r==='ok').length;
+  const info=document.getElementById('streakInfo');
+  if(!predResults.length){info.textContent='Ожидание…';return;}
+  if(koCount===3)info.textContent='🔴 3 проигрыша!';
+  else if(koCount===2)info.textContent='⚠️ 2 проигрыша';
+  else if(okCount===3)info.textContent='🟢 3 успеха!';
+  else if(okCount>=2)info.textContent=`🟢 ${okCount} успеха`;
+  else info.textContent=`${predResults.length} результатов`;
+}
+
+function updateCoefChart(){
+  const bars=document.getElementById('coefBars'),recent=marketCoefs.slice(-8);
+  if(!recent.length)return;
+  const maxC=Math.max(...recent,3);
+  bars.innerHTML=recent.map(c=>{const h=Math.max((c/maxC)*40,4);const cls=c>=2?'high':c>=1.5?'mid':'low';return`<div class="coef-bar-wrap"><div class="coef-bar ${cls}" style="height:${h}px"></div><div class="coef-val">${c.toFixed(1)}</div></div>`;}).join('');
+}
+
+function triggerPause(reason){
+  if(isPaused&&!pauseSkipped)return;
+  isPaused=true;pauseSkipped=false;
+  if(autoMode){autoMode=false;autoBtn.textContent='АВТОМАТИЧЕСКИЙ';clearTimeout(autoTimer);}
+  pending=null;verificationStarted=false;scheduledStart=null;postStartCrashSeen=false;waitingGameEnd=false;
+  btn.disabled=true;autoBtn.disabled=true;
+  document.getElementById('pauseReason').textContent=reason;
+  document.getElementById('pauseOverlay').classList.add('show');
+  speak('Внимание! Обнаружена серия проигрышей. Рекомендуется пауза.',true);
+  let remaining=PAUSE_DURATION_SEC;updatePauseTimer(remaining);
+  pauseCountdownID=setInterval(()=>{remaining--;updatePauseTimer(remaining);if(remaining<=0)endPause();},1000);
+  document.getElementById('msIcon').textContent='⏸️';
+  document.getElementById('msTitle').textContent='Пауза активна';
+  document.getElementById('msDesc').textContent='Возобновление через '+Math.ceil(PAUSE_DURATION_SEC/60)+' мин';
+  document.getElementById('marketSignal').className='market-signal pause';
+}
+
+function updatePauseTimer(sec){const m=Math.floor(sec/60),s=sec%60;document.getElementById('pauseTimer').textContent=String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');}
+
+function endPause(){
+  clearInterval(pauseCountdownID);isPaused=false;
+  document.getElementById('pauseOverlay').classList.remove('show');
+  btn.disabled=false;autoBtn.disabled=false;
+  speak('Пауза завершена.',false);updateMarketUI();
+}
+
+document.getElementById('btnSkipPause').addEventListener('click',()=>{
+  clearInterval(pauseCountdownID);isPaused=false;pauseSkipped=true;
+  document.getElementById('pauseOverlay').classList.remove('show');
+  btn.disabled=false;autoBtn.disabled=false;
+});
+
+const DAILY_LIMIT=30,DAILY_START_KEY='kk_daily_start_v1',DAILY_USED_KEY='kk_daily_used_v1',DAILY_LOCK_KEY='kk_daily_lock_v1';
+const COUNTS_KEY='kk_pred_counts_v1',HISTORY_KEY='kk_pred_history_v1',RANGE_KEY='kk_pred_range_v1';
+const fmt2=n=>n<10?'0'+n:''+n;
+const hhmm=d=>`${fmt2(d.getHours())}:${fmt2(d.getMinutes())}`;
+
+let currentPredicted=null,pending=null,verificationStarted=false,scheduledStart=null;
+let autoFetchInterval=null,lastCoefficient=null,lastFetchTime=null,lastVerifiedCrash=null;
+let ignoreFirstCrash=false,lastCrashAt=null,waitingGameEnd=false,postStartCrashSeen=false;
+const lastCoefs=[];
+
+let counts=loadCounts(),history=loadHistory(),range=loadRange();
+let autoMode=false,autoTimer=null;
+
+const multEl=document.getElementById('multiplier'),circle=document.getElementById('circle');
+const btn=document.getElementById('generateButton');
+const roundEl=document.getElementById('roundStatus'),lastEl=document.getElementById('lastCoef');
+const betTimeEl=document.getElementById('betTime'),countOkEl=document.getElementById('countOk');
+const countKoEl=document.getElementById('countKo'),countTotalEl=document.getElementById('countTotal');
+const autoBtn=document.getElementById('autoButton');
+
+function loadCounts(){try{const p=JSON.parse(localStorage.getItem(COUNTS_KEY)||'{}');return{ok:p.ok||0,ko:p.ko||0}}catch(e){return{ok:0,ko:0}}}
 function saveCounts(){localStorage.setItem(COUNTS_KEY,JSON.stringify(counts))}
-function loadHistory(){try{return JSON.parse(localStorage.getItem(HISTORY_KEY))||[]}catch{return[]}}
+function loadHistory(){try{return JSON.parse(localStorage.getItem(HISTORY_KEY)||'[]')}catch(e){return[]}}
 function saveHistory(){localStorage.setItem(HISTORY_KEY,JSON.stringify(history))}
-function pushHistory(item){history.unshift(item);history=history.slice(0,50);saveHistory()}
-function loadRange(){try{return JSON.parse(localStorage.getItem(RANGE_KEY))||{min:2,max:3.5}}catch{return{min:2,max:3.5}}}
+function pushHistory(e){history.unshift(e);if(history.length>200)history.length=200;saveHistory()}
+function loadRange(){
+  try{
+      const p=JSON.parse(localStorage.getItem(RANGE_KEY)||'{}');
+      return{
+          min:Number(p.min||5),
+          max:Number(p.max||500)
+      }
+  }catch(e){
+      return{
+          min:5,
+          max:500
+      }
+  }
+}
 function saveRange(){localStorage.setItem(RANGE_KEY,JSON.stringify(range))}
-function refreshUI(){document.getElementById('countOk').textContent=counts.ok;document.getElementById('countKo').textContent=counts.ko;document.getElementById('countTotal').textContent=counts.ok+counts.ko}
-function setStatus(text,cls='',voice=''){statusEl.textContent=text;statusEl.className='status '+cls;if(voice)speakOnce(voice)}
-function renderHistory(){document.getElementById('chipsContainer').innerHTML=history.map(x=>`<div class="chip ${x.status}">${x.coef.toFixed(2)}X</div>`).join('')}
-function getDailyWindow(){try{const x=JSON.parse(localStorage.getItem(LOCK_KEY));if(!x)return{};return{start:x.start,resetAt:x.start+WINDOW_HOURS*3600000,locked:x.count>=DAILY_CAP}}catch{return{}}}
-function ensureDaily(){let x;try{x=JSON.parse(localStorage.getItem(LOCK_KEY))}catch{};if(!x||Date.now()-x.start>=WINDOW_HOURS*3600000){x={start:Date.now(),count:0};localStorage.setItem(LOCK_KEY,JSON.stringify(x))}return x}
-function openLock(resetAt){document.getElementById('lockOverlay').classList.add('open');document.getElementById('lockNote').textContent='Сброс: '+new Date(resetAt).toLocaleString()}
-function incDaily(){const x=ensureDaily();x.count++;localStorage.setItem(LOCK_KEY,JSON.stringify(x))}
+function refreshUI(){countOkEl.textContent=counts.ok;countKoEl.textContent=counts.ko;countTotalEl.textContent=counts.ok+counts.ko}
+
+function setStatus(msg,kind,voice){
+  const el=document.getElementById('verifyStatus');
+  el.className='status '+(kind||'');el.textContent=msg||'';
+  if(voice)speakOnce(voice,kind==='ok'||kind==='ko');
+}
+
+function renderHistory(){
+  const c=document.getElementById('chipsContainer');c.innerHTML='';
+  if(!history.length){const em=document.createElement('div');em.textContent='История пуста.';em.style.opacity=.85;c.appendChild(em);return}
+  history.forEach(it=>{const chip=document.createElement('div');chip.className='chip '+(it.status==='ok'?'ok':'ko');chip.innerHTML=`${Number(it.coef).toFixed(2)}x<small> ${it.status==='ok'?'Успех':'Неудача'} • ${hhmm(new Date(it.time))}</small>`;c.appendChild(chip)})
+}
+
+function getDailyWindow(){const start=Number(localStorage.getItem(DAILY_START_KEY)||0);if(!start)return{start:0,resetAt:0,locked:false};const resetAt=start+86400000;if(Date.now()>=resetAt){localStorage.removeItem(DAILY_LOCK_KEY);localStorage.setItem(DAILY_START_KEY,'');localStorage.setItem(DAILY_USED_KEY,'0');return{start:0,resetAt:0,locked:false}}return{start,resetAt,locked:localStorage.getItem(DAILY_LOCK_KEY)==='1'}}
+function ensureDaily(){let s=Number(localStorage.getItem(DAILY_START_KEY)||0);if(!s){s=Date.now();localStorage.setItem(DAILY_START_KEY,String(s));localStorage.setItem(DAILY_USED_KEY,'0');localStorage.removeItem(DAILY_LOCK_KEY)}return s}
+function openLock(resetTs){setStatus('🔒 Лимит достигнут.','ko','Достигнут дневной лимит.');autoMode=false;autoBtn.textContent='АВТОМАТИЧЕСКИЙ';clearTimeout(autoTimer);const dt=new Date(resetTs);document.getElementById('lockMsg').textContent=`Лимит ${DAILY_LIMIT} предсказаний исчерпан.`;document.getElementById('lockNote').textContent=`Возвращайтесь завтра в ${fmt2(dt.getHours())}:${fmt2(dt.getMinutes())}`;document.getElementById('lockOverlay').classList.add('open')}
+function incDaily(){const start=ensureDaily();const resetAt=start+86400000;let used=Number(localStorage.getItem(DAILY_USED_KEY)||0)+1;localStorage.setItem(DAILY_USED_KEY,String(used));if(used>=DAILY_LIMIT){localStorage.setItem(DAILY_LOCK_KEY,'1');openLock(resetAt);return true}return false}
+(function(){const{start,resetAt,locked}=getDailyWindow();if(locked&&start)openLock(resetAt)})();
+
 function getCoef(item){const v=item?.coef??item?.crash??item?.value??item?.topCoefficient??item?.multiplier;return v!==undefined?Number(v):null}
 
 function startAutoFetch(){if(autoFetchInterval)return;fetchAndMaybeStart();autoFetchInterval=setInterval(fetchAndMaybeStart,5000)}
+
 function tryStart(){
   if(verificationStarted||currentPredicted==null||scheduledStart==null)return;
   if(lastCrashAt===null||lastCrashAt<scheduledStart){waitingGameEnd=true;setStatus('Ожидайте окончания текущей игры','','Подождите окончания текущей игры');return}
@@ -388,6 +539,7 @@ function tryStart(){
   roundEl.textContent='0';multEl.style.color='#00ff66';multEl.textContent=currentPredicted.toFixed(2)+'X';
   circle.classList.add('verifying');
 }
+
 async function fetchAndMaybeStart(){
   if(!verificationStarted&&scheduledStart&&Date.now()>=scheduledStart&&currentPredicted!=null)tryStart();
   const coef=await fetchStopCoefficient();if(coef===null)return;
@@ -405,26 +557,193 @@ async function fetchAndMaybeStart(){
   lastVerifiedCrash=rounded;
   if(ignoreFirstCrash){ignoreFirstCrash=false;return}
   pending.currentRound+=1;roundEl.textContent=pending.currentRound;
-  if(rounded>=pending.predictedOdds){predResults.push('ok');if(predResults.length>MAX_PRED_RESULTS)predResults.shift();setStatus(`✅ Успешно на раунде ${pending.currentRound}`,'ok',`Предсказание подтверждено! Коэффициент ${pending.predictedOdds.toFixed(2)}`);multEl.textContent='Успешно ✅';multEl.style.color='#10b981';circle.classList.remove('verifying','ko');circle.classList.add('ok');counts.ok+=1;saveCounts();refreshUI();pushHistory({coef:pending.predictedOdds,status:'ok',time:new Date().toISOString(),round:pending.currentRound});renderHistory();incDaily();pending=null;verificationStarted=false;scheduledStart=null;btn.disabled=false;postStartCrashSeen=false;waitingGameEnd=false;if(autoMode){clearTimeout(autoTimer);autoTimer=setTimeout(lancerAuto,4000)}return}
-  if(pending.currentRound>=3){predResults.push('ko');if(predResults.length>MAX_PRED_RESULTS)predResults.shift();setStatus('❌ Неудача после 3 раундов','ko','Предсказание не подтвердилось после 3 раундов');multEl.textContent='Неудача ❌';multEl.style.color='#ef4444';circle.classList.remove('verifying','ok');circle.classList.add('ko');counts.ko+=1;saveCounts();refreshUI();pushHistory({coef:pending.predictedOdds,status:'ko',time:new Date().toISOString(),round:3});renderHistory();incDaily();pending=null;verificationStarted=false;scheduledStart=null;btn.disabled=false;postStartCrashSeen=false;waitingGameEnd=false;let streak=0;for(let i=predResults.length-1;i>=0;i--){if(predResults[i]==='ko')streak++;else break}if(streak>=LOSS_STREAK_DANGER)triggerPause(`${streak} проигрышей подряд.`);if(autoMode){clearTimeout(autoTimer);autoTimer=setTimeout(lancerAuto,5000)}}
+
+  if(rounded>=pending.predictedOdds){
+    const predData={predicted_coef:pending.predictedOdds,real_coef:rounded,status:'ok',round:pending.currentRound};
+    lastVoiceMsg='';
+    predResults.push('ok');if(predResults.length>MAX_PRED_RESULTS)predResults.shift();
+    setStatus(`✅ Успешно на раунде ${pending.currentRound}`,'ok',`Предсказание подтверждено! Коэффициент ${pending.predictedOdds.toFixed(2)}`);
+    multEl.textContent='Успешно ✅';multEl.style.color='#10b981';
+    circle.classList.remove('verifying','ko');circle.classList.add('ok');
+    counts.ok+=1;saveCounts();refreshUI();
+    pushHistory({coef:pending.predictedOdds,status:'ok',time:new Date().toISOString(),round:pending.currentRound});
+    renderHistory();
+    incDaily();
+    pending=null;verificationStarted=false;scheduledStart=null;btn.disabled=false;
+    postStartCrashSeen=false;waitingGameEnd=false;
+    const analysis=updateMarketUI();
+    if(autoMode){
+      clearTimeout(autoTimer);
+      autoTimer=setTimeout(lancerAuto, 4000);
+    }
+    return;
+  }
+
+  if(pending.currentRound>=3){
+    const predData={predicted_coef:pending.predictedOdds,real_coef:rounded,status:'ko',round:3};
+    lastVoiceMsg='';
+    predResults.push('ko');if(predResults.length>MAX_PRED_RESULTS)predResults.shift();
+    setStatus('❌ Неудача после 3 раундов','ko','Предсказание не подтвердилось после 3 раундов');
+    multEl.textContent='Неудача ❌';multEl.style.color='#ef4444';
+    circle.classList.remove('verifying','ok');circle.classList.add('ko');
+    counts.ko+=1;saveCounts();refreshUI();
+    pushHistory({coef:pending.predictedOdds,status:'ko',time:new Date().toISOString(),round:3});
+    renderHistory();
+    incDaily();
+    pending=null;verificationStarted=false;scheduledStart=null;btn.disabled=false;
+    postStartCrashSeen=false;waitingGameEnd=false;
+    const analysis=updateMarketUI();
+    let streak=0;
+    for(let i=predResults.length-1;i>=0;i--){if(predResults[i]==='ko')streak++;else break;}
+    if(streak>=LOSS_STREAK_DANGER){triggerPause(`${streak} проигрышей подряд.`);}
+    else if(autoMode){
+      clearTimeout(autoTimer);
+      autoTimer=setTimeout(lancerAuto, 5000);
+    }
+  }
 }
+
+const LAST_COEF_MIN = 1.50;
+const BIG_X_MIN = 5.00;
+const MIN_HISTORY = 10;
+
 function canPredict(){return lastCoefs.length>=5&&lastCoefs.filter(c=>c>LAST_COEF_MIN).length>=3}
 function summaryCoefs(){return lastCoefs.length===0?'Окно пусто':`[${lastCoefs.map(c=>c.toFixed(2)).join(', ')}] → ${lastCoefs.filter(c=>c>LAST_COEF_MIN).length}/5`}
-function isMarketSafeToPlay(){const a=analyzeMarket();if(isPaused&&!pauseSkipped)return{ok:false,reason:'Пауза активна'};if(a.level==='danger')return{ok:false,reason:a.reason};return{ok:true,reason:a.reason}}
-function isCycleActive(){return verificationStarted||pending!=null||scheduledStart!=null}
-function lancerAuto(){if(!autoMode)return;if(isCycleActive()){clearTimeout(autoTimer);autoTimer=setTimeout(lancerAuto,5000);return}const m=isMarketSafeToPlay();if(!m.ok){setStatus('🚨 Авто приостановлен — '+m.reason,'ko');clearTimeout(autoTimer);autoTimer=setTimeout(lancerAuto,10000);return}multEl.textContent='Анализ..';setStatus('Анализ рынка...','');setTimeout(()=>{if(!autoMode)return;startAutoFetch();if(canPredict())btn.click();else{setStatus('Авто: условия не выполнены • '+summaryCoefs(),'');clearTimeout(autoTimer);autoTimer=setTimeout(lancerAuto,7000)}},15000)}
-function toggle(el,open){el.classList.toggle('open',open)}
+function isMarketSafeToPlay(){const a=analyzeMarket();if(isPaused&&!pauseSkipped)return{ok:false,reason:'Пауза активна'};if(a.level==='danger')return{ok:false,reason:a.reason};return{ok:true,reason:a.reason};}
 
-btn.addEventListener('click',()=>{startAutoFetch();if(isCycleActive())return;if(!canPredict()){setStatus('Условия не выполнены • '+summaryCoefs(),'');btn.disabled=false;return}btn.disabled=true;const min=Math.max(1,Number(range.min)),max=Math.max(min+.01,Number(range.max));currentPredicted=Number((Math.random()*(max-min)+min).toFixed(2));multEl.textContent=currentPredicted.toFixed(2)+'X';multEl.style.color='#00ff66';circle.classList.remove('ok','ko');const offsetMin=Math.floor(Math.random()*4)+1;const target=new Date(Date.now()+offsetMin*60000);target.setSeconds(0,0);scheduledStart=target.getTime();roundEl.textContent='0';betTimeEl.textContent=`${fmt2(target.getHours())}:${fmt2(target.getMinutes())}`;lastVoiceMsg='';setStatus(`Время: ${betTimeEl.textContent}`,'',`Сигнал подготовлен. Цель ${currentPredicted.toFixed(2)}`);postStartCrashSeen=false;waitingGameEnd=false})
-autoBtn.addEventListener('click',()=>{autoMode=!autoMode;autoBtn.textContent=autoMode?'АВТО: ВКЛ':'АВТОМАТИЧЕСКИЙ';if(autoMode)lancerAuto();else clearTimeout(autoTimer)})
+btn.addEventListener('click',()=>{
+  const{start,resetAt,locked}=getDailyWindow();
+  if(locked&&start){openLock(resetAt);return}
+  if(pending||verificationStarted)return;
+  if(isPaused&&!pauseSkipped){document.getElementById('pauseOverlay').classList.add('show');return}
+  ensureDaily();startAutoFetch();
+  const marketCheck=isMarketSafeToPlay();
+  if(!marketCheck.ok){multEl.textContent='⚠️';multEl.style.color='#ef4444';circle.classList.remove('ok','ko');setStatus('🚨 Рынок неблагоприятный — '+marketCheck.reason,'ko');btn.disabled=false;return;}
+  if(!canPredict()){multEl.textContent='Анализ..';multEl.style.color='#f4a51c';circle.classList.remove('ok','ko');circle.classList.add('verifying');setStatus('Условия не выполнены • '+summaryCoefs(),'');btn.disabled=false;return;}
+  btn.disabled=true;
+  const min=Math.max(1,Number(range.min)),max=Math.max(min+.01,Number(range.max));
+  currentPredicted=Number((Math.random()*(max-min)+min).toFixed(2));
+  multEl.textContent=currentPredicted.toFixed(2)+'X';multEl.style.color='#00ff66';
+  circle.classList.remove('ok','ko');
+  const offsetMin=Math.floor(Math.random()*4)+1;
+  const target=new Date(Date.now()+offsetMin*60000);target.setSeconds(0,0);scheduledStart=target.getTime();
+  roundEl.textContent='0';betTimeEl.textContent=`${fmt2(target.getHours())}:${fmt2(target.getMinutes())}`;
+  lastVoiceMsg='';
+  setStatus(`Время: ${betTimeEl.textContent}`,'',`Сигнал готов! Коэффициент ${currentPredicted.toFixed(2)}. Ставка в ${fmt2(target.getHours())}:${fmt2(target.getMinutes())}`);
+  waitingGameEnd=false;postStartCrashSeen=false;
+});
 
-document.getElementById('openSettings').onclick=()=>toggle(document.getElementById('settingsPanel'),true);document.getElementById('closeSettings').onclick=()=>toggle(document.getElementById('settingsPanel'),false);document.getElementById('closeSettingsBtn').onclick=()=>toggle(document.getElementById('settingsPanel'),false);document.getElementById('openHistory').onclick=()=>toggle(document.getElementById('historyPanel'),true);document.getElementById('closeHistory').onclick=()=>toggle(document.getElementById('historyPanel'),false);
-document.getElementById('minOddsInput').value=range.min;document.getElementById('maxOddsInput').value=range.max;document.getElementById('saveRangeBtn').onclick=()=>{range={min:Number(document.getElementById('minOddsInput').value),max:Number(document.getElementById('maxOddsInput').value)};saveRange();toggle(document.getElementById('settingsPanel'),false)};document.getElementById('resetStatsBtn').onclick=()=>{counts={ok:0,ko:0};history=[];saveCounts();saveHistory();refreshUI();renderHistory()};
+function isCycleActive(){return verificationStarted||!!pending||scheduledStart!==null}
 
-async function bootApp(){document.getElementById('gate-checking').style.display='none';document.getElementById('appWrap').style.display='flex';refreshUI();renderHistory();updateMarketUI();startAutoFetch();voiceEnabled=localStorage.getItem('kk_voice_enabled')!=='0';updateVoiceBtn()}
+function lancerAuto(){
+  if(!autoMode)return;
+  if(isCycleActive()){ 
+    const w=scheduledStart&&Date.now()<scheduledStart?Math.max(1000,scheduledStart-Date.now()+500):5000;
+    clearTimeout(autoTimer);
+    autoTimer=setTimeout(lancerAuto,w);
+    return;
+  }
+  const{start,resetAt,locked}=getDailyWindow();if(locked&&start){openLock(resetAt);return}
+  if(isPaused&&!pauseSkipped)return;
+  const marketCheck=isMarketSafeToPlay();
+  if(!marketCheck.ok){setStatus('🚨 Авто приостановлен — '+marketCheck.reason,'ko');clearTimeout(autoTimer);autoTimer=setTimeout(lancerAuto,10000);return;}
+  multEl.textContent='Анализ..';multEl.style.color='#f4a51c';
+  circle.classList.remove('ok','ko');circle.classList.add('verifying');
+  setStatus('Анализ рынка...','');
+  setTimeout(()=>{
+    if(!autoMode)return;
+    startAutoFetch();
+    if(canPredict())btn.click();
+    else{setStatus('Авто: условия не выполнены • '+summaryCoefs(),'');clearTimeout(autoTimer);autoTimer=setTimeout(lancerAuto,7000)}
+  },15000);
+}
+
+autoBtn.addEventListener('click',()=>{
+  const{start,resetAt,locked}=getDailyWindow();if(locked&&start){openLock(resetAt);return}
+  if(isPaused&&!pauseSkipped){document.getElementById('pauseOverlay').classList.add('show');return}
+  ensureDaily();autoMode=!autoMode;autoBtn.textContent=autoMode?'АВТО: ВКЛ':'АВТОМАТИЧЕСКИЙ';
+  if(autoMode){speak('Автоматический режим включён');lancerAuto();}
+  else{window.speechSynthesis?.cancel();clearTimeout(autoTimer);}
+});
+
+function toggle(el,open){el.classList.toggle('open',open);}
+document.getElementById('openHistory').addEventListener('click',()=>{renderHistory();toggle(document.getElementById('historyPanel'),true)});
+document.getElementById('closeHistory').addEventListener('click',()=>toggle(document.getElementById('historyPanel'),false));
+document.getElementById('openSettings').addEventListener('click',()=>{
+  document.getElementById('minOddsInput').value=Number(range.min).toFixed(2);
+  document.getElementById('maxOddsInput').value=Number(range.max).toFixed(2);
+  document.getElementById('settingsMsg').textContent='';
+  toggle(document.getElementById('settingsPanel'),true);
+});
+document.getElementById('closeSettings').addEventListener('click',()=>toggle(document.getElementById('settingsPanel'),false));
+document.getElementById('saveRange').addEventListener('click',()=>{
+  const min=Number(document.getElementById('minOddsInput').value),max=Number(document.getElementById('maxOddsInput').value);
+  if(isNaN(min)||isNaN(max)){document.getElementById('settingsMsg').textContent='Неверные данные';return}
+  if(max<=min){document.getElementById('settingsMsg').textContent='Максимум должен быть больше минимума';return}
+  range={min:Math.max(1,min),max};saveRange();document.getElementById('settingsMsg').textContent=`Диапазон: ${range.min.toFixed(2)}x – ${range.max.toFixed(2)}x`
+});
+document.getElementById('resetStats').addEventListener('click',()=>{counts={ok:0,ko:0};saveCounts();refreshUI();document.getElementById('settingsMsg').textContent='Статистика сброшена.'});
+document.getElementById('resetHistory').addEventListener('click',()=>{history=[];saveHistory();renderHistory();document.getElementById('settingsMsg').textContent='История сброшена.'});
+
+async function bootApp() {
+  refreshUI();
+  btn.disabled = false;
+  startAutoFetch();
+  updateMarketUI();
+}
+
 bootApp();
+document.getElementById('appWrap').style.display = 'flex';
+document.getElementById('voiceToggle').style.display = 'flex';
+document.getElementById('gate-checking').style.display = 'none';
+</script>
 
-const canvas=document.getElementById('waveCanvas'),ctx=canvas.getContext('2d');let wavePhase=0,waveAngle=0;function drawFrame(){ctx.clearRect(0,0,220,220);wavePhase+=.022;waveAngle+=.007;ctx.save();ctx.translate(110,110);ctx.rotate(waveAngle);ctx.strokeStyle='rgba(138,0,225,.55)';ctx.lineWidth=2;ctx.beginPath();for(let i=0;i<=360;i++){const a=i*Math.PI/180,r=87+Math.sin(a*6+wavePhase)*4;const x=Math.cos(a)*r,y=Math.sin(a)*r;if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)}ctx.stroke();ctx.restore();requestAnimationFrame(drawFrame)}drawFrame();
+<script>
+const canvas = document.getElementById('waveCanvas');
+const ctx    = canvas.getContext('2d');
+const CX = 110, CY = 110, R = 88;
+let wavePhase = 0, waveAngle = 0, waveColorHue = 270;
+
+const particles = Array.from({length:200},(_,i)=>({
+    angle:(i/200)*Math.PI*2, offset:Math.random()*Math.PI*2,
+    speed:0.003+Math.random()*0.005, size:0.7+Math.random()*1.8,
+    baseR:R+(Math.random()-0.5)*20, opacity:0.4+Math.random()*0.6,
+    layer:Math.floor(Math.random()*3)
+}));
+
+function drawFrame(){
+    ctx.clearRect(0,0,220,220); wavePhase+=0.022; waveAngle+=0.007;
+    const grd=ctx.createRadialGradient(CX,CY,R-28,CX,CY,R+28);
+    grd.addColorStop(0,`hsla(${waveColorHue},100%,60%,0)`);
+    grd.addColorStop(0.4,`hsla(${waveColorHue},100%,60%,0.12)`);
+    grd.addColorStop(0.7,`hsla(${waveColorHue+40},100%,70%,0.08)`);
+    grd.addColorStop(1,`hsla(${waveColorHue},100%,60%,0)`);
+    ctx.beginPath();ctx.arc(CX,CY,R+28,0,Math.PI*2);ctx.fillStyle=grd;ctx.fill();
+    for(let i=0;i<400;i++){
+        const a=(i/400)*Math.PI*2;
+        const r=R+Math.sin(a*6+wavePhase)*8+Math.sin(a*3-wavePhase*1.2)*5+Math.cos(a*10+wavePhase*0.8)*3;
+        const x=CX+Math.cos(a)*r, y=CY+Math.sin(a)*r;
+        const hue=waveColorHue+(i/400)*90+waveAngle*25;
+        ctx.beginPath();ctx.arc(x,y,0.7+(Math.sin(a*5+wavePhase)+1)*0.9,0,Math.PI*2);
+        ctx.fillStyle=`hsla(${hue},100%,72%,${0.45+Math.sin(a*4+wavePhase)*0.35})`;ctx.fill();
+    }
+    particles.forEach(p=>{
+        p.angle+=p.speed;
+        const r=p.baseR+Math.sin(p.angle*5+wavePhase+p.offset)*11;
+        ctx.beginPath();ctx.arc(CX+Math.cos(p.angle+waveAngle*0.6)*r,CY+Math.sin(p.angle+waveAngle*0.6)*r,p.size,0,Math.PI*2);
+        ctx.fillStyle=`hsla(${waveColorHue+p.layer*40+(p.angle/(Math.PI*2))*70},100%,78%,${p.opacity*(0.55+Math.sin(wavePhase+p.offset)*0.35)})`;ctx.fill();
+    });
+    const lx1=CX+Math.cos(waveAngle)*(R-18),ly1=CY+Math.sin(waveAngle)*(R-18);
+    const lx2=CX+Math.cos(waveAngle)*(R+18),ly2=CY+Math.sin(waveAngle)*(R+18);
+    const lg=ctx.createLinearGradient(lx1,ly1,lx2,ly2);
+    lg.addColorStop(0,`hsla(${waveColorHue+60},100%,85%,0)`);
+    lg.addColorStop(0.5,`hsla(${waveColorHue+60},100%,95%,0.95)`);
+    lg.addColorStop(1,`hsla(${waveColorHue+60},100%,85%,0)`);
+    ctx.beginPath();ctx.moveTo(lx1,ly1);ctx.lineTo(lx2,ly2);
+    ctx.strokeStyle=lg;ctx.lineWidth=2.5;ctx.stroke();
+    requestAnimationFrame(drawFrame);
+}
+requestAnimationFrame(drawFrame);
 </script>
 </body>
 </html>
