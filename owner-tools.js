@@ -2,11 +2,46 @@
   "use strict";
 
   const ADMIN_IDS = Object.freeze([8016237913]);
-  const ADMIN_PAGE_VERSION = "20260724-22";
+  const ADMIN_PAGE_VERSION = "20260724-23";
+  const CONTEXT_KEY = "allpredictor_telegram_context_v1";
+
+  function telegramWebApp() {
+    return window.Telegram?.WebApp || null;
+  }
+
+  function saveTelegramContext() {
+    const webApp = telegramWebApp();
+    const initData = String(webApp?.initData || "");
+    const user = webApp?.initDataUnsafe?.user || null;
+    if (!initData && !user) return false;
+
+    const context = {
+      initData,
+      user,
+      platform: webApp?.platform || "",
+      version: webApp?.version || "",
+      savedAt: Date.now()
+    };
+
+    try {
+      sessionStorage.setItem(CONTEXT_KEY, JSON.stringify(context));
+      return true;
+    } catch (_error) {
+      return false;
+    }
+  }
 
   function currentTelegramId() {
-    const value = window.Telegram?.WebApp?.initDataUnsafe?.user?.id;
-    return Number.isSafeInteger(Number(value)) ? Number(value) : null;
+    const liveValue = telegramWebApp()?.initDataUnsafe?.user?.id;
+    if (Number.isSafeInteger(Number(liveValue))) return Number(liveValue);
+
+    try {
+      const stored = JSON.parse(sessionStorage.getItem(CONTEXT_KEY) || "null");
+      const storedValue = stored?.user?.id;
+      return Number.isSafeInteger(Number(storedValue)) ? Number(storedValue) : null;
+    } catch (_error) {
+      return null;
+    }
   }
 
   function isAdmin() {
@@ -24,6 +59,7 @@
   }
 
   function installAdminButton() {
+    saveTelegramContext();
     if (isAdminPage() || !isAdmin() || document.getElementById("allPredictorAdminButton")) return;
 
     const style = document.createElement("style");
@@ -40,6 +76,7 @@
     button.type = "button";
     button.textContent = "🔑 ADMIN";
     button.addEventListener("click", () => {
+      saveTelegramContext();
       location.href = freshAdminUrl();
     });
     document.body.appendChild(button);
@@ -49,9 +86,11 @@
     adminTelegramIds: ADMIN_IDS.slice(),
     currentTelegramId,
     isAdmin,
-    freshAdminUrl
+    freshAdminUrl,
+    saveTelegramContext
   });
 
+  window.addEventListener("pagehide", saveTelegramContext);
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", installAdminButton, { once: true });
   else installAdminButton();
 })();
