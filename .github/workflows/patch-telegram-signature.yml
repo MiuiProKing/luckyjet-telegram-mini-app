@@ -1,0 +1,132 @@
+name: Add Telegram signature verification
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Add Ed25519 Telegram verification fallback
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          path = Path('supabase/functions/allpredictor-api/index.ts')
+          text = path.read_text(encoding='utf-8')
+          marker = 'TELEGRAM_ED25519_FALLBACK_V1'
+          if marker in text:
+              print('Signature fallback already installed')
+              raise SystemExit(0)
+
+          helpers = r'''
+const TELEGRAM_ED25519_FALLBACK_V1 = true;
+const TELEGRAM_BOT_ID = "8702043607";
+const TELEGRAM_PRODUCTION_PUBLIC_KEY = "e7bf03a2fa4602af4580703d88dda5bb59f32ed8b02a56c187fe7d34caed242d";
+
+function hexBytes(value: string): Uint8Array {
+  const clean = value.trim();
+  const bytes = new Uint8Array(clean.length / 2);
+  for (let i = 0; i < bytes.length; i += 1) bytes[i] = Number.parseInt(clean.slice(i * 2, i * 2 + 2), 16);
+  return bytes;
+}
+
+function base64UrlBytes(value: string): Uint8Array {
+  const normalized = value.replace(/-/g, "+").replace(/_/g, "/");
+  const padded = normalized + "=".repeat((4 - normalized.length % 4) % 4);
+  const binary = atob(padded);
+  return Uint8Array.from(binary, char => char.charCodeAt(0));
+}
+
+async function verifyPublicTelegramSignature(params: URLSearchParams): Promise<boolean> {
+  const signature = params.get("signature");
+  if (!signature) return false;
+  try {
+    const signed = Array.from(params.entries())
+      .filter(([key]) => key !== "hash" && key !== "signature")
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([key, value]) => `${key}=${value}`)
+      .join("\n");
+    const dataCheckString = `${TELEGRAM_BOT_ID}:WebAppData\n${signed}`;
+    const publicKey = await crypto.subtle.importKey(
+      "raw",
+      hexBytes(TELEGRAM_PRODUCTION_PUBLIC_KEY),
+      { name: "Ed25519" },
+      false,
+      ["verify"]
+    );
+    return await crypto.subtle.verify(
+      { name: "Ed25519" },
+      publicKey,
+      base64UrlBytes(signature),
+      encoder.encode(dataCheckString)
+    );
+  } catch (error) {
+    console.error("Telegram public signature verification failed", error);
+    return false;
+  }
+}
+'''
+
+          anchor = 'const encoder = new TextEncoder();\n'
+          if anchor not in text:
+              raise SystemExit('Encoder anchor not found')
+          text = text.replace(anchor, anchor + helpers, 1)
+
+          replacement = r'''async function verifyTelegram(initData: string) {
+  const botToken = Deno.env.get("TELEGRAM_BOT_TOKEN") || "";
+  if (!initData) throw new Error("TELEGRAM_AUTH_REQUIRED");
+  const params = new URLSearchParams(initData);
+  const providedHash = params.get("hash");
+  const authDate = Number(params.get("auth_date") || 0);
+  if (!authDate || Math.floor(Date.now() / 1000) - authDate > 86400) throw new Error("TELEGRAM_AUTH_EXPIRED");
+
+  let tokenHashValid = false;
+  if (providedHash && botToken) {
+    const hashParams = new URLSearchParams(params);
+    hashParams.delete("hash");
+    const checkString = Array.from(hashParams.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([key, value]) => `${key}=${value}`)
+      .join("\n");
+    const secret = await hmac(encoder.encode("WebAppData"), botToken);
+    const calculated = hex(await hmac(new Uint8Array(secret), checkString));
+    tokenHashValid = calculated.toLowerCase() === providedHash.toLowerCase();
+  }
+
+  const publicSignatureValid = tokenHashValid ? false : await verifyPublicTelegramSignature(params);
+  if (!tokenHashValid && !publicSignatureValid) throw new Error("TELEGRAM_AUTH_INVALID");
+
+  const rawUser = params.get("user");
+  if (!rawUser) throw new Error("TELEGRAM_USER_MISSING");
+  const user = JSON.parse(rawUser);
+  user.id = Number(user.id);
+  if (!Number.isSafeInteger(user.id)) throw new Error("TELEGRAM_USER_ID_INVALID");
+  return user;
+}'''
+
+          pattern = r'async function verifyTelegram\(initData: string\) \{.*?\n\}'
+          text, count = re.subn(pattern, replacement, text, count=1, flags=re.S)
+          if count != 1:
+              raise SystemExit(f'verifyTelegram replacement count: {count}')
+
+          path.write_text(text, encoding='utf-8')
+          PY
+      - name: Commit patch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add supabase/functions/allpredictor-api/index.ts
+          if git diff --cached --quiet; then
+            echo "No changes needed"
+            exit 0
+          fi
+          git commit -m "Verify Telegram Mini App data with public signature fallback"
+          git push
