@@ -1,7 +1,5 @@
--- AllPredictor: repair license creation RPC
--- Run this file once in Supabase SQL Editor.
-
-create extension if not exists pgcrypto;
+-- AllPredictor: universal repair for license creation
+-- No pgcrypto required. Run once in Supabase SQL Editor.
 
 alter table if exists public.license_keys
   add column if not exists max_devices integer not null default 1,
@@ -18,16 +16,26 @@ set search_path = public
 as $$
 declare
   candidate text;
+  seed text;
 begin
   loop
-    candidate := upper(prefix)
-      || '-' || upper(substr(encode(gen_random_bytes(6), 'hex'), 1, 4))
-      || '-' || upper(substr(encode(gen_random_bytes(6), 'hex'), 1, 4))
-      || '-' || upper(substr(encode(gen_random_bytes(6), 'hex'), 1, 4));
+    seed := md5(
+      random()::text
+      || clock_timestamp()::text
+      || txid_current()::text
+      || pg_backend_pid()::text
+    );
+
+    candidate := upper(coalesce(nullif(trim(prefix), ''), 'V0X'))
+      || '-' || upper(substr(seed, 1, 4))
+      || '-' || upper(substr(seed, 5, 4))
+      || '-' || upper(substr(seed, 9, 4));
+
     exit when not exists (
       select 1 from public.license_keys where license_key = candidate
     );
   end loop;
+
   return candidate;
 end;
 $$;
@@ -98,5 +106,5 @@ grant execute on function public.create_license(text, integer, integer, text, bi
 
 notify pgrst, 'reload schema';
 
--- Test result: should return one JSON object with a V0X key.
+-- Test: returns one JSON object with a key such as V0X-1A2B-3C4D-5E6F.
 select public.create_license('pro_1', null, 1, 'SQL TEST', 8016237913) as test_license;
