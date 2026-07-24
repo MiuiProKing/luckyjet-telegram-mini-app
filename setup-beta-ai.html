@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Установка BETA AI 24/7</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at top,#18214b,#070a14 55%,#020409);color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;padding:18px}.wrap{max-width:820px;margin:auto}.hero,.card{border:1px solid rgba(255,255,255,.13);background:rgba(10,15,30,.94);border-radius:22px;box-shadow:0 18px 50px rgba(0,0,0,.35)}.hero{padding:24px;text-align:center}.hero h1{margin:0 0 8px;font-size:25px}.hero p{margin:0;color:#aebbd6;line-height:1.55}.card{margin-top:14px;padding:18px}.step{display:inline-grid;place-items:center;width:32px;height:32px;border-radius:10px;background:linear-gradient(135deg,#22d3ee,#7c3aed);font-weight:900;color:#031018}.card h2{display:flex;align-items:center;gap:10px;margin:0 0 10px;font-size:19px}.card p{color:#aebbd6;line-height:1.55}.code{width:100%;height:220px;border:1px solid #293552;border-radius:14px;background:#050813;color:#dbeafe;padding:14px;font:12px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;resize:vertical}.actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}.btn{min-height:48px;border:0;border-radius:14px;font-weight:900;cursor:pointer;text-decoration:none;display:flex;align-items:center;justify-content:center;text-align:center;padding:10px;background:linear-gradient(135deg,#22d3ee,#2563eb);color:#031018}.btn.alt{background:linear-gradient(135deg,#8b5cf6,#db2777);color:#fff}.note{margin-top:12px;padding:12px;border-radius:13px;background:#1c1608;border:1px solid #6b4f0f;color:#fde68a;font-size:13px;line-height:1.5}.ok{position:fixed;left:50%;bottom:22px;transform:translate(-50%,20px);opacity:0;background:#064e3b;border:1px solid #10b981;color:#d1fae5;padding:11px 18px;border-radius:999px;font-weight:800;transition:.2s}.ok.show{opacity:1;transform:translate(-50%,0)}@media(max-width:560px){.actions{grid-template-columns:1fr}.hero,.card{border-radius:18px}.code{height:190px}}
+</style>
+</head>
+<body><main class="wrap">
+<section class="hero"><h1>🤖 BETA AI 24/7 — установка</h1><p>Выполни три шага один раз. После этого Supabase будет получать коэффициенты и сохранять историю каждую минуту, даже когда Telegram закрыт.</p></section>
+
+<section class="card"><h2><span class="step">1</span>Создай Edge Function</h2><p>Открой Supabase → Edge Functions → Create function. Название функции: <b>beta-ai-worker</b>. Удали пример кода и вставь код ниже, затем нажми Deploy.</p><textarea id="fn" class="code" readonly>import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const API_URL = "https://crash-gateway-grm-cr.100hp.app/state";
+const CUSTOMER_ID = "077dee8d-c923-4c02-9bee-757573662e69";
+const SESSION_ID = "933841e0-8e4f-4513-9ef1-852096c0e566";
+const LAST_COEF_MIN = 1.5;
+
+Deno.serve(async (req) => {
+  const headers = { "content-type": "application/json", "access-control-allow-origin": "*" };
+  if (req.method === "OPTIONS") return new Response("ok", { headers });
+  const expected = Deno.env.get("BETA_AI_CRON_SECRET") || "";
+  if (expected && req.headers.get("x-cron-secret") !== expected) {
+    return new Response(JSON.stringify({ error: "UNAUTHORIZED" }), { status: 401, headers });
+  }
+  try {
+    const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
+    const api = await fetch(API_URL, { headers: { "customer-id": CUSTOMER_ID, "session-id": SESSION_ID, accept: "application/json" } });
+    if (!api.ok) throw new Error(`LuckyJet API ${api.status}`);
+    const raw = await api.json();
+    const value = Number(raw?.stopCoefficients?.[0]);
+    if (!Number.isFinite(value)) return new Response(JSON.stringify({ ok: true, skipped: "NO_COEFFICIENT" }), { headers });
+    const coefficient = Number((value === 1 ? 1.01 : value).toFixed(2));
+    const sourceTime = String(raw?.currentTime ?? raw?.roundConfig?.id ?? "");
+    const bucket = Math.floor(Date.now() / 45000);
+    const roundKey = String(raw?.roundConfig?.id ?? raw?.currentTime ?? `${coefficient}-${bucket}`);
+    const { data: inserted, error: insertError } = await sb.from("beta_ai_rounds").upsert({ round_key: roundKey, coefficient, source_time: sourceTime, raw }, { onConflict: "round_key", ignoreDuplicates: true }).select("id").maybeSingle();
+    if (insertError) throw insertError;
+    if (!inserted) return new Response(JSON.stringify({ ok: true, skipped: "DUPLICATE_ROUND" }), { headers });
+    const { data: open, error: openError } = await sb.from("beta_ai_signals").select("*").eq("status", "open").maybeSingle();
+    if (openError) throw openError;
+    if (open) {
+      const checked = Number(open.checked_rounds || 0) + 1;
+      const win = coefficient >= Number(open.target);
+      const loss = !win && checked >= 3;
+      const patch = { checked_rounds: checked, result_coefficient: coefficient };
+      if (win || loss) Object.assign(patch, { status: win ? "win" : "loss", resolved_at: new Date().toISOString() });
+      const { error } = await sb.from("beta_ai_signals").update(patch).eq("id", open.id);
+      if (error) throw error;
+    }
+    const { data: stillOpen } = await sb.from("beta_ai_signals").select("id").eq("status", "open").maybeSingle();
+    if (!stillOpen) {
+      const { data: recent, error } = await sb.from("beta_ai_rounds").select("id,coefficient").order("created_at", { ascending: false }).limit(5);
+      if (error) throw error;
+      const window = (recent || []).map((r) => Number(r.coefficient));
+      if (window.length >= 5 && window.filter((c) => c > LAST_COEF_MIN).length >= 3) {
+        const target = Number((2 + Math.random() * 1.5).toFixed(2));
+        const { error: signalError } = await sb.from("beta_ai_signals").insert({ target, source_round_id: recent?.[0]?.id });
+        if (signalError && signalError.code !== "23505") throw signalError;
+      }
+    }
+    return new Response(JSON.stringify({ ok: true, coefficient, round_key: roundKey }), { headers });
+  } catch (error) {
+    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : String(error) }), { status: 500, headers });
+  }
+});</textarea><div class="actions"><button class="btn" onclick="copy('fn')">СКОПИРОВАТЬ КОД ФУНКЦИИ</button><a class="btn alt" href="https://supabase.com/dashboard/project/lcgewatmbpfxzoiqneoa/functions" target="_blank">ОТКРЫТЬ EDGE FUNCTIONS</a></div></section>
+
+<section class="card"><h2><span class="step">2</span>Добавь секрет</h2><p>В Edge Functions → Secrets создай секрет <b>BETA_AI_CRON_SECRET</b>. Значение придумай сам, например длинную строку из букв и цифр. Запомни её — в SQL нужно вставить точно такую же.</p><div class="note">Не присылай секрет сюда. Пример имени: <b>BETA_AI_CRON_SECRET</b>. Значение: своя длинная случайная строка.</div><div class="actions"><a class="btn alt" href="https://supabase.com/dashboard/project/lcgewatmbpfxzoiqneoa/settings/functions" target="_blank">ОТКРЫТЬ SECRETS</a></div></section>
+
+<section class="card"><h2><span class="step">3</span>Запусти SQL</h2><p>Скопируй SQL. Перед запуском замени текст <b>YOUR_CRON_SECRET</b> на секрет из второго шага. Затем вставь всё в SQL Editor и нажми Run.</p><textarea id="sql" class="code" readonly>create extension if not exists pg_cron;
+create extension if not exists pg_net;
+
+create table if not exists public.beta_ai_rounds (
+  id bigint generated by default as identity primary key,
+  round_key text not null unique,
+  coefficient numeric(12,2) not null,
+  source_time text,
+  raw jsonb,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.beta_ai_signals (
+  id bigint generated by default as identity primary key,
+  target numeric(12,2) not null,
+  status text not null default 'open' check (status in ('open','win','loss')),
+  checked_rounds integer not null default 0,
+  result_coefficient numeric(12,2),
+  source_round_id bigint references public.beta_ai_rounds(id) on delete set null,
+  resolved_at timestamptz,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists beta_ai_rounds_created_idx on public.beta_ai_rounds(created_at desc);
+create index if not exists beta_ai_signals_created_idx on public.beta_ai_signals(created_at desc);
+create unique index if not exists beta_ai_one_open_signal on public.beta_ai_signals ((status)) where status='open';
+
+alter table public.beta_ai_rounds enable row level security;
+alter table public.beta_ai_signals enable row level security;
+drop policy if exists "beta ai public read rounds" on public.beta_ai_rounds;
+create policy "beta ai public read rounds" on public.beta_ai_rounds for select using (true);
+drop policy if exists "beta ai public read signals" on public.beta_ai_signals;
+create policy "beta ai public read signals" on public.beta_ai_signals for select using (true);
+grant select on public.beta_ai_rounds, public.beta_ai_signals to anon, authenticated;
+
+select cron.unschedule(jobid) from cron.job where jobname = 'allpredictor-beta-ai-minute';
+select cron.schedule(
+  'allpredictor-beta-ai-minute',
+  '* * * * *',
+  $$
+  select net.http_post(
+    url := 'https://lcgewatmbpfxzoiqneoa.supabase.co/functions/v1/beta-ai-worker',
+    headers := jsonb_build_object('Content-Type','application/json','x-cron-secret','YOUR_CRON_SECRET'),
+    body := '{}'::jsonb
+  );
+  $$
+);</textarea><div class="actions"><button class="btn" onclick="copy('sql')">СКОПИРОВАТЬ SQL</button><a class="btn alt" href="https://supabase.com/dashboard/project/lcgewatmbpfxzoiqneoa/sql/new" target="_blank">ОТКРЫТЬ SQL EDITOR</a></div></section>
+
+<section class="card"><h2><span class="step">✓</span>Проверка</h2><p>После запуска подожди 2–5 минут и открой в приложении: <b>PRO → BETA AI 🤖</b>. В истории должны появиться коэффициенты. Если функция открыта в Supabase, нажми Invoke — ответ должен содержать <b>ok: true</b> или <b>DUPLICATE_ROUND</b>.</p></section>
+</main><div id="toast" class="ok">Скопировано</div><script>async function copy(id){const el=document.getElementById(id);try{await navigator.clipboard.writeText(el.value)}catch(e){el.select();document.execCommand('copy')}const t=document.getElementById('toast');t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1500)}</script></body></html>
