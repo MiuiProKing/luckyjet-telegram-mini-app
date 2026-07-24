@@ -1,6 +1,6 @@
 window.ALLPREDICTOR_CONFIG = Object.freeze({
   appName: "AllPredictor 1Win",
-  version: "3.1.2",
+  version: "3.1.3",
   botUsername: "AllPredictorVrs2_bot",
   creatorUsername: "V0xFF3",
   creatorUrl: "https://t.me/V0xFF3",
@@ -95,7 +95,7 @@ window.ALLPREDICTOR_CONFIG = Object.freeze({
       qId: "Apakah kunci dapat dibagikan kepada orang lain?",
       aRu: "Индивидуальные ключи будут привязаны к Telegram ID и не предназначены для передачи.",
       aEn: "Individual keys will be linked to a Telegram ID and are not intended for sharing.",
-      aId: "Kunci individual akan terhubung ke ID Telegram dan tidak boleh dibagikan."
+      aId: "Kunci individual akan terhubung ke ID Telegram dan не предназначены для передачи."
     }
   ]
 });
