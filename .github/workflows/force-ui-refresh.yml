@@ -18,9 +18,8 @@ jobs:
           from pathlib import Path
           import re
 
-          version = "20260724-27"
-          module_names = [
-              "owner-tools.js",
+          version = "20260724-28"
+          global_modules = [
               "app-config.js",
               "i18n-runtime.js",
               "language-onboarding.js",
@@ -29,6 +28,7 @@ jobs:
               "analytics-client.js",
               "app-center.js",
           ]
+          all_known_modules = ["owner-tools.js", *global_modules]
           obsolete_names = ["i18n.js", "admin-devices.js", "admin-auth-bridge.js"]
 
           def remove_module(s, name):
@@ -50,7 +50,7 @@ jobs:
                   )
                   s = s.replace('data-app-tab="pro">PRO</button>', 'data-app-tab="pro">⚡ PRO</button>')
 
-              for name in module_names + obsolete_names:
+              for name in all_known_modules + obsolete_names:
                   s = remove_module(s, name)
 
               if p.name == 'admin.html':
@@ -67,8 +67,13 @@ jobs:
                       f'<script src="i18n-runtime.js?v={version}"></script>'
                       f'<script src="admin-devices.js?v={version}"></script>'
                   )
+              elif p.name == 'index.html':
+                  bundle = f'<script src="owner-tools.js?v={version}"></script>' + ''.join(
+                      f'<script src="{name}?v={version}"></script>' for name in global_modules
+                  )
               else:
-                  bundle = ''.join(f'<script src="{name}?v={version}"></script>' for name in module_names)
+                  # Predictor pages must stay isolated from the admin UI module.
+                  bundle = ''.join(f'<script src="{name}?v={version}"></script>' for name in global_modules)
 
               s = s.replace('</head>', bundle + '</head>', 1)
               p.write_text(s, encoding='utf-8')
@@ -82,5 +87,5 @@ jobs:
             echo "No changes needed"
             exit 0
           fi
-          git commit -m "Refresh enhanced admin dashboard"
+          git commit -m "Restore coefficient polling and isolate admin module"
           git push
