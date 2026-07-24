@@ -4,14 +4,18 @@
   const CONTEXT_KEY = "allpredictor_telegram_context_v1";
   const MAX_AGE_MS = 30 * 60 * 1000;
 
-  function readContext() {
+  function readFrom(storage) {
     try {
-      const value = JSON.parse(sessionStorage.getItem(CONTEXT_KEY) || "null");
+      const value = JSON.parse(storage.getItem(CONTEXT_KEY) || "null");
       if (!value || !value.savedAt || Date.now() - Number(value.savedAt) > MAX_AGE_MS) return null;
       return value;
     } catch (_error) {
       return null;
     }
+  }
+
+  function readContext() {
+    return readFrom(sessionStorage) || readFrom(localStorage);
   }
 
   function setProperty(target, name, value) {
