@@ -18,7 +18,7 @@ jobs:
           from pathlib import Path
           import re
 
-          version = "20260724-25"
+          version = "20260724-27"
           module_names = [
               "owner-tools.js",
               "app-config.js",
@@ -82,5 +82,5 @@ jobs:
             echo "No changes needed"
             exit 0
           fi
-          git commit -m "Open admin panel inline without losing Telegram auth"
+          git commit -m "Refresh enhanced admin dashboard"
           git push
