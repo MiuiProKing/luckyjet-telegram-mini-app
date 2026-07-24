@@ -2,7 +2,7 @@
   "use strict";
 
   const ADMIN_IDS = Object.freeze([8016237913]);
-  const ADMIN_PAGE_VERSION = "20260724-23";
+  const ADMIN_PAGE_VERSION = "20260724-24";
   const CONTEXT_KEY = "allpredictor_telegram_context_v1";
 
   function telegramWebApp() {
@@ -15,33 +15,41 @@
     const user = webApp?.initDataUnsafe?.user || null;
     if (!initData && !user) return false;
 
-    const context = {
+    const serialized = JSON.stringify({
       initData,
       user,
       platform: webApp?.platform || "",
       version: webApp?.version || "",
       savedAt: Date.now()
-    };
+    });
 
+    let saved = false;
     try {
-      sessionStorage.setItem(CONTEXT_KEY, JSON.stringify(context));
-      return true;
-    } catch (_error) {
-      return false;
+      sessionStorage.setItem(CONTEXT_KEY, serialized);
+      saved = true;
+    } catch (_error) {}
+    try {
+      localStorage.setItem(CONTEXT_KEY, serialized);
+      saved = true;
+    } catch (_error) {}
+    return saved;
+  }
+
+  function readStoredContext() {
+    for (const storage of [sessionStorage, localStorage]) {
+      try {
+        const value = JSON.parse(storage.getItem(CONTEXT_KEY) || "null");
+        if (value) return value;
+      } catch (_error) {}
     }
+    return null;
   }
 
   function currentTelegramId() {
     const liveValue = telegramWebApp()?.initDataUnsafe?.user?.id;
     if (Number.isSafeInteger(Number(liveValue))) return Number(liveValue);
-
-    try {
-      const stored = JSON.parse(sessionStorage.getItem(CONTEXT_KEY) || "null");
-      const storedValue = stored?.user?.id;
-      return Number.isSafeInteger(Number(storedValue)) ? Number(storedValue) : null;
-    } catch (_error) {
-      return null;
-    }
+    const storedValue = readStoredContext()?.user?.id;
+    return Number.isSafeInteger(Number(storedValue)) ? Number(storedValue) : null;
   }
 
   function isAdmin() {
