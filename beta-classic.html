@@ -1,65 +1,43 @@
 <!doctype html>
 <html lang="ru">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-  <meta http-equiv="Pragma" content="no-cache">
-  <meta http-equiv="Expires" content="0">
-  <title>LuckyJet Beta Classic</title>
-  <style>
-    *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:#0f1525;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}body{display:grid;place-items:center;padding:22px}.loader{text-align:center}.spinner{width:42px;height:42px;margin:0 auto 16px;border:3px solid rgba(255,255,255,.12);border-top-color:#8b5cf6;border-radius:50%;animation:spin .8s linear infinite}.message{font-size:16px}.error{max-width:560px;color:#ffd36a;line-height:1.55}.retry{display:none;margin:18px auto 0;padding:12px 22px;border:0;border-radius:13px;background:linear-gradient(135deg,#6d28d9,#8b5cf6);color:#fff;font-weight:900}@keyframes spin{to{transform:rotate(360deg)}}
-  </style>
-  <script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<title>LuckyJet Beta Classic</title>
+<script src="app-config.js?v=20260724-32"></script>
+<script src="i18n-runtime.js?v=20260724-32"></script>
+<script src="language-onboarding.js?v=20260724-32"></script>
+<script src="license-client.js?v=20260724-32"></script>
+<script src="access.js?v=20260724-32"></script>
+<script src="analytics-client.js?v=20260724-32"></script>
+<script src="app-center.js?v=20260724-32"></script>
+<style>
+:root{--bg:#05070d;--panel:#0d1422;--line:#23304a;--text:#f8fafc;--muted:#8ea0bd;--cyan:#22d3ee;--violet:#8b5cf6;--green:#34d399;--red:#fb7185;--gold:#fbbf24}*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:radial-gradient(circle at 50% -10%,#172554 0,#090d18 42%,#03050a 100%);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}body{padding:18px 14px 90px}.app{width:min(720px,100%);margin:auto}.top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}.back{width:46px;height:46px;border-radius:15px;border:1px solid var(--line);background:#0b1020;color:#fff;font-size:22px}.brand{text-align:center;flex:1}.brand h1{margin:0;font-size:22px;letter-spacing:.12em}.brand small{color:var(--cyan);font-weight:800;letter-spacing:.16em}.live{display:flex;align-items:center;gap:7px;padding:9px 12px;border:1px solid #164e63;border-radius:999px;background:#082f49;color:#a5f3fc;font-size:12px;font-weight:800}.dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 12px var(--green);animation:pulse 1.2s infinite}.hero,.panel{background:linear-gradient(145deg,rgba(17,24,39,.96),rgba(8,13,24,.96));border:1px solid var(--line);border-radius:24px;box-shadow:0 22px 70px rgba(0,0,0,.45)}.hero{padding:24px;text-align:center;position:relative;overflow:hidden}.hero:before{content:"";position:absolute;inset:-60% 25% auto;height:260px;background:radial-gradient(circle,rgba(34,211,238,.22),transparent 65%);pointer-events:none}.orb{width:210px;height:210px;margin:12px auto 18px;border-radius:50%;display:grid;place-items:center;position:relative;background:radial-gradient(circle,#111827 0 56%,#07111f 57%);border:2px solid #1e3a5f;box-shadow:0 0 0 10px rgba(34,211,238,.04),0 0 46px rgba(34,211,238,.17)}.orb:before{content:"";position:absolute;inset:-7px;border-radius:50%;background:conic-gradient(from 30deg,transparent,var(--cyan),transparent,var(--violet),transparent);mask:radial-gradient(farthest-side,transparent calc(100% - 4px),#000 0);animation:spin 5s linear infinite}.target{font-size:38px;font-weight:900;color:var(--green);text-shadow:0 0 18px rgba(52,211,153,.35)}.target small{display:block;font-size:11px;color:var(--muted);letter-spacing:.18em;margin-top:8px}.status{min-height:44px;color:var(--muted);font-size:14px;line-height:1.5}.btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px}button{font:inherit;cursor:pointer}.primary,.secondary{height:54px;border-radius:16px;font-weight:900;letter-spacing:.06em}.primary{border:0;background:linear-gradient(135deg,var(--cyan),#2563eb);color:#02131a;box-shadow:0 12px 30px rgba(34,211,238,.22)}.secondary{border:1px solid #4c1d95;background:linear-gradient(135deg,#312e81,#6d28d9);color:#fff}.secondary.on{background:linear-gradient(135deg,#065f46,#10b981)}.panel{margin-top:14px;padding:18px}.panel-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:13px}.panel-title b{font-size:15px}.panel-title span{font-size:12px;color:var(--muted)}.coefs{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}.coef{min-height:58px;border-radius:14px;border:1px solid var(--line);background:#080d17;display:grid;place-items:center;font-weight:900}.coef.low{color:var(--red);border-color:#4c1d2b}.coef.mid{color:var(--gold);border-color:#5b4312}.coef.high{color:var(--green);border-color:#14532d}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:14px}.stat{padding:13px 8px;text-align:center;border-radius:14px;border:1px solid var(--line);background:#080d17}.stat small{display:block;color:var(--muted);font-size:10px;text-transform:uppercase}.stat strong{display:block;margin-top:5px}.notice{margin-top:14px;padding:12px 14px;border-radius:14px;border:1px solid #3b2f16;background:#181407;color:#fde68a;font-size:12px;line-height:1.5}@keyframes spin{to{transform:rotate(360deg)}}@keyframes pulse{50%{opacity:.35}}@media(max-width:520px){body{padding:12px 10px 82px}.hero{padding:19px 14px}.orb{width:190px;height:190px}.btns{grid-template-columns:1fr}.coefs{gap:5px}.coef{font-size:13px;min-height:52px}}
+</style>
 </head>
 <body>
-  <main class="loader">
-    <div class="spinner" id="spinner"></div>
-    <div class="message" id="message">Загрузка LuckyJet Beta Classic…</div>
-    <button class="retry" id="retry" type="button">ПОВТОРИТЬ</button>
-  </main>
-  <script>
-    (() => {
-      const message = document.getElementById('message');
-      const spinner = document.getElementById('spinner');
-      const retry = document.getElementById('retry');
-
-      function fail(text) {
-        spinner.style.display = 'none';
-        message.className = 'message error';
-        message.textContent = text;
-        retry.style.display = 'block';
-      }
-
-      async function load() {
-        retry.style.display = 'none';
-        spinner.style.display = 'block';
-        message.className = 'message';
-        message.textContent = 'Загрузка LuckyJet Beta Classic…';
-        try {
-          if (!window.pako || typeof window.pako.ungzip !== 'function') {
-            throw new Error('Не загрузился модуль распаковки');
-          }
-          const response = await fetch('beta-classic.payload.b64?v=20260724-33', { cache: 'no-store' });
-          if (!response.ok) throw new Error('Payload HTTP ' + response.status);
-          const encoded = (await response.text()).trim();
-          const binary = atob(encoded);
-          const bytes = new Uint8Array(binary.length);
-          for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-          const html = window.pako.ungzip(bytes, { to: 'string' });
-          if (!html || !html.includes('<html')) throw new Error('Получен пустой HTML');
-          document.open();
-          document.write(html);
-          document.close();
-        } catch (error) {
-          console.error(error);
-          fail('Ошибка загрузки Beta Classic: ' + (error?.message || String(error)));
-        }
-      }
-
-      retry.addEventListener('click', load);
-      load();
-    })();
-  </script>
+<main class="app">
+<div class="top"><button class="back" onclick="location.href='index.html'">‹</button><div class="brand"><small>BETA CLASSIC</small><h1>LUCKYJET</h1></div><div class="live"><i class="dot"></i>LIVE</div></div>
+<section class="hero">
+<div class="orb"><div id="target" class="target">—<small>ЦЕЛЕВОЙ КОЭФФИЦИЕНТ</small></div></div>
+<div id="status" class="status">Подключение к LIVE-серверу…</div>
+<div class="btns"><button id="signalBtn" class="primary">ПОЛУЧИТЬ СИГНАЛ</button><button id="autoBtn" class="secondary">АВТО: ВЫКЛ</button></div>
+</section>
+<section class="panel"><div class="panel-title"><b>Последние коэффициенты</b><span id="progress">0/5</span></div><div id="coefs" class="coefs"></div><div class="stats"><div class="stat"><small>Последний</small><strong id="last">—</strong></div><div class="stat"><small>Средний</small><strong id="avg">—</strong></div><div class="stat"><small>Сигналов</small><strong id="signals">0</strong></div></div><div class="notice">Условие из fixed: сигнал доступен после 5 полученных раундов, когда минимум 3 из последних 5 коэффициентов выше 1.50x.</div></section>
+</main>
+<script>
+const API_URL='https://crash-gateway-grm-cr.100hp.app/state';
+const API_HEADERS={'customer-id':'077dee8d-c923-4c02-9bee-757573662e69','session-id':'933841e0-8e4f-4513-9ef1-852096c0e566','accept':'application/json'};
+const history=[];let lastRound=null,auto=false,timer=null,signalCount=0;
+const $=id=>document.getElementById(id);
+function render(){const five=history.slice(-5);$('coefs').innerHTML=Array.from({length:5},(_,i)=>{const v=five[i];return `<div class="coef ${v==null?'':v<1.5?'low':v<2?'mid':'high'}">${v==null?'—':v.toFixed(2)+'x'}</div>`}).join('');$('progress').textContent=Math.min(history.length,5)+'/5';$('last').textContent=five.length?five.at(-1).toFixed(2)+'x':'—';$('avg').textContent=five.length?(five.reduce((a,b)=>a+b,0)/five.length).toFixed(2)+'x':'—';$('signals').textContent=signalCount}
+function canPredict(){const five=history.slice(-5);return five.length===5&&five.filter(v=>v>1.50).length>=3}
+function calculateTarget(){const five=history.slice(-5).sort((a,b)=>a-b);const median=five[2];const avg=five.reduce((a,b)=>a+b,0)/5;const low=five.filter(v=>v<1.5).length;let target=median*.55+avg*.25+(low>=2?.35:.15);return Math.max(1.5,Math.min(8,Number(target.toFixed(2))))}
+async function fetchCoef(){try{const r=await fetch(API_URL,{headers:API_HEADERS,cache:'no-store'});if(!r.ok)throw new Error('API '+r.status);const d=await r.json();const raw=d.stopCoefficients?.[0];if(raw==null)return;const v=Number(raw===1?1.01:raw);const round=String(d.roundConfig?.id??d.currentTime??v);if(round===lastRound)return;lastRound=round;history.push(Number(v.toFixed(2)));if(history.length>30)history.shift();render();$('status').textContent=canPredict()?'Условия выполнены. Можно получить сигнал.':'Сбор данных: нужно 5 раундов и минимум 3 выше 1.50x.';if(auto&&canPredict())makeSignal()}catch(e){$('status').textContent='Ошибка подключения: '+(e?.message||'неизвестная ошибка')}}
+function makeSignal(){if(!canPredict()){$('target').firstChild.textContent='—';$('status').textContent='Условия пока не выполнены.';return}const target=calculateTarget();signalCount++;$('target').firstChild.textContent=target.toFixed(2)+'X';$('status').textContent='Сигнал рассчитан по последним 5 коэффициентам. Проверяйте следующие 3 раунда.';render();window.dispatchEvent(new CustomEvent('allpredictor:prediction',{detail:{app:'luckyjet-beta-classic',target}}))}
+$('signalBtn').onclick=makeSignal;$('autoBtn').onclick=()=>{auto=!auto;$('autoBtn').textContent=auto?'АВТО: ВКЛ':'АВТО: ВЫКЛ';$('autoBtn').classList.toggle('on',auto);if(auto&&canPredict())makeSignal()};
+render();fetchCoef();timer=setInterval(fetchCoef,3000);
+</script>
 </body>
 </html>
