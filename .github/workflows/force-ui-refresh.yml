@@ -18,7 +18,7 @@ jobs:
           from pathlib import Path
           import re
 
-          version = "20260724-29"
+          version = "20260724-30"
           lucky_api = "https://crash-gateway-grm-cr.100hp.app/state"
           lucky_customer = "077dee8d-c923-4c02-9bee-757573662e69"
           lucky_session = "933841e0-8e4f-4513-9ef1-852096c0e566"
@@ -45,27 +45,9 @@ jobs:
                   return s
               if not any(token in lower for token in ("stopcoefficients", "currentcoefficients", "fetchstopcoefficient", "crash-gateway")):
                   return s
-
-              # Replace every previously used LuckyJet crash gateway /state address.
-              s = re.sub(
-                  r'https://crash-gateway[^\s"\'`<>]+/state',
-                  lucky_api,
-                  s,
-                  flags=re.I,
-              )
-              # Normalize API header credentials to the working beta connection.
-              s = re.sub(
-                  r'(["\']customer-id["\']\s*:\s*)["\'][^"\']*["\']',
-                  lambda m: m.group(1) + '"' + lucky_customer + '"',
-                  s,
-                  flags=re.I,
-              )
-              s = re.sub(
-                  r'(["\']session-id["\']\s*:\s*)["\'][^"\']*["\']',
-                  lambda m: m.group(1) + '"' + lucky_session + '"',
-                  s,
-                  flags=re.I,
-              )
+              s = re.sub(r'https://crash-gateway[^\s"\'`<>]+/state', lucky_api, s, flags=re.I)
+              s = re.sub(r'(["\']customer-id["\']\s*:\s*)["\'][^"\']*["\']', lambda m: m.group(1) + '"' + lucky_customer + '"', s, flags=re.I)
+              s = re.sub(r'(["\']session-id["\']\s*:\s*)["\'][^"\']*["\']', lambda m: m.group(1) + '"' + lucky_session + '"', s, flags=re.I)
               return s
 
           beta_card = '''
@@ -78,26 +60,18 @@ jobs:
           for p in Path('.').glob('*.html'):
               if p.name == 'setup-server.html':
                   continue
-
               s = p.read_text(encoding='utf-8')
               s = sync_luckyjet_connection(s)
 
               if p.name == 'index.html':
-                  s = re.sub(
-                      r'<script src="telegram\.js(?:\?v=[^"]*)?"></script>',
-                      f'<script src="telegram.js?v={version}"></script>',
-                      s,
-                      flags=re.I,
-                  )
+                  s = re.sub(r'<script src="telegram\.js(?:\?v=[^"]*)?"></script>', f'<script src="telegram.js?v={version}"></script>', s, flags=re.I)
                   s = s.replace('data-app-tab="pro">PRO</button>', 'data-app-tab="pro">⚡ PRO</button>')
                   s = s.replace('Два локальных LIVE-анализатора.', 'Три локальных LIVE-анализатора.')
-
                   if 'data-open-pro="luckyjet-beta"' not in s:
                       pattern = r'(<button class="game-card has-art" type="button" data-open-pro="rocketqueen"[\s\S]*?</button>)'
                       s, count = re.subn(pattern, lambda m: m.group(1) + beta_card, s, count=1)
                       if count == 0:
                           raise RuntimeError('PRO Rocket Queen card marker was not found')
-
                   handler = '  document.querySelector(\'[data-open-pro="luckyjet-beta"]\').addEventListener("click", () => { window.location.href = "beta-luckyjet.html"; });'
                   if 'window.location.href = "beta-luckyjet.html"' not in s:
                       marker = '  document.querySelector(\'[data-open-pro="rocketqueen"]\').addEventListener("click", () => { window.location.href = "pro-rocketqueen.html"; });'
@@ -113,22 +87,10 @@ jobs:
 
               if p.name == 'admin.html':
                   if 'http-equiv="Cache-Control"' not in s:
-                      s = s.replace(
-                          '<meta name="theme-color" content="#07050b">',
-                          '<meta name="theme-color" content="#07050b">\n  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">\n  <meta http-equiv="Pragma" content="no-cache">\n  <meta http-equiv="Expires" content="0">',
-                          1,
-                      )
-                  bundle = (
-                      f'<script src="owner-tools.js?v={version}"></script>'
-                      f'<script src="app-config.js?v={version}"></script>'
-                      f'<script src="admin-auth-bridge.js?v={version}"></script>'
-                      f'<script src="i18n-runtime.js?v={version}"></script>'
-                      f'<script src="admin-devices.js?v={version}"></script>'
-                  )
+                      s = s.replace('<meta name="theme-color" content="#07050b">', '<meta name="theme-color" content="#07050b">\n  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">\n  <meta http-equiv="Pragma" content="no-cache">\n  <meta http-equiv="Expires" content="0">', 1)
+                  bundle = (f'<script src="owner-tools.js?v={version}"></script>' f'<script src="app-config.js?v={version}"></script>' f'<script src="admin-auth-bridge.js?v={version}"></script>' f'<script src="i18n-runtime.js?v={version}"></script>' f'<script src="admin-devices.js?v={version}"></script>')
               elif p.name == 'index.html':
-                  bundle = f'<script src="owner-tools.js?v={version}"></script>' + ''.join(
-                      f'<script src="{name}?v={version}"></script>' for name in global_modules
-                  )
+                  bundle = f'<script src="owner-tools.js?v={version}"></script>' + ''.join(f'<script src="{name}?v={version}"></script>' for name in global_modules)
               else:
                   bundle = ''.join(f'<script src="{name}?v={version}"></script>' for name in global_modules)
 
@@ -144,5 +106,5 @@ jobs:
             echo "No changes needed"
             exit 0
           fi
-          git commit -m "Sync LuckyJet live connection and install beta PRO card"
+          git commit -m "Refresh Beta Classic card and application cache"
           git push
