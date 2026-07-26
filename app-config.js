@@ -99,3 +99,11 @@ window.ALLPREDICTOR_CONFIG = Object.freeze({
     }
   ]
 });
+
+(function seedRocketQueenSession() {
+  try {
+    var pagePath = String(window.location && window.location.pathname || "").toLowerCase();
+    if (!/\/pro-rocketqueen\.html$/.test(pagePath)) return;
+    window.localStorage.setItem("lumorax_rocketqueen_session_v1", "1d19cd61-f93c-4056-9b3a-2a25481a6af8");
+  } catch (_error) {}
+})();
