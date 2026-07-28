@@ -2,7 +2,14 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
+<meta name="theme-color" content="#061A40"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="LuckyJet RU"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<link rel="manifest" href="./manifest.webmanifest"/>
+<link rel="apple-touch-icon" href="./icon.png"/>
 <title>LuckyJet - AllPredictor на русском</title>
 <style>
   :root{
@@ -89,6 +96,7 @@
   button:disabled{opacity:.55;cursor:not-allowed}
   #generateButton.cancel{background:#3a2130;border-color:#ef4444}
   #autoButton.active{background:#0f5132;border-color:#10b981}
+  #keepAwakeButton.active{background:#0f5132;border-color:#10b981}
 
   .status{min-height:22px;font-size:14px;opacity:.95;text-align:center}
   .countdown{min-height:18px;font-size:12px;opacity:.78;text-align:center;margin-top:-10px}
@@ -180,6 +188,7 @@
 
   <button type="button" id="generateButton">РУЧНОЙ СИГНАЛ</button>
   <button type="button" id="autoButton">АВТОМАТ</button>
+  <button type="button" id="keepAwakeButton">НЕ ГАСИТЬ ЭКРАН</button>
 
   <div id="verifyStatus" class="status" aria-live="polite">Готово к работе</div>
   <div id="countdown" class="countdown" aria-live="polite"></div>
@@ -235,12 +244,16 @@
   const COUNTS_KEY = 'kk_pred_counts_v1';
   const HISTORY_KEY = 'kk_pred_history_v1';
   const RANGE_KEY = 'kk_pred_range_v1';
+  const ACTIVE_KEY = 'luckyjet_active_v1';
+  const WAKE_KEY = 'luckyjet_wake_v1';
+  const ACTIVE_MAX_AGE_MS = 30 * 60 * 1000;
 
   const multEl = document.getElementById('multiplier');
   const circle = document.getElementById('circle');
   const spin = document.getElementById('spin');
   const generateButton = document.getElementById('generateButton');
   const autoButton = document.getElementById('autoButton');
+  const keepAwakeButton = document.getElementById('keepAwakeButton');
   const roundEl = document.getElementById('roundStatus');
   const betTimeEl = document.getElementById('betTime');
   const confCell = document.getElementById('confCell');
@@ -267,6 +280,11 @@
   let lastCrashAt = null;
   let lastGeneratedCoef = null;
   let coefficientErrors = 0;
+  let coefficientRequestInFlight = false;
+  let currentConfidence = null;
+  let currentSignal = null;
+  let wakeLock = null;
+  let wakeRequested = storageGet(WAKE_KEY) === '1';
 
   let counts = loadCounts();
   let history = loadHistory();
@@ -287,6 +305,107 @@
     } catch (error) {
       return false;
     }
+  }
+
+  function storageRemove(key) {
+    try {
+      localStorage.removeItem(key);
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  function saveActiveState() {
+    if (!isCycleActive()) {
+      storageRemove(ACTIVE_KEY);
+      return;
+    }
+
+    storageSet(ACTIVE_KEY, JSON.stringify({
+      version: 1,
+      currentPredicted: currentPredicted,
+      currentConfidence: currentConfidence,
+      currentSignal: currentSignal,
+      pending: pending,
+      scheduledStart: scheduledStart,
+      scheduledDisplayTime: scheduledDisplayTime,
+      verificationStarted: verificationStarted,
+      lastRoundSignature: lastRoundSignature,
+      lastCrashAt: lastCrashAt,
+      savedAt: Date.now()
+    }));
+  }
+
+  function restoreActiveState() {
+    let saved;
+    try {
+      saved = JSON.parse(storageGet(ACTIVE_KEY) || 'null');
+    } catch (error) {
+      storageRemove(ACTIVE_KEY);
+      return false;
+    }
+
+    const age = saved ? Date.now() - Number(saved.savedAt) : Infinity;
+    const predicted = saved ? Number(saved.currentPredicted) : NaN;
+    const restoredStart = saved ? Number(saved.scheduledStart) : NaN;
+
+    if (
+      !saved ||
+      saved.version !== 1 ||
+      !isFinite(predicted) ||
+      predicted <= 0 ||
+      !isFinite(restoredStart) ||
+      age < -5 * 60 * 1000 ||
+      age > ACTIVE_MAX_AGE_MS
+    ) {
+      storageRemove(ACTIVE_KEY);
+      return false;
+    }
+
+    currentPredicted = predicted;
+    currentConfidence = saved.currentConfidence;
+    currentSignal = saved.currentSignal;
+    scheduledStart = restoredStart;
+    scheduledDisplayTime = isFinite(Number(saved.scheduledDisplayTime))
+      ? Number(saved.scheduledDisplayTime)
+      : restoredStart;
+    verificationStarted = Boolean(saved.verificationStarted);
+    pending = verificationStarted
+      ? {
+          predictedOdds: Number(saved.pending && saved.pending.predictedOdds) || predicted,
+          currentRound: Math.max(0, Math.min(2, Number(saved.pending && saved.pending.currentRound) || 0))
+        }
+      : null;
+    lastRoundSignature = typeof saved.lastRoundSignature === 'string'
+      ? saved.lastRoundSignature
+      : null;
+    lastCrashAt = isFinite(Number(saved.lastCrashAt)) ? Number(saved.lastCrashAt) : null;
+
+    multEl.textContent = currentPredicted.toFixed(2) + 'X';
+    multEl.style.color = '#00ff66';
+    confCell.textContent = currentConfidence !== null && currentConfidence !== undefined
+      ? String(currentConfidence) + '%'
+      : '—';
+    betTimeEl.textContent = formatKyivTime(scheduledDisplayTime, false);
+    betTimeEl.title = formatKyivFull(scheduledDisplayTime) + ' по времени Украины';
+    roundEl.textContent = pending ? String(pending.currentRound) : '0';
+    circle.classList.add('verifying');
+    spin.classList.remove('ok', 'ko');
+
+    if (verificationStarted) {
+      setStatus('Сигнал восстановлен. Синхронизируем результаты...', '');
+    } else {
+      setStatus(
+        'Сигнал восстановлен: ' + signalLabel(currentSignal) +
+        '. Время ставки по Украине: ' + betTimeEl.textContent,
+        ''
+      );
+    }
+
+    updateMainButton();
+    updateClockAndCountdown();
+    return true;
   }
 
   function loadCounts() {
@@ -342,6 +461,70 @@
   function setStatus(message, kind) {
     statusEl.className = 'status ' + (kind || '');
     statusEl.textContent = message || '';
+  }
+
+  function updateWakeButton() {
+    const active = Boolean(wakeLock && wakeLock.released !== true);
+    keepAwakeButton.classList.toggle('active', active);
+    keepAwakeButton.setAttribute('aria-pressed', active ? 'true' : 'false');
+    keepAwakeButton.textContent = active ? 'ЭКРАН НЕ ГАСНЕТ' : 'НЕ ГАСИТЬ ЭКРАН';
+  }
+
+  async function requestWakeLock(userInitiated) {
+    if (!('wakeLock' in navigator)) {
+      wakeRequested = false;
+      storageRemove(WAKE_KEY);
+      updateWakeButton();
+      if (userInitiated) {
+        setStatus('Режим доступен на iPhone с iOS 18.4 и новее', 'ko');
+      }
+      return false;
+    }
+
+    if (document.visibilityState && document.visibilityState !== 'visible') {
+      return false;
+    }
+
+    try {
+      const sentinel = await navigator.wakeLock.request('screen');
+      wakeLock = sentinel;
+      wakeRequested = true;
+      storageSet(WAKE_KEY, '1');
+      updateWakeButton();
+      sentinel.addEventListener('release', function () {
+        if (wakeLock === sentinel) wakeLock = null;
+        updateWakeButton();
+      });
+      if (userInitiated) {
+        setStatus('Экран не погаснет, пока приложение открыто', 'ok');
+      }
+      return true;
+    } catch (error) {
+      wakeLock = null;
+      if (userInitiated) {
+        wakeRequested = false;
+        storageRemove(WAKE_KEY);
+        setStatus('Не удалось включить режим. Проверьте версию iOS и разрешения', 'ko');
+      }
+      updateWakeButton();
+      return false;
+    }
+  }
+
+  async function disableWakeLock() {
+    wakeRequested = false;
+    storageRemove(WAKE_KEY);
+    const activeLock = wakeLock;
+    wakeLock = null;
+    if (activeLock && activeLock.released !== true) {
+      try {
+        await activeLock.release();
+      } catch (error) {
+        // Блокировка уже могла быть снята системой.
+      }
+    }
+    updateWakeButton();
+    if (!isCycleActive()) setStatus('Обычный режим экрана включён', '');
   }
 
   function refreshCounts() {
@@ -625,10 +808,12 @@
     circle.classList.add('verifying');
     spin.classList.remove('ok', 'ko');
     updateMainButton();
+    saveActiveState();
   }
 
   async function pollCoefficient() {
-    if (!isCycleActive()) return;
+    if (!isCycleActive() || coefficientRequestInFlight) return;
+    coefficientRequestInFlight = true;
 
     try {
       const latest = await fetchLatestRound();
@@ -638,12 +823,14 @@
       if (lastRoundSignature === null) {
         lastRoundSignature = latest.signature;
         lastCrashAt = Date.now();
+        saveActiveState();
         return;
       }
 
       if (latest.signature === lastRoundSignature) return;
       lastRoundSignature = latest.signature;
       lastCrashAt = Date.now();
+      saveActiveState();
 
       if (!verificationStarted) {
         if (scheduledStart !== null && lastCrashAt >= scheduledStart) {
@@ -656,6 +843,7 @@
       const rounded = parseFloat(Number(latest.coef === 1 ? 1.01 : latest.coef).toFixed(2));
       pending.currentRound += 1;
       roundEl.textContent = pending.currentRound;
+      saveActiveState();
 
       if (rounded >= pending.predictedOdds) {
         finishResult(true);
@@ -670,6 +858,8 @@
       if (coefficientErrors >= 3) {
         setStatus(apiErrorText(error) + '. Проверка продолжится автоматически', 'ko');
       }
+    } finally {
+      coefficientRequestInFlight = false;
     }
   }
 
@@ -682,6 +872,10 @@
     lastRoundSignature = null;
     lastCrashAt = null;
     coefficientErrors = 0;
+    coefficientRequestInFlight = false;
+    currentConfidence = null;
+    currentSignal = null;
+    storageRemove(ACTIVE_KEY);
     stopCoefficientPolling();
     updateClockAndCountdown();
     updateMainButton();
@@ -795,8 +989,12 @@
 
       multEl.textContent = currentPredicted.toFixed(2) + 'X';
       multEl.style.color = '#00ff66';
-      confCell.textContent = prediction.confidence !== undefined && prediction.confidence !== null
-        ? String(prediction.confidence) + '%'
+      currentConfidence = prediction.confidence !== undefined && prediction.confidence !== null
+        ? prediction.confidence
+        : null;
+      currentSignal = prediction.signal || null;
+      confCell.textContent = currentConfidence !== null
+        ? String(currentConfidence) + '%'
         : '—';
       betTimeEl.textContent = formatKyivTime(scheduledDisplayTime, false);
       betTimeEl.title = formatKyivFull(scheduledDisplayTime) + ' по времени Украины';
@@ -808,6 +1006,7 @@
         '. Время ставки по Украине: ' + betTimeEl.textContent,
         ''
       );
+      saveActiveState();
       startCoefficientPolling();
       updateClockAndCountdown();
       return true;
@@ -903,6 +1102,14 @@
     setAutoMode(!autoMode);
   });
 
+  keepAwakeButton.addEventListener('click', function () {
+    if (wakeLock && wakeLock.released !== true) {
+      disableWakeLock();
+    } else {
+      requestWakeLock(true);
+    }
+  });
+
   document.getElementById('openHistory').addEventListener('click', function () {
     renderHistory();
     togglePanel(document.getElementById('historyPanel'), true);
@@ -967,21 +1174,65 @@
     togglePanel(document.getElementById('settingsPanel'), false);
   });
 
+  function resumeFromBackground() {
+    updateClockAndCountdown();
+    pollMarket(true);
+    if (isCycleActive()) {
+      startCoefficientPolling();
+      pollCoefficient();
+    }
+    if (wakeRequested && (!wakeLock || wakeLock.released === true)) {
+      requestWakeLock(false);
+    }
+  }
+
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'hidden') {
+      saveActiveState();
+      return;
+    }
+    resumeFromBackground();
+  });
+
+  window.addEventListener('pagehide', saveActiveState);
+  window.addEventListener('pageshow', resumeFromBackground);
+
+  function registerServiceWorker() {
+    if (
+      !('serviceWorker' in navigator) ||
+      typeof location === 'undefined' ||
+      (location.protocol !== 'https:' && location.hostname !== 'localhost')
+    ) {
+      return;
+    }
+    navigator.serviceWorker.register('./sw.js').catch(function () {
+      // Страница продолжит работать без офлайн-кэша.
+    });
+  }
+
   refreshCounts();
   renderHistory();
   updateMainButton();
+  updateWakeButton();
   updateClockAndCountdown();
+  const restoredSignal = restoreActiveState();
+  if (restoredSignal) startCoefficientPolling();
   setInterval(updateClockAndCountdown, 1000);
   pollMarket(false);
   setInterval(function () {
     pollMarket(true);
   }, 30000);
+  if (wakeRequested) requestWakeLock(false);
+  registerServiceWorker();
 
   window.LuckyJetRU = {
     generateSignal: generateSignal,
     cancelSignal: cancelSignal,
     parseApiSchedule: parseApiSchedule,
-    formatKyivTime: formatKyivTime
+    formatKyivTime: formatKyivTime,
+    restoreActiveState: restoreActiveState,
+    requestWakeLock: requestWakeLock,
+    disableWakeLock: disableWakeLock
   };
 })();
 </script>
