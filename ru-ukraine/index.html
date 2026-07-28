@@ -754,12 +754,16 @@
       await pollMarket(true);
       const safe = await checkMarket();
       if (!safe) {
+        multEl.textContent = 'НЕТ СИГНАЛА';
+        multEl.style.color = '#f4a51c';
         circle.classList.remove('verifying');
         return false;
       }
 
       if (marketLevel === 'danger') {
         setStatus('Рынок опасный. Сигнал отменён', 'ko');
+        multEl.textContent = 'НЕТ СИГНАЛА';
+        multEl.style.color = '#f4a51c';
         circle.classList.remove('verifying');
         return false;
       }
