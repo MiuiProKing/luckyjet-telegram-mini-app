@@ -427,7 +427,7 @@
       }
       const metrics = scannerMetrics(recentRows);
       if (metrics.ready && !isBettingState()) {
-        setStatus('Условия готовы. ЖДИ — надпись «СТАВЬ СЕЙЧАС» появится только при открытом BETTING.', '');
+        setStatus('Условия готовы. ЖДИ — вход появится при BETTING или сразу после нового уникального раунда.', '');
         return;
       }
       setStatus('ЖДИ • без 10X: ' + metrics.dryRounds + ' • последний: ' + (metrics.latest ? metrics.latest.toFixed(2) + 'X' : '—') + ' • низких из 3: ' + metrics.lowInLast3 + '/2.', '');
