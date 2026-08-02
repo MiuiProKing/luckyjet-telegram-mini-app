@@ -225,6 +225,8 @@ button:active{transform:translateY(1px) scale(.99)}button:disabled{opacity:.55;c
   </div>
 
   <div class="circle" id="circle" style="position:relative;width:220px;height:220px;">
+    <div class="ring" aria-hidden="true"></div>
+    <div class="ring-spin" aria-hidden="true"></div>
     <canvas id="waveCanvas" width="220" height="220"></canvas>
     <div id="circleInner" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:140px;height:140px;border-radius:50%;background:#060610;border:3px solid #8a00e1;display:flex;align-items:center;justify-content:center;box-shadow:0 0 20px rgba(138,0,225,0.5);z-index:2;">
         <div id="multiplier">0.00X</div>
