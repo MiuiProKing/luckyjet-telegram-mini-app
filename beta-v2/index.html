@@ -439,10 +439,7 @@
   }
 
   function todayDailyTopRows() {
-    const today = kyivDayKey(Date.now());
-    return dailyTopRows.filter(function (row) {
-      return kyivDayKey(row.timestamp) === today;
-    }).sort(function (a, b) {
+    return dailyTopRows.slice().sort(function (a, b) {
       return b.coef - a.coef;
     });
   }
@@ -1247,7 +1244,9 @@
     if (snapshot.recentToday.length < 20) {
       throw new Error('Недостаточно последних topCoefficient: ' + snapshot.recentToday.length + '/20');
     }
-    if (!snapshot.topToday.length) throw new Error('Суточный TOP topCoefficient недоступен');
+    if (!snapshot.topFresh || !snapshot.topToday.length) {
+      throw new Error('Суточный TOP topCoefficient недоступен');
+    }
     marketLevel = analyzeDirectMarket(snapshot.recentToday, snapshot.topToday).level;
     return snapshot;
   }
