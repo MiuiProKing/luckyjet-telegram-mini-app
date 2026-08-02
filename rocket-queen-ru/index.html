@@ -609,6 +609,7 @@
           🌐
         </button>
         <div class="lang-menu" id="langMenu">
+          <button data-lang="ru"><span class="flag">🇷🇺</span><span>Русский</span></button>
           <button data-lang="fr"><span class="flag">🇫🇷</span><span>Français</span></button>
           <button data-lang="en"><span class="flag">🇬🇧</span><span>English</span></button>
         </div>
@@ -787,6 +788,7 @@
         status_failed_after5: "❌ Échoué après 3 rounds",
         status_limit_hit: "🔒 Limite quotidienne atteinte.",
         status_analyzing: "Analyse en cours...",
+        status_wait_low: "Attente : dernier coef <= 1.30",
         status_cond_not_met: (info) => `Condition non remplie • ${info}`,
         status_auto_cond_not_met: (info) => `AUTO: condition non remplie • ${info}`,
         history_empty: "Aucune prédiction pour le moment.",
@@ -827,6 +829,7 @@
         status_failed_after5: "❌ Failed after 3 rounds",
         status_limit_hit: "🔒 Daily limit reached.",
         status_analyzing: "Analyzing...",
+        status_wait_low: "Waiting: last coef <= 1.30",
         status_cond_not_met: (info) => `Condition not met • ${info}`,
         status_auto_cond_not_met: (info) => `AUTO: condition not met • ${info}`,
         history_empty: "No predictions yet.",
@@ -836,10 +839,52 @@
         mult_failed: "Failed ❌",
         mult_analyse: "Analyzing..",
         window_empty: "empty window"
+      },
+      ru: {
+        time: "Время", round: "Раунд", lastCoef: "Последний коэф",
+        validated_label: "успешные ✅", failed_label: "неудачные ❌", total_label: "Всего",
+        btn_hack: "ПОЛУЧИТЬ СИГНАЛ",
+        btn_auto_off: "АВТОМАТИЧЕСКИЙ",
+        btn_auto_on: "АВТО: ВКЛ",
+        history_title: "ИСТОРИЯ РАУНДОВ",
+        settings_title: "НАСТРОЙКИ",
+        lock_title: "Прогнозы ограничены",
+        lock_msg_limit: (n) => `Сегодня использованы все ${n} прогнозов.`,
+        lock_note_at: (hhmm) => `Возвращайтесь завтра в ${hhmm}.`,
+        min_label: "Диапазон коэффициента — минимум (x)",
+        max_label: "Диапазон коэффициента — максимум (x)",
+        min_hint: "Значение по умолчанию: 2.00",
+        max_hint: "Значение по умолчанию: 8.00",
+        act_save_range: "Сохранить диапазон",
+        act_reset_stats: "Сбросить статистику",
+        act_reset_history: "Очистить историю раундов",
+        set_invalid: "Введите правильные значения.",
+        set_max_gt_min: "Максимум должен быть больше минимума.",
+        set_saved: (min, max) => `Диапазон сохранён: ${min}x – ${max}x`,
+        set_stats_reset: "Статистика сброшена.",
+        set_hist_reset: "История раундов очищена.",
+        status_wait_end: "дождитесь окончания текущей игры",
+        status_bet_next: "ставьте на следующем старте",
+        status_bet_now: "ставьте сейчас",
+        status_validated_round: (r) => `✅ Успешно в раунде ${r}`,
+        status_failed_after5: "❌ Неудача после 3 раундов",
+        status_limit_hit: "🔒 Дневной лимит достигнут.",
+        status_analyzing: "Идёт анализ...",
+        status_wait_low: "Ожидание: последний коэф <= 1.30",
+        status_cond_not_met: (info) => `Условие не выполнено • ${info}`,
+        status_auto_cond_not_met: (info) => `АВТО: условие не выполнено • ${info}`,
+        history_empty: "Прогнозов пока нет.",
+        chip_validated: "Успешно",
+        chip_failed: "Неудача",
+        mult_validated: "Успешно ✅",
+        mult_failed: "Неудача ❌",
+        mult_analyse: "Анализ...",
+        window_empty: "окно пустое"
       }
     };
 
     let currentLang = localStorage.getItem(LANG_KEY) || "fr";
+    if (!i18n[currentLang]) currentLang = "fr";
     const t = (key) => i18n[currentLang][key];
 
     // Pour formats HH:MM
@@ -847,6 +892,7 @@
     const hhmm = d => `${fmt2(d.getHours())}:${fmt2(d.getMinutes())}`;
 
     function applyI18nStatic() {
+      document.documentElement.lang = currentLang;
       document.getElementById('i_lbl_time').textContent = t('time');
       document.getElementById('i_lbl_round').textContent = t('round');
       document.getElementById('i_lbl_lastcoef').textContent = t('lastCoef');
@@ -1181,8 +1227,7 @@
           // Si le dernier coef est <= 1.30, on ne donne pas le feu vert.
           // On reste en attente de la fin du prochain jeu pour revérifier.
           waitingGameEnd = true;
-          let waitMsg = currentLang === 'fr' ? "Attente : dernier coef <= 1.30" : "Waiting: last coef <= 1.30";
-          setStatus(waitMsg, '');
+          setStatus(i18n[currentLang].status_wait_low, '');
           return;
         }
         // -------------------------------------------------------------
