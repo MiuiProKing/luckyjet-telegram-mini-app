@@ -28,6 +28,15 @@
     padding:24px;
   }
   .wrap{display:flex;flex-direction:column;align-items:center;gap:18px;max-width:720px;width:100%;position:relative}
+  .back-exit{
+    align-self:flex-start;display:inline-flex;align-items:center;justify-content:center;
+    min-height:44px;padding:0 16px;border-radius:12px;
+    border:1px solid rgba(255,255,255,.25);background:#000;color:#fff;
+    font-size:14px;font-weight:800;letter-spacing:.5px;text-decoration:none;
+    box-shadow:0 6px 16px rgba(0,0,0,.35);-webkit-tap-highlight-color:transparent;
+    transition:transform .1s ease,filter .15s ease;
+  }
+  .back-exit:active{transform:translateY(1px) scale(.98)}
   .topbar{width:100%;max-width:720px;position:relative;display:flex;justify-content:center;align-items:center;padding-top:6px}
   h1{font-weight:800;letter-spacing:2px}
   .lucky{opacity:.9}.jet{color:var(--primary)}
@@ -164,6 +173,7 @@
 <body>
 
 <div class="wrap">
+  <a class="back-exit" href="../index.html#pro" aria-label="Выйти назад">⏪ ВЫЙТИ НАЗАД</a>
   <div class="topbar">
     <button type="button" class="icon-btn" id="openSettings" title="Настройки" aria-label="Открыть настройки">
       <svg viewBox="0 0 24 24" fill="none"><rect x="4" y="4" width="6" height="6" rx="2" fill="#cfd2ff" opacity=".9"/><rect x="14" y="4" width="6" height="6" rx="2" fill="#cfd2ff" opacity=".7"/><rect x="4" y="14" width="6" height="6" rx="2" fill="#cfd2ff" opacity=".8"/><rect x="14" y="14" width="6" height="6" rx="2" fill="#cfd2ff" opacity=".9"/></svg>
