@@ -495,7 +495,9 @@
           };
         });
         els.certificate.className = 'cert' + (Number(test.successes) > 0 ? '' : ' bad');
-        els.certificate.textContent = 'LIVE-ТЕСТ 10X+: ' + Number(test.successes || 0) + '/' + Number(test.completedSignals || 0) + ' • успешных подряд: ' + certifiedStreak;
+        els.certificate.textContent = Number(test.completedSignals) >= 3 && Number(test.successes) === 0
+          ? '⚠️ ЭКСПЕРИМЕНТ 10X+: 0/' + Number(test.completedSignals) + ' • точность пока не подтверждена'
+          : 'LIVE-ТЕСТ 10X+: ' + Number(test.successes || 0) + '/' + Number(test.completedSignals || 0) + ' • успешных подряд: ' + certifiedStreak;
         render();
       } catch (error) {
         els.certificate.className = 'cert bad';
