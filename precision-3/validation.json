@@ -3,7 +3,7 @@
   "mode": "prospective-live",
   "target": 10,
   "maxAttempts": 3,
-  "lastUpdatedAt": "2026-08-02T22:36:00.000Z",
+  "lastUpdatedAt": "2026-08-02T22:43:00.000Z",
   "source": "https://crash-gateway-grm-cr.100hp.app/history",
   "rule": {
     "minimumRoundsWithout10x": 3,
@@ -18,9 +18,9 @@
     "note": "The available samples are too small to establish predictive power. Historical patterns are used only as a timing filter, not as a guarantee."
   },
   "prospective": {
-    "completedSignals": 2,
+    "completedSignals": 3,
     "successes": 0,
-    "failures": 2,
+    "failures": 3,
     "consecutiveSuccesses": 0,
     "signals": [
       {
@@ -89,6 +89,38 @@
         "success": false,
         "winningAttempt": null,
         "completedAt": "2026-08-02T22:36:00.000Z"
+      },
+      {
+        "number": 3,
+        "entryAt": null,
+        "entryTimePrecision": "The live page fixed every entry before its result; the third entry was displayed at 01:43:02 Kyiv and the exported completion time has minute precision.",
+        "entryRoundId": "bf7d6887-ce93-48e3-8484-a883d9411bed",
+        "baselineRoundId": "f3d77159-fb17-4b7f-8c50-bcf77cf7fe96",
+        "gate": {
+          "dryRounds": 9,
+          "latest": 1.22,
+          "lowInLast3": 2
+        },
+        "attempts": [
+          {
+            "attempt": 1,
+            "roundId": "bf7d6887-ce93-48e3-8484-a883d9411bed",
+            "coefficient": 1.17
+          },
+          {
+            "attempt": 2,
+            "roundId": "283eb547-7ce2-49d7-afe4-cfd53b312ef2",
+            "coefficient": 1.97
+          },
+          {
+            "attempt": 3,
+            "roundId": "dc4eb9ea-4b85-46b7-b60e-d97ea07a30d2",
+            "coefficient": 2.83
+          }
+        ],
+        "success": false,
+        "winningAttempt": null,
+        "completedAt": "2026-08-02T22:43:00.000Z"
       }
     ]
   }
