@@ -189,23 +189,23 @@
   <div class="badges">
     <div class="market-badge" id="marketBadge">
       <div class="mb-dot" id="mbDot"></div>
-      <span id="mbText">Подключение к истории topCoefficient...</span>
+      <span id="mbText">Подключение к суточному TOP topCoefficient...</span>
     </div>
     <div class="time-badge">Киев <span id="kyivClock">--:--:--</span></div>
   </div>
   <div class="recent-feed">
-    <span class="recent-label">topCoefficient:</span>
+    <span class="recent-label">Последние раунды:</span>
     <div class="recent-values" id="recentCoefficients" aria-live="polite">
       <span class="recent-coef">...</span>
     </div>
   </div>
 
   <div class="meta daily-grid">
-    <div class="cell"><div class="title">Максимум дня</div><div id="dailyMax" class="value">—</div></div>
-    <div class="cell"><div class="title">Раундов сегодня</div><div id="dailyRounds" class="value">0</div></div>
-    <div class="cell"><div class="title">Больших 10X+</div><div id="dailyBigHits" class="value">0</div></div>
+    <div class="cell"><div class="title">Максимум суток</div><div id="dailyMax" class="value">—</div></div>
+    <div class="cell"><div class="title">TOP за сутки</div><div id="dailyRounds" class="value">0</div></div>
+    <div class="cell"><div class="title">Минимум TOP-20</div><div id="dailyBigHits" class="value">—</div></div>
   </div>
-  <div class="daily-note">Анализ завершённых раундов за текущие сутки по Киеву. Большой коэффициент нельзя гарантировать.</div>
+  <div class="daily-note">Суточный TOP-20 берётся напрямую из LuckyJet, последние раунды — из /history. Большой коэффициент нельзя гарантировать.</div>
 
   <div class="circle" id="circle">
     <div class="ring-spin" id="spin"></div>
@@ -280,6 +280,7 @@
   const BASE = 'https://allpredictor.com/api/v1';
   const API_KEY = 'ap_de0cc6901c6303fe93388c94934c30ceac8baf126e2474b6';
   const DIRECT_HISTORY_URL = 'https://crash-gateway-grm-cr.100hp.app/history';
+  const DIRECT_DAILY_TOP_URL = 'https://crash-gateway-grm-cr.100hp.app/leaderboard/top-coefficients?interval=DAY';
   const DIRECT_HISTORY_HEADERS = {
     'customer-id': '077dee8d-c923-4c02-9bee-757573662e69',
     'session-id': '0f6d1875-7cd1-4547-a506-4f4aac77bc7c',
@@ -289,12 +290,14 @@
   const API_TIMEOUT_MS = 15000;
   const API_RETRY_DELAY_MS = 5 * 60 * 1000;
   const DIRECT_CACHE_MS = 1500;
+  const DAILY_TOP_CACHE_MS = 15000;
   const COUNTS_KEY = 'lj_beta_v2_counts_v1';
   const HISTORY_KEY = 'lj_beta_v2_history_v1';
   const RANGE_KEY = 'lj_beta_v2_range_v1';
   const ACTIVE_KEY = 'lj_beta_v2_active_v1';
   const WAKE_KEY = 'lj_beta_v2_wake_v1';
   const DAILY_ROWS_KEY = 'lj_beta_v2_daily_top_v1';
+  const DAILY_LEADERBOARD_KEY = 'lj_beta_v2_daily_leaderboard_v1';
   const BIG_X_DEFAULT = 10;
   const MAX_DAILY_ROWS = 10000;
   const ACTIVE_MAX_AGE_MS = 30 * 60 * 1000;
@@ -340,9 +343,12 @@
   let apiUnavailableUntil = 0;
   let directHistoryCache = null;
   let directHistoryCachedAt = 0;
+  let dailyTopCache = null;
+  let dailyTopCachedAt = 0;
   let wakeLock = null;
   let wakeRequested = storageGet(WAKE_KEY) === '1';
   let dailyRows = loadDailyRows();
+  let dailyTopRows = loadDailyTopRows();
 
   let counts = loadCounts();
   let history = loadHistory();
@@ -405,6 +411,20 @@
     }
   }
 
+  function loadDailyTopRows() {
+    try {
+      const parsed = JSON.parse(storageGet(DAILY_LEADERBOARD_KEY) || '[]');
+      if (!Array.isArray(parsed)) return [];
+      return parsed.filter(function (row) {
+        return row && row.id && isFinite(Number(row.coef)) && isFinite(Number(row.timestamp));
+      }).map(function (row) {
+        return {id: String(row.id), coef: Number(row.coef), timestamp: Number(row.timestamp)};
+      });
+    } catch (error) {
+      return [];
+    }
+  }
+
   function saveDailyRows() {
     storageSet(DAILY_ROWS_KEY, JSON.stringify(dailyRows));
   }
@@ -416,6 +436,28 @@
     }).sort(function (a, b) {
       return b.timestamp - a.timestamp;
     });
+  }
+
+  function todayDailyTopRows() {
+    const today = kyivDayKey(Date.now());
+    return dailyTopRows.filter(function (row) {
+      return kyivDayKey(row.timestamp) === today;
+    }).sort(function (a, b) {
+      return b.coef - a.coef;
+    });
+  }
+
+  function setDailyTopRows(rows) {
+    const known = new Map();
+    rows.forEach(function (row) {
+      if (!known.has(row.id)) known.set(row.id, row);
+    });
+    dailyTopRows = Array.from(known.values()).sort(function (a, b) {
+      return b.coef - a.coef;
+    }).slice(0, 20);
+    storageSet(DAILY_LEADERBOARD_KEY, JSON.stringify(dailyTopRows));
+    updateDailyStats();
+    return todayDailyTopRows();
   }
 
   function mergeDailyRows(rows) {
@@ -442,13 +484,14 @@
   }
 
   function updateDailyStats() {
-    const rows = todayDailyRows();
+    const topRows = todayDailyTopRows();
+    const collectedRows = todayDailyRows();
+    const rows = topRows.length ? topRows : collectedRows;
     const max = rows.length ? Math.max.apply(null, rows.map(function (row) { return row.coef; })) : null;
+    const floor = topRows.length ? Math.min.apply(null, topRows.map(function (row) { return row.coef; })) : null;
     dailyMaxEl.textContent = max === null ? '—' : max.toFixed(2) + 'X';
-    dailyRoundsEl.textContent = String(rows.length);
-    dailyBigHitsEl.textContent = String(rows.filter(function (row) {
-      return row.coef >= BIG_X_DEFAULT;
-    }).length);
+    dailyRoundsEl.textContent = String(topRows.length || collectedRows.length);
+    dailyBigHitsEl.textContent = floor === null ? '—' : floor.toFixed(2) + 'X';
   }
 
   function saveActiveState() {
@@ -852,6 +895,7 @@
 
   function roundTimestamp(item) {
     const candidates = [
+      item.startTime, item.start_time,
       item.createdAt, item.created_at, item.endedAt, item.ended_at,
       item.endTime, item.timestamp, item.time, item.date
     ];
@@ -954,6 +998,58 @@
     }
   }
 
+  async function fetchDailyTopCoefficients(force) {
+    const now = Date.now();
+    if (
+      !force &&
+      dailyTopCache &&
+      now - dailyTopCachedAt < DAILY_TOP_CACHE_MS
+    ) {
+      return dailyTopCache;
+    }
+
+    let controller = null;
+    let timeout = null;
+    const options = {
+      method: 'GET',
+      headers: DIRECT_HISTORY_HEADERS,
+      cache: 'no-store'
+    };
+
+    if (typeof AbortController !== 'undefined') {
+      controller = new AbortController();
+      options.signal = controller.signal;
+      timeout = setTimeout(function () {
+        controller.abort();
+      }, API_TIMEOUT_MS);
+    }
+
+    try {
+      const response = await fetch(DIRECT_DAILY_TOP_URL, options);
+      if (!response.ok) {
+        const error = apiError(response.status, 'Суточный TOP коэффициентов недоступен');
+        error.source = 'daily-top';
+        throw error;
+      }
+      const data = await response.json();
+      const rows = normalizeCoefficientRows(Array.isArray(data) ? data : data && data.data);
+      if (!rows.length) {
+        const error = new Error('Суточный TOP не вернул topCoefficient');
+        error.source = 'daily-top';
+        throw error;
+      }
+      dailyTopCache = rows;
+      dailyTopCachedAt = Date.now();
+      setDailyTopRows(rows);
+      return rows;
+    } catch (error) {
+      error.source = error.source || 'daily-top';
+      throw error;
+    } finally {
+      if (timeout) clearTimeout(timeout);
+    }
+  }
+
   async function fetchRecentCoefficientRows(limit, force) {
     try {
       const directRows = await fetchDirectHistory(force);
@@ -972,11 +1068,50 @@
     }
   }
 
-  function analyzeDirectMarket(rows) {
+  async function fetchAnalysisSnapshot(force) {
+    let topError = null;
+    let recentError = null;
+    let freshTopRows = [];
+    let freshRecentRows = [];
+
+    try {
+      freshTopRows = await fetchDailyTopCoefficients(force);
+    } catch (error) {
+      topError = error;
+    }
+
+    try {
+      freshRecentRows = await fetchRecentCoefficientRows(200, force);
+    } catch (error) {
+      recentError = error;
+    }
+
+    if (freshRecentRows.length) mergeDailyRows(freshRecentRows);
+    const recentToday = todayDailyRows();
+    const topToday = todayDailyTopRows();
+    updateDailyStats();
+
+    if (!recentToday.length && !topToday.length) {
+      throw recentError || topError || new Error('Источники topCoefficient недоступны');
+    }
+
+    return {
+      recentRows: freshRecentRows,
+      recentToday: recentToday,
+      topRows: freshTopRows,
+      topToday: topToday,
+      recentFresh: !recentError,
+      topFresh: !topError,
+      recentError: recentError,
+      topError: topError
+    };
+  }
+
+  function analyzeDirectMarket(rows, topRows) {
     const today = todayDailyRows();
     const source = today.length ? today : rows;
     const stats = calculateBigXStats(source);
-    const level = stats.count < 20 ? 'danger' : (stats.count < 50 ? 'warn' : 'safe');
+    const level = stats.count < 20 ? 'danger' : (topRows && topRows.length ? 'safe' : 'warn');
     return {level: level, score: stats.readiness, average: stats.average, stats: stats};
   }
 
@@ -1021,13 +1156,22 @@
     };
   }
 
-  function buildDirectPrediction(rows) {
+  function buildDirectPrediction(rows, dailyLeaderboard) {
     const stats = calculateBigXStats(rows);
     if (stats.count < 20) throw new Error('Нужно минимум 20 topCoefficient за текущие сутки');
 
     const min = Math.max(1.01, Number(range.min) || BIG_X_DEFAULT);
     const max = Math.max(min + 0.01, Number(range.max) || 100);
     const sortedHigh = stats.highValues.slice().sort(function (a, b) { return a - b; });
+    const dailyValues = (dailyLeaderboard || []).map(function (row) {
+      return Number(row.coef);
+    }).filter(function (value) {
+      return isFinite(value);
+    }).sort(function (a, b) {
+      return b - a;
+    });
+    const dailyMaximum = dailyValues.length ? dailyValues[0] : stats.maximum;
+    const dailyTopFloor = dailyValues.length ? dailyValues[dailyValues.length - 1] : null;
     const historicalTarget = sortedHigh.length
       ? sortedHigh[Math.floor((sortedHigh.length - 1) * 0.25)]
       : min;
@@ -1048,19 +1192,22 @@
       bet_time: betTime,
       market_score: confidence,
       avg_recent_coef: Number(stats.average.toFixed(2)),
-      daily_max: Number(stats.maximum.toFixed(2)),
+      daily_max: Number(dailyMaximum.toFixed(2)),
+      daily_top_floor: dailyTopFloor === null ? null : Number(dailyTopFloor.toFixed(2)),
+      daily_top_count: dailyValues.length,
       rounds_today: stats.count,
       big_hits_today: stats.highCount,
       current_big_gap: stats.currentGap,
       expected_big_gap: stats.expectedGap,
       generated_at: generated.toISOString(),
-      source: 'daily-topCoefficient'
+      source: 'daily-topCoefficient+recent-history'
     };
   }
 
   function apiErrorText(error) {
     if (!error) return 'Неизвестная ошибка API';
     if (error.message && /topCoefficient|текущие сутки/i.test(error.message)) return error.message;
+    if (error.source === 'daily-top') return 'Не удалось получить суточный TOP коэффициентов';
     if (error.source === 'direct') return 'Не удалось получить реальные коэффициенты';
     if (error.status === 401 || error.status === 403) return 'API-ключ недействителен или доступ закрыт';
     if (error.status === 429) return 'Лимит запросов API исчерпан. Попробуйте позже';
@@ -1072,16 +1219,19 @@
 
   async function pollMarket(silent) {
     try {
-      const rows = await fetchRecentCoefficientRows(200, false);
-      const directMarket = analyzeDirectMarket(rows);
+      const snapshot = await fetchAnalysisSnapshot(false);
+      const directMarket = analyzeDirectMarket(snapshot.recentToday, snapshot.topToday);
       marketLevel = directMarket.level;
       mbDot.className = 'mb-dot ' + marketLevel;
-      const labels = {
-        safe: 'topCoefficient: данных за сутки достаточно',
-        warn: 'topCoefficient: продолжаем собирать сутки',
-        danger: 'topCoefficient: нужно минимум 20 раундов'
-      };
-      mbText.textContent = labels[marketLevel] || 'Состояние суточной истории неизвестно';
+      if (snapshot.topFresh && snapshot.recentFresh && snapshot.topToday.length) {
+        mbText.textContent = 'Суточный TOP-' + snapshot.topToday.length + ' и последние раунды подключены';
+      } else if (snapshot.topToday.length && !snapshot.recentFresh) {
+        mbText.textContent = 'Суточный TOP подключён, /history временно недоступен';
+      } else if (snapshot.recentToday.length) {
+        mbText.textContent = 'Последние раунды подключены, суточный TOP недоступен';
+      } else {
+        mbText.textContent = 'Состояние источников topCoefficient неизвестно';
+      }
       return true;
     } catch (directFailure) {
       marketLevel = null;
@@ -1093,17 +1243,18 @@
   }
 
   async function checkMarket() {
-    const rows = await fetchRecentCoefficientRows(200, true);
-    const today = mergeDailyRows(rows);
-    if (today.length < 20) throw new Error('Недостаточно topCoefficient за текущие сутки: ' + today.length + '/20');
-    marketLevel = analyzeDirectMarket(today).level;
-    return true;
+    const snapshot = await fetchAnalysisSnapshot(false);
+    if (snapshot.recentToday.length < 20) {
+      throw new Error('Недостаточно последних topCoefficient: ' + snapshot.recentToday.length + '/20');
+    }
+    if (!snapshot.topToday.length) throw new Error('Суточный TOP topCoefficient недоступен');
+    marketLevel = analyzeDirectMarket(snapshot.recentToday, snapshot.topToday).level;
+    return snapshot;
   }
 
   async function fetchPrediction() {
-    const rows = await fetchRecentCoefficientRows(200, true);
-    const today = mergeDailyRows(rows);
-    return buildDirectPrediction(today);
+    const snapshot = await fetchAnalysisSnapshot(false);
+    return buildDirectPrediction(snapshot.recentToday, snapshot.topToday);
   }
 
   async function fetchLatestRound() {
@@ -1369,8 +1520,9 @@
       lastRoundSignature = null;
       lastCrashAt = null;
       setStatus(
-        (prediction.source === 'daily-topCoefficient'
-          ? 'Только topCoefficient за сутки. Максимум дня: ' + Number(prediction.daily_max).toFixed(2) + 'X. '
+        (prediction.source === 'daily-topCoefficient+recent-history'
+          ? 'Суточный TOP-' + prediction.daily_top_count + ': максимум ' +
+            Number(prediction.daily_max).toFixed(2) + 'X; последние раунды анализируются отдельно. '
           : '') +
         'Готовность: ' + signalLabel(prediction.signal) +
         '. Время ставки по Украине: ' + betTimeEl.textContent,
@@ -1533,8 +1685,13 @@
 
   document.getElementById('resetDailyData').addEventListener('click', function () {
     dailyRows = [];
+    dailyTopRows = [];
     directHistoryCache = null;
+    dailyTopCache = null;
+    directHistoryCachedAt = 0;
+    dailyTopCachedAt = 0;
     storageRemove(DAILY_ROWS_KEY);
+    storageRemove(DAILY_LEADERBOARD_KEY);
     updateDailyStats();
     recentCoefficientsEl.textContent = '';
     document.getElementById('settingsMsg').textContent = 'Суточные topCoefficient очищены.';
@@ -1602,7 +1759,10 @@
     normalizeCoefficientRows: normalizeCoefficientRows,
     calculateBigXStats: calculateBigXStats,
     buildDirectPrediction: buildDirectPrediction,
-    todayDailyRows: todayDailyRows
+    todayDailyRows: todayDailyRows,
+    todayDailyTopRows: todayDailyTopRows,
+    fetchDailyTopCoefficients: fetchDailyTopCoefficients,
+    fetchAnalysisSnapshot: fetchAnalysisSnapshot
   };
 })();
 </script>
