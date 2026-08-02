@@ -17,6 +17,8 @@
       .beta-ai-card{position:relative!important;border:1px solid rgba(34,211,238,.8)!important;background:linear-gradient(145deg,#071725,#11143d 48%,#2e1065)!important;box-shadow:0 16px 42px rgba(34,211,238,.24),inset 0 0 32px rgba(139,92,246,.18)!important;overflow:hidden!important}
       .rocketqueen-ru-card{position:relative!important;border:1px solid rgba(96,165,250,.78)!important;box-shadow:0 16px 42px rgba(37,99,235,.24),inset 0 0 30px rgba(220,38,38,.12)!important;overflow:hidden!important}
       .rocketqueen-ru-card .pro-badge{background:linear-gradient(135deg,#2563eb,#dc2626)!important;color:#fff!important}
+      .beta-v2-card{position:relative!important;border:1px solid rgba(251,191,36,.82)!important;background:linear-gradient(145deg,#0b1020,#271537 52%,#4a2507)!important;box-shadow:0 16px 44px rgba(251,146,60,.28),inset 0 0 30px rgba(250,204,21,.12)!important;overflow:hidden!important}
+      .beta-v2-card .card-art{filter:saturate(1.35) contrast(1.05) brightness(.7)!important}.beta-v2-card .pro-badge{background:linear-gradient(135deg,#facc15,#f97316)!important;color:#251000!important}.beta-v2-card .card-name{color:#fff7cc!important}.beta-v2-card .card-studio{color:#fde68a!important}
       .beta-ai-card::after{content:"24/7";position:absolute;right:10px;bottom:9px;z-index:5;padding:4px 8px;border-radius:999px;background:rgba(6,182,212,.2);border:1px solid rgba(103,232,249,.48);color:#a5f3fc;font-size:10px;font-weight:900;letter-spacing:.12em}
       .beta-ai-card .card-art{filter:saturate(1.35) hue-rotate(145deg) brightness(.58)!important}.beta-ai-card .pro-badge{background:linear-gradient(135deg,#22d3ee,#8b5cf6)!important;color:#fff!important}.beta-ai-card .card-name{color:#ecfeff!important}.beta-ai-card .card-studio{color:#a5f3fc!important}
       @keyframes proAttention{0%,100%{filter:brightness(1);transform:scale(1)}50%{filter:brightness(1.25);transform:scale(1.015)}}
@@ -47,6 +49,7 @@
   function addProCards(){
     makeCard({key:"luckyjet-beta-classic",cls:"beta-classic-card",badge:"CLASSIC",name:"LUCKY JET BETA",studio:"CLASSIC LOGIC • ORIGINAL API",file:"beta-classic.html",aria:"Open Lucky Jet Beta Classic"});
     makeCard({key:"luckyjet-beta-ai",cls:"beta-ai-card",badge:"AI 🤖",name:"BETA AI",studio:"24/7 SERVER ANALYSIS • HISTORY",file:"beta-ai.html",aria:"Open Lucky Jet Beta AI"});
+    makeCard({key:"luckyjet-beta-v2",cls:"beta-v2-card",badge:"BETA V2",name:"LUCKY JET BIG X",studio:"TOPCOEFFICIENT • MAX DAY",file:"beta-v2.html",aria:"Открыть Lucky Jet BETA V2 BIG X"});
     makeCard({key:"rocketqueen-ru",cls:"rocketqueen-ru-card",badge:"🇷🇺 RU",name:"ROCKET QUEEN",studio:"РУССКАЯ ВЕРСИЯ",file:"https://miuiproking.github.io/luckyjet-telegram-mini-app/rocket-queen-ru/?v=b0934b3",aria:"Открыть Rocket Queen на русском",art:"pro-rocketqueen.jpg"});
     const subtitle=document.querySelector(".pro-subtitle"); if(subtitle) subtitle.textContent="LIVE-анализаторы и BETA AI 24/7. Выберите нужную версию.";
   }

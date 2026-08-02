@@ -1,0 +1,1610 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
+<meta name="theme-color" content="#061A40"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="LuckyJet BETA V2"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<link rel="manifest" href="ru-ukraine/manifest.webmanifest"/>
+<link rel="apple-touch-icon" href="ru-ukraine/icon.png"/>
+<title>LuckyJet BETA V2 — BIG X</title>
+<style>
+  :root{
+    --primary:#367de7; --primary-dark:#2252a3;
+    --good:#10b981; --bad:#ef4444;
+    --bg:#0f1525; --ink:#e5e7eb;
+    --panel:rgba(255,255,255,.08); --panel-bd:rgba(255,255,255,.18);
+    --chipA:#3b1ba8; --chipB:#5e43d3; --chipTxt:#e6e8ff;
+    --chipOk:#f4a51c; --chipOkTxt:#1b1405;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    min-height:100vh;display:flex;align-items:center;justify-content:center;
+    background:#061A40;color:#fff;
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Inter,Arial,sans-serif;
+    padding:24px;
+  }
+  .wrap{display:flex;flex-direction:column;align-items:center;gap:18px;max-width:720px;width:100%;position:relative}
+  .back-exit{
+    align-self:flex-start;display:inline-flex;align-items:center;justify-content:center;
+    min-height:44px;padding:0 16px;border-radius:12px;
+    border:1px solid rgba(255,255,255,.25);background:#000;color:#fff;
+    font-size:14px;font-weight:800;letter-spacing:.5px;text-decoration:none;
+    box-shadow:0 6px 16px rgba(0,0,0,.35);-webkit-tap-highlight-color:transparent;
+    transition:transform .1s ease,filter .15s ease;
+  }
+  .back-exit:active{transform:translateY(1px) scale(.98)}
+  .topbar{width:100%;max-width:720px;position:relative;display:flex;justify-content:center;align-items:center;padding-top:6px}
+  h1{font-weight:800;letter-spacing:2px}
+  .lucky{opacity:.9}.jet{color:var(--primary)}
+  .icon-btn{
+    position:absolute;top:-2px;width:42px;height:42px;border-radius:12px;
+    background:black;border:1px solid rgba(255,255,255,.12);
+    box-shadow:inset 0 0 0 2px rgba(0,0,0,.25),0 6px 16px rgba(0,0,0,.35);
+    display:grid;place-items:center;cursor:pointer;transition:transform .1s ease,filter .15s ease;
+  }
+  .icon-btn:active{transform:translateY(1px) scale(.98)}
+  .icon-btn svg{width:22px;height:22px;opacity:.9}
+  #openSettings{left:0}
+  #openHistory{right:0}
+
+  /* Индикатор рынка */
+  .badges{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px}
+  .market-badge,.time-badge{
+    display:flex;align-items:center;gap:8px;padding:7px 16px;
+    border-radius:999px;background:rgba(255,255,255,.06);border:1px solid #00CC99;
+    font-size:13px;font-weight:700;letter-spacing:.4px;
+  }
+  .time-badge{border-color:rgba(255,255,255,.28)}
+  .mb-dot{width:8px;height:8px;border-radius:50%;background:#888}
+  .mb-dot.safe{background:#10b981;box-shadow:0 0 6px #10b981}
+  .mb-dot.warn{background:#f59e0b;box-shadow:0 0 6px #f59e0b}
+  .mb-dot.danger{background:#ef4444;box-shadow:0 0 6px #ef4444}
+  .recent-feed{
+    width:100%;max-width:560px;display:flex;align-items:center;gap:8px;
+    padding:8px 10px;background:rgba(255,255,255,.06);
+    border:1px solid rgba(255,255,255,.18);border-radius:8px;overflow:hidden;
+  }
+  .recent-label{font-size:12px;font-weight:700;white-space:nowrap;opacity:.82}
+  .recent-values{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}
+  .recent-values::-webkit-scrollbar{display:none}
+  .recent-coef{
+    flex:0 0 auto;min-width:48px;padding:5px 7px;border-radius:6px;
+    background:#2f3650;color:#fff;font-size:12px;font-weight:800;text-align:center;
+  }
+  .recent-coef.mid{background:#695019}
+  .recent-coef.high{background:#126348}
+  .daily-note{max-width:560px;margin-top:-8px;color:#fcd34d;font-size:12px;line-height:1.45;text-align:center;opacity:.92}
+  .daily-grid .value{color:#fbbf24;text-shadow:0 0 12px rgba(251,191,36,.25)}
+
+  .circle{
+    width:190px;height:190px;border-radius:50%;
+    position:relative;display:flex;align-items:center;justify-content:center;
+    background:#223843;
+    overflow:hidden;animation:glow 3.2s ease-in-out infinite;
+  }
+  .ring{position:absolute;inset:8px;border-radius:50%;border:3px solid red;pointer-events:none;}
+  .ring-spin{
+    position:absolute;inset:-2px;border-radius:50%;
+    background:black;
+    -webkit-mask:radial-gradient(farthest-side,transparent calc(50% - 5px),#000 calc(50% - 4px));
+    mask:radial-gradient(farthest-side,transparent calc(50% - 5px),#000 calc(50% - 4px));
+    animation:spin 8s linear infinite;filter:drop-shadow(0 0 10px rgba(54,125,231,.35));
+  }
+  .orb{position:absolute;width:6px;height:6px;border-radius:50%;background:white;opacity:.85;filter:blur(.2px);animation:orbit 6s linear infinite;transform-origin:95px 95px;}
+  .orb.o2{animation-duration:7.5s;opacity:.6}
+  .orb.o3{animation-duration:9s;opacity:.5}
+  #multiplier{font-size:20px;font-weight:800;text-align:center;line-height:1.35;padding:0 8px;color:#00ff66;text-shadow:0 0 14px rgba(0,255,102,.35);z-index:1;}
+  .circle.verifying{animation-duration:2.2s}
+  .circle.ok{box-shadow:0 10px 30px rgba(0,0,0,.45),inset 0 0 30px rgba(16,185,129,.45);}
+  .circle.ko{box-shadow:0 10px 30px rgba(0,0,0,.45),inset 0 0 30px rgba(239,68,68,.45);}
+  .ring-spin.ok{background:conic-gradient(from 0deg,rgba(16,185,129,.0) 0%,rgba(16,185,129,.55) 25%,rgba(16,185,129,.0) 50%)}
+  .ring-spin.ko{background:conic-gradient(from 0deg,rgba(239,68,68,.0) 0%,rgba(239,68,68,.55) 25%,rgba(239,68,68,.0) 50%)}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  @keyframes glow{0%,100%{box-shadow:inset 0 0 22px rgba(54,125,231,.25),0 10px 30px rgba(0,0,0,.45)}50%{box-shadow:inset 0 0 34px rgba(54,125,231,.45),0 10px 30px rgba(0,0,0,.45)}}
+  @keyframes orbit{from{transform:rotate(0deg) translateX(78px) rotate(0deg)}to{transform:rotate(360deg) translateX(78px) rotate(-360deg)}}
+
+  .meta{width:100%;max-width:560px;display:grid;grid-template-columns:repeat(3,1fr);gap:12px;align-items:stretch;}
+  .cell{background:var(--panel);border:1px solid var(--panel-bd);border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;}
+  .title{font-size:12px;opacity:.85}
+  .value{font-size:16px;font-weight:800}
+
+  button{
+    background:#000000;border:none;color:white;
+    font-weight:800;letter-spacing:.8px;border-radius:5px;width:220px;height:50px; border:solid 1px red;
+    cursor:pointer;transition:transform .15s ease,opacity .15s ease;
+  }
+  button:active{transform:translateY(1px) scale(.99)}
+  button:disabled{opacity:.55;cursor:not-allowed}
+  #generateButton.cancel{background:#3a2130;border-color:#ef4444}
+  #autoButton.active{background:#0f5132;border-color:#10b981}
+  #keepAwakeButton.active{background:#0f5132;border-color:#10b981}
+
+  .status{min-height:22px;font-size:14px;opacity:.95;text-align:center}
+  .countdown{min-height:18px;font-size:12px;opacity:.78;text-align:center;margin-top:-10px}
+  .ok{color:var(--good)}.ko{color:var(--bad)}
+
+  .panel{
+    position:fixed;right:18px;top:18px;left:18px;max-width:880px;margin:0 auto;
+    background:#201a3a;border:1px solid rgba(255,255,255,.12);border-radius:16px;
+    box-shadow:0 18px 50px rgba(0,0,0,.55);
+    transform:translateY(-20px) scale(.98);opacity:0;pointer-events:none;
+    transition:transform .18s ease,opacity .18s ease;z-index:50;
+  }
+  .panel.open{transform:translateY(0) scale(1);opacity:1;pointer-events:auto;}
+  .panel-header{display:flex;align-items:center;gap:10px;padding:16px 18px 8px;}
+  .panel-header .ttl{font-size:20px;font-weight:900;letter-spacing:.5px}
+  .square{width:30px;height:30px;border-radius:10px;background:#2b2350;display:grid;place-items:center;border:1px solid rgba(255,255,255,.12);}
+  .panel-close{margin-left:auto;width:38px;height:38px;border-radius:12px;background:#241f38;border:1px solid rgba(255,255,255,.14);display:grid;place-items:center;cursor:pointer;box-shadow:inset 0 0 0 2px rgba(0,0,0,.25);}
+  .panel-close i{width:18px;height:18px;position:relative;display:block;}
+  .panel-close i::before,.panel-close i::after{content:"";position:absolute;left:50%;top:50%;width:20px;height:2.5px;background:#f4a51c;transform-origin:center;border-radius:2px;}
+  .panel-close i::before{transform:translate(-50%,-50%) rotate(45deg);}
+  .panel-close i::after{transform:translate(-50%,-50%) rotate(-45deg);}
+  .panel-body{padding:10px 16px 18px;}
+  .chips{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:10px;}
+  .chip{padding:10px 12px;text-align:center;font-weight:800;border-radius:12px;
+    background:linear-gradient(180deg,var(--chipA),var(--chipB));color:var(--chipTxt);
+    border:1px solid rgba(255,255,255,.12);box-shadow:0 6px 16px rgba(0,0,0,.35);
+    user-select:none;white-space:nowrap;}
+  .chip.ok{background:linear-gradient(180deg,#f8be45,#e99709);color:var(--chipOkTxt);}
+  .chip.ko{background:linear-gradient(180deg,#3a2e5f,#4b3c7e);color:#e7e7ff;opacity:.9;}
+  .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;}
+  .field{background:var(--panel);border:1px solid var(--panel-bd);border-radius:10px;padding:10px 12px;}
+  .label{font-size:12px;opacity:.85;margin-bottom:6px}
+  .controls{display:flex;gap:8px;align-items:center}
+  .controls input{flex:1;background:#2a2349;color:#fff;border:1px solid rgba(255,255,255,.15);border-radius:8px;height:40px;padding:0 10px;font-weight:700;text-align:center;}
+  .actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+  .btn-secondary{background:#2a2349;border:1px solid rgba(255,255,255,.18);color:#e9e9ff;border-radius:8px;padding:10px 14px;font-weight:800;cursor:pointer;}
+  .danger{background:#3a2130;border-color:#c43d5d;color:#ffd7df}
+  .hint{font-size:12px;opacity:.85;margin-top:6px}
+  @media(max-width:520px){
+    body{padding:18px 12px}
+    .grid{grid-template-columns:1fr}
+    .topbar{padding-left:48px;padding-right:48px}
+    h1{font-size:17px;text-align:center}
+    .meta{gap:7px}
+    .cell{padding:8px 5px}
+    .title{font-size:11px}
+    .value{font-size:14px}
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <a class="back-exit" href="index.html#pro" aria-label="Выйти назад">⏪ ВЫЙТИ НАЗАД</a>
+  <div class="topbar">
+    <button type="button" class="icon-btn" id="openSettings" title="Настройки" aria-label="Открыть настройки">
+      <svg viewBox="0 0 24 24" fill="none"><rect x="4" y="4" width="6" height="6" rx="2" fill="#cfd2ff" opacity=".9"/><rect x="14" y="4" width="6" height="6" rx="2" fill="#cfd2ff" opacity=".7"/><rect x="4" y="14" width="6" height="6" rx="2" fill="#cfd2ff" opacity=".8"/><rect x="14" y="14" width="6" height="6" rx="2" fill="#cfd2ff" opacity=".9"/></svg>
+    </button>
+    <h1><span class="lucky">LUCKYJET </span><span class="jet">BETA V2 • BIG X</span></h1>
+    <button type="button" class="icon-btn" id="openHistory" title="История" aria-label="Открыть историю">
+      <svg viewBox="0 0 24 24" fill="none"><rect x="2.5" y="2.5" width="19" height="19" rx="9.5" stroke="#cfd2ff" stroke-width="2"/><path d="M12 6.8v5.2l3.8 2.2" stroke="#cfd2ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+  </div>
+<!-- Индикаторы рынка и времени -->
+  <div class="badges">
+    <div class="market-badge" id="marketBadge">
+      <div class="mb-dot" id="mbDot"></div>
+      <span id="mbText">Подключение к истории topCoefficient...</span>
+    </div>
+    <div class="time-badge">Киев <span id="kyivClock">--:--:--</span></div>
+  </div>
+  <div class="recent-feed">
+    <span class="recent-label">topCoefficient:</span>
+    <div class="recent-values" id="recentCoefficients" aria-live="polite">
+      <span class="recent-coef">...</span>
+    </div>
+  </div>
+
+  <div class="meta daily-grid">
+    <div class="cell"><div class="title">Максимум дня</div><div id="dailyMax" class="value">—</div></div>
+    <div class="cell"><div class="title">Раундов сегодня</div><div id="dailyRounds" class="value">0</div></div>
+    <div class="cell"><div class="title">Больших 10X+</div><div id="dailyBigHits" class="value">0</div></div>
+  </div>
+  <div class="daily-note">Анализ завершённых раундов за текущие сутки по Киеву. Большой коэффициент нельзя гарантировать.</div>
+
+  <div class="circle" id="circle">
+    <div class="ring-spin" id="spin"></div>
+    <div class="ring"></div>
+    <div class="orb"></div><div class="orb o2"></div><div class="orb o3"></div>
+    <div id="multiplier">0.00X</div>
+  </div>
+
+  <div class="meta">
+    <div class="cell"><div class="title">Ставка, Украина</div><div id="betTime" class="value">--:--</div></div>
+    <div class="cell"><div class="title">Раунд</div><div class="value"><span id="roundStatus">0</span>/3</div></div>
+    <div class="cell"><div class="title">Готовность BIG X</div><div id="confCell" class="value">—</div></div>
+  </div>
+  <div class="meta">
+    <div class="cell"><div class="title">✅ Успешно</div><div class="value" id="countOk">0</div></div>
+    <div class="cell"><div class="title">❌ Неудачно</div><div class="value" id="countKo">0</div></div>
+    <div class="cell"><div class="title">Всего</div><div class="value" id="countTotal">0</div></div>
+  </div>
+
+  <button type="button" id="generateButton">РУЧНОЙ СИГНАЛ</button>
+  <button type="button" id="autoButton">АВТОМАТ</button>
+  <button type="button" id="keepAwakeButton">НЕ ГАСИТЬ ЭКРАН</button>
+
+  <div id="verifyStatus" class="status" aria-live="polite">Готово к работе</div>
+  <div id="countdown" class="countdown" aria-live="polite"></div>
+</div>
+
+<!-- Панель истории -->
+<div class="panel" id="historyPanel">
+  <div class="panel-header">
+    <div class="square"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#cfd2ff" stroke-width="2"/><path d="M12 7.2v5l3.8 2.2" stroke="#cfd2ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="ttl">ЛОКАЛЬНАЯ ИСТОРИЯ</div>
+    <button type="button" class="panel-close" id="closeHistory" title="Закрыть" aria-label="Закрыть историю"><i></i></button>
+  </div>
+  <div class="panel-body"><div class="chips" id="chipsContainer"></div></div>
+</div>
+
+<!-- Панель настроек -->
+<div class="panel" id="settingsPanel">
+  <div class="panel-header">
+    <div class="square"><svg viewBox="0 0 24 24" fill="none"><rect x="4" y="4" width="6" height="6" rx="2" fill="#cfd2ff" opacity=".9"/><rect x="14" y="4" width="6" height="6" rx="2" fill="#cfd2ff" opacity=".7"/><rect x="4" y="14" width="6" height="6" rx="2" fill="#cfd2ff" opacity=".8"/><rect x="14" y="14" width="6" height="6" rx="2" fill="#cfd2ff" opacity=".9"/></svg></div>
+    <div class="ttl">НАСТРОЙКИ</div>
+    <button type="button" class="panel-close" id="closeSettings" title="Закрыть" aria-label="Закрыть настройки"><i></i></button>
+  </div>
+  <div class="panel-body">
+    <div class="grid">
+      <div class="field">
+        <div class="label">Порог большого коэффициента (x)</div>
+        <div class="controls"><input type="number" step="0.01" min="1.00" id="minOddsInput"/></div>
+        <div class="hint">По умолчанию: 10.00</div>
+      </div>
+      <div class="field">
+        <div class="label">Максимальная цель сигнала (x)</div>
+        <div class="controls"><input type="number" step="0.01" min="1.00" id="maxOddsInput"/></div>
+        <div class="hint">По умолчанию: 100.00</div>
+      </div>
+    </div>
+    <div class="actions">
+      <button type="button" class="btn-secondary" id="saveRange">Сохранить диапазон</button>
+      <button type="button" class="btn-secondary danger" id="resetDailyData">Сбросить данные суток</button>
+      <button type="button" class="btn-secondary danger" id="resetStats">Сбросить статистику</button>
+      <button type="button" class="btn-secondary danger" id="resetHistory">Сбросить историю</button>
+    </div>
+    <div class="hint" id="settingsMsg"></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  const BASE = 'https://allpredictor.com/api/v1';
+  const API_KEY = 'ap_de0cc6901c6303fe93388c94934c30ceac8baf126e2474b6';
+  const DIRECT_HISTORY_URL = 'https://crash-gateway-grm-cr.100hp.app/history';
+  const DIRECT_HISTORY_HEADERS = {
+    'customer-id': '077dee8d-c923-4c02-9bee-757573662e69',
+    'session-id': '0f6d1875-7cd1-4547-a506-4f4aac77bc7c',
+    'accept': 'application/json'
+  };
+  const KYIV_TZ = 'Europe/Kyiv';
+  const API_TIMEOUT_MS = 15000;
+  const API_RETRY_DELAY_MS = 5 * 60 * 1000;
+  const DIRECT_CACHE_MS = 1500;
+  const COUNTS_KEY = 'lj_beta_v2_counts_v1';
+  const HISTORY_KEY = 'lj_beta_v2_history_v1';
+  const RANGE_KEY = 'lj_beta_v2_range_v1';
+  const ACTIVE_KEY = 'lj_beta_v2_active_v1';
+  const WAKE_KEY = 'lj_beta_v2_wake_v1';
+  const DAILY_ROWS_KEY = 'lj_beta_v2_daily_top_v1';
+  const BIG_X_DEFAULT = 10;
+  const MAX_DAILY_ROWS = 10000;
+  const ACTIVE_MAX_AGE_MS = 30 * 60 * 1000;
+
+  const multEl = document.getElementById('multiplier');
+  const circle = document.getElementById('circle');
+  const spin = document.getElementById('spin');
+  const generateButton = document.getElementById('generateButton');
+  const autoButton = document.getElementById('autoButton');
+  const keepAwakeButton = document.getElementById('keepAwakeButton');
+  const roundEl = document.getElementById('roundStatus');
+  const betTimeEl = document.getElementById('betTime');
+  const confCell = document.getElementById('confCell');
+  const countOkEl = document.getElementById('countOk');
+  const countKoEl = document.getElementById('countKo');
+  const countTotalEl = document.getElementById('countTotal');
+  const mbDot = document.getElementById('mbDot');
+  const mbText = document.getElementById('mbText');
+  const statusEl = document.getElementById('verifyStatus');
+  const countdownEl = document.getElementById('countdown');
+  const kyivClockEl = document.getElementById('kyivClock');
+  const recentCoefficientsEl = document.getElementById('recentCoefficients');
+  const dailyMaxEl = document.getElementById('dailyMax');
+  const dailyRoundsEl = document.getElementById('dailyRounds');
+  const dailyBigHitsEl = document.getElementById('dailyBigHits');
+
+  let currentPredicted = null;
+  let pending = null;
+  let scheduledStart = null;
+  let scheduledDisplayTime = null;
+  let verificationStarted = false;
+  let coefficientTimer = null;
+  let autoTimer = null;
+  let autoMode = false;
+  let requestInFlight = false;
+  let marketLevel = null;
+  let lastRoundSignature = null;
+  let lastCrashAt = null;
+  let coefficientErrors = 0;
+  let coefficientRequestInFlight = false;
+  let currentConfidence = null;
+  let currentSignal = null;
+  let apiUnavailableUntil = 0;
+  let directHistoryCache = null;
+  let directHistoryCachedAt = 0;
+  let wakeLock = null;
+  let wakeRequested = storageGet(WAKE_KEY) === '1';
+  let dailyRows = loadDailyRows();
+
+  let counts = loadCounts();
+  let history = loadHistory();
+  let range = loadRange();
+
+  function storageGet(key) {
+    try {
+      return localStorage.getItem(key);
+    } catch (error) {
+      return null;
+    }
+  }
+
+  function storageSet(key, value) {
+    try {
+      localStorage.setItem(key, value);
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  function storageRemove(key) {
+    try {
+      localStorage.removeItem(key);
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  function kyivDayKey(timestamp) {
+    const date = new Date(timestamp);
+    try {
+      const parts = new Intl.DateTimeFormat('en-CA', {
+        timeZone: KYIV_TZ,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      }).formatToParts(date);
+      const values = {};
+      parts.forEach(function (part) { values[part.type] = part.value; });
+      return values.year + '-' + values.month + '-' + values.day;
+    } catch (error) {
+      return date.toISOString().slice(0, 10);
+    }
+  }
+
+  function loadDailyRows() {
+    try {
+      const parsed = JSON.parse(storageGet(DAILY_ROWS_KEY) || '[]');
+      if (!Array.isArray(parsed)) return [];
+      return parsed.filter(function (row) {
+        return row && row.id && isFinite(Number(row.coef)) && isFinite(Number(row.timestamp));
+      }).map(function (row) {
+        return {id: String(row.id), coef: Number(row.coef), timestamp: Number(row.timestamp)};
+      });
+    } catch (error) {
+      return [];
+    }
+  }
+
+  function saveDailyRows() {
+    storageSet(DAILY_ROWS_KEY, JSON.stringify(dailyRows));
+  }
+
+  function todayDailyRows() {
+    const today = kyivDayKey(Date.now());
+    return dailyRows.filter(function (row) {
+      return kyivDayKey(row.timestamp) === today;
+    }).sort(function (a, b) {
+      return b.timestamp - a.timestamp;
+    });
+  }
+
+  function mergeDailyRows(rows) {
+    const now = Date.now();
+    const known = new Map(dailyRows.map(function (row) { return [row.id, row]; }));
+    rows.forEach(function (row, index) {
+      const previous = known.get(row.id);
+      const sourceTime = Number(row.timestamp);
+      const timestamp = isFinite(sourceTime) && sourceTime > 0
+        ? sourceTime
+        : (previous ? previous.timestamp : now - index * 1000);
+      known.set(row.id, {id: row.id, coef: row.coef, timestamp: timestamp});
+    });
+
+    const cutoff = now - 48 * 60 * 60 * 1000;
+    dailyRows = Array.from(known.values()).filter(function (row) {
+      return row.timestamp >= cutoff;
+    }).sort(function (a, b) {
+      return b.timestamp - a.timestamp;
+    }).slice(0, MAX_DAILY_ROWS);
+    saveDailyRows();
+    updateDailyStats();
+    return todayDailyRows();
+  }
+
+  function updateDailyStats() {
+    const rows = todayDailyRows();
+    const max = rows.length ? Math.max.apply(null, rows.map(function (row) { return row.coef; })) : null;
+    dailyMaxEl.textContent = max === null ? '—' : max.toFixed(2) + 'X';
+    dailyRoundsEl.textContent = String(rows.length);
+    dailyBigHitsEl.textContent = String(rows.filter(function (row) {
+      return row.coef >= BIG_X_DEFAULT;
+    }).length);
+  }
+
+  function saveActiveState() {
+    if (!isCycleActive()) {
+      storageRemove(ACTIVE_KEY);
+      return;
+    }
+
+    storageSet(ACTIVE_KEY, JSON.stringify({
+      version: 1,
+      currentPredicted: currentPredicted,
+      currentConfidence: currentConfidence,
+      currentSignal: currentSignal,
+      pending: pending,
+      scheduledStart: scheduledStart,
+      scheduledDisplayTime: scheduledDisplayTime,
+      verificationStarted: verificationStarted,
+      lastRoundSignature: lastRoundSignature,
+      lastCrashAt: lastCrashAt,
+      savedAt: Date.now()
+    }));
+  }
+
+  function restoreActiveState() {
+    let saved;
+    try {
+      saved = JSON.parse(storageGet(ACTIVE_KEY) || 'null');
+    } catch (error) {
+      storageRemove(ACTIVE_KEY);
+      return false;
+    }
+
+    const age = saved ? Date.now() - Number(saved.savedAt) : Infinity;
+    const predicted = saved ? Number(saved.currentPredicted) : NaN;
+    const restoredStart = saved ? Number(saved.scheduledStart) : NaN;
+
+    if (
+      !saved ||
+      saved.version !== 1 ||
+      !isFinite(predicted) ||
+      predicted <= 0 ||
+      !isFinite(restoredStart) ||
+      age < -5 * 60 * 1000 ||
+      age > ACTIVE_MAX_AGE_MS
+    ) {
+      storageRemove(ACTIVE_KEY);
+      return false;
+    }
+
+    currentPredicted = predicted;
+    currentConfidence = saved.currentConfidence;
+    currentSignal = saved.currentSignal;
+    scheduledStart = restoredStart;
+    scheduledDisplayTime = isFinite(Number(saved.scheduledDisplayTime))
+      ? Number(saved.scheduledDisplayTime)
+      : restoredStart;
+    verificationStarted = Boolean(saved.verificationStarted);
+    pending = verificationStarted
+      ? {
+          predictedOdds: Number(saved.pending && saved.pending.predictedOdds) || predicted,
+          currentRound: Math.max(0, Math.min(2, Number(saved.pending && saved.pending.currentRound) || 0))
+        }
+      : null;
+    lastRoundSignature = typeof saved.lastRoundSignature === 'string'
+      ? saved.lastRoundSignature
+      : null;
+    lastCrashAt = isFinite(Number(saved.lastCrashAt)) ? Number(saved.lastCrashAt) : null;
+
+    multEl.textContent = currentPredicted.toFixed(2) + 'X';
+    multEl.style.color = '#00ff66';
+    confCell.textContent = currentConfidence !== null && currentConfidence !== undefined
+      ? String(currentConfidence) + '%'
+      : '—';
+    betTimeEl.textContent = formatKyivTime(scheduledDisplayTime, false);
+    betTimeEl.title = formatKyivFull(scheduledDisplayTime) + ' по времени Украины';
+    roundEl.textContent = pending ? String(pending.currentRound) : '0';
+    circle.classList.add('verifying');
+    spin.classList.remove('ok', 'ko');
+
+    if (verificationStarted) {
+      setStatus('Сигнал восстановлен. Синхронизируем результаты...', '');
+    } else {
+      setStatus(
+        'Сигнал восстановлен: ' + signalLabel(currentSignal) +
+        '. Время ставки по Украине: ' + betTimeEl.textContent,
+        ''
+      );
+    }
+
+    updateMainButton();
+    updateClockAndCountdown();
+    return true;
+  }
+
+  function loadCounts() {
+    try {
+      const value = JSON.parse(storageGet(COUNTS_KEY) || '{}');
+      return {ok: Number(value.ok) || 0, ko: Number(value.ko) || 0};
+    } catch (error) {
+      return {ok: 0, ko: 0};
+    }
+  }
+
+  function loadHistory() {
+    try {
+      const value = JSON.parse(storageGet(HISTORY_KEY) || '[]');
+      return Array.isArray(value) ? value : [];
+    } catch (error) {
+      return [];
+    }
+  }
+
+  function loadRange() {
+    try {
+      const value = JSON.parse(storageGet(RANGE_KEY) || '{}');
+      const min = Number(value.min);
+      const max = Number(value.max);
+      return {
+        min: isFinite(min) && min >= 1 ? min : 10,
+        max: isFinite(max) && max > 1 ? max : 100
+      };
+    } catch (error) {
+      return {min: 10, max: 100};
+    }
+  }
+
+  function saveCounts() {
+    storageSet(COUNTS_KEY, JSON.stringify(counts));
+  }
+
+  function saveHistory() {
+    storageSet(HISTORY_KEY, JSON.stringify(history));
+  }
+
+  function saveRange() {
+    storageSet(RANGE_KEY, JSON.stringify(range));
+  }
+
+  function pushHistory(item) {
+    history.unshift(item);
+    if (history.length > 200) history.length = 200;
+    saveHistory();
+  }
+
+  function setStatus(message, kind) {
+    statusEl.className = 'status ' + (kind || '');
+    statusEl.textContent = message || '';
+  }
+
+  function updateWakeButton() {
+    const active = Boolean(wakeLock && wakeLock.released !== true);
+    keepAwakeButton.classList.toggle('active', active);
+    keepAwakeButton.setAttribute('aria-pressed', active ? 'true' : 'false');
+    keepAwakeButton.textContent = active ? 'ЭКРАН НЕ ГАСНЕТ' : 'НЕ ГАСИТЬ ЭКРАН';
+  }
+
+  async function requestWakeLock(userInitiated) {
+    if (!('wakeLock' in navigator)) {
+      wakeRequested = false;
+      storageRemove(WAKE_KEY);
+      updateWakeButton();
+      if (userInitiated) {
+        setStatus('Режим доступен на iPhone с iOS 18.4 и новее', 'ko');
+      }
+      return false;
+    }
+
+    if (document.visibilityState && document.visibilityState !== 'visible') {
+      return false;
+    }
+
+    try {
+      const sentinel = await navigator.wakeLock.request('screen');
+      wakeLock = sentinel;
+      wakeRequested = true;
+      storageSet(WAKE_KEY, '1');
+      updateWakeButton();
+      sentinel.addEventListener('release', function () {
+        if (wakeLock === sentinel) wakeLock = null;
+        updateWakeButton();
+      });
+      if (userInitiated) {
+        setStatus('Экран не погаснет, пока приложение открыто', 'ok');
+      }
+      return true;
+    } catch (error) {
+      wakeLock = null;
+      if (userInitiated) {
+        wakeRequested = false;
+        storageRemove(WAKE_KEY);
+        setStatus('Не удалось включить режим. Проверьте версию iOS и разрешения', 'ko');
+      }
+      updateWakeButton();
+      return false;
+    }
+  }
+
+  async function disableWakeLock() {
+    wakeRequested = false;
+    storageRemove(WAKE_KEY);
+    const activeLock = wakeLock;
+    wakeLock = null;
+    if (activeLock && activeLock.released !== true) {
+      try {
+        await activeLock.release();
+      } catch (error) {
+        // Блокировка уже могла быть снята системой.
+      }
+    }
+    updateWakeButton();
+    if (!isCycleActive()) setStatus('Обычный режим экрана включён', '');
+  }
+
+  function refreshCounts() {
+    countOkEl.textContent = counts.ok;
+    countKoEl.textContent = counts.ko;
+    countTotalEl.textContent = counts.ok + counts.ko;
+  }
+
+  function formatInKyiv(date, withSeconds, withDate) {
+    const options = {
+      timeZone: KYIV_TZ,
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    };
+    if (withSeconds) options.second = '2-digit';
+    if (withDate) {
+      options.day = '2-digit';
+      options.month = '2-digit';
+      options.year = 'numeric';
+    }
+    try {
+      return new Intl.DateTimeFormat('ru-RU', options).format(date);
+    } catch (error) {
+      options.timeZone = 'Europe/Kiev';
+      try {
+        return new Intl.DateTimeFormat('ru-RU', options).format(date);
+      } catch (fallbackError) {
+        return date.toLocaleTimeString('ru-RU');
+      }
+    }
+  }
+
+  function formatKyivTime(timestamp, withSeconds) {
+    const date = new Date(timestamp);
+    if (isNaN(date.getTime())) return '--:--';
+    return formatInKyiv(date, Boolean(withSeconds), false);
+  }
+
+  function formatKyivFull(timestamp) {
+    const date = new Date(timestamp);
+    if (isNaN(date.getTime())) return '';
+    return formatInKyiv(date, false, true);
+  }
+
+  function parseApiSchedule(prediction) {
+    const match = /^(\d{1,2}):(\d{2})/.exec(String(prediction.bet_time || ''));
+    if (!match) return null;
+
+    let generated = new Date(prediction.generated_at || Date.now());
+    if (isNaN(generated.getTime())) generated = new Date();
+
+    const hour = Number(match[1]);
+    const minute = Number(match[2]);
+    if (hour > 23 || minute > 59) return null;
+
+    let absoluteTimestamp = Date.UTC(
+      generated.getUTCFullYear(),
+      generated.getUTCMonth(),
+      generated.getUTCDate(),
+      hour,
+      minute,
+      0,
+      0
+    );
+
+    if (absoluteTimestamp < generated.getTime() - 120000) {
+      absoluteTimestamp += 24 * 60 * 60 * 1000;
+    }
+
+    const delay = Math.max(0, absoluteTimestamp - generated.getTime());
+    return {
+      timerTimestamp: Date.now() + delay,
+      absoluteTimestamp: absoluteTimestamp
+    };
+  }
+
+  function apiError(status, message) {
+    const error = new Error(message || ('HTTP ' + status));
+    error.status = status;
+    return error;
+  }
+
+  function markApiUnavailable(error) {
+    apiUnavailableUntil = Date.now() + API_RETRY_DELAY_MS;
+    error.code = error.code || 'API_TEMPORARILY_UNAVAILABLE';
+    return error;
+  }
+
+  function xhrJson(url) {
+    return new Promise(function (resolve, reject) {
+      const xhr = new XMLHttpRequest();
+      xhr.open('GET', url, true);
+      xhr.timeout = API_TIMEOUT_MS;
+      xhr.setRequestHeader('X-API-Key', API_KEY);
+      xhr.onload = function () {
+        if (xhr.status < 200 || xhr.status >= 300) {
+          reject(apiError(xhr.status));
+          return;
+        }
+        try {
+          resolve(JSON.parse(xhr.responseText));
+        } catch (error) {
+          reject(markApiUnavailable(new Error('AllPredictor вернул не JSON')));
+        }
+      };
+      xhr.onerror = function () {
+        reject(new Error('Сетевая ошибка'));
+      };
+      xhr.ontimeout = function () {
+        const error = new Error('Превышено время ожидания API');
+        error.name = 'TimeoutError';
+        reject(error);
+      };
+      xhr.send();
+    });
+  }
+
+  async function apiGet(path) {
+    if (!API_KEY) throw apiError(401, 'API-ключ отсутствует');
+    if (Date.now() < apiUnavailableUntil) {
+      throw apiError(503, 'AllPredictor API временно недоступен');
+    }
+    const url = BASE + path;
+
+    if (typeof window.fetch !== 'function') {
+      return xhrJson(url);
+    }
+
+    let controller = null;
+    let timeout = null;
+    const options = {
+      method: 'GET',
+      headers: {'X-API-Key': API_KEY},
+      cache: 'no-store'
+    };
+
+    if (typeof AbortController !== 'undefined') {
+      controller = new AbortController();
+      options.signal = controller.signal;
+      timeout = setTimeout(function () {
+        controller.abort();
+      }, API_TIMEOUT_MS);
+    }
+
+    try {
+      const response = await fetch(url, options);
+      if (!response.ok) throw apiError(response.status);
+      const text = await response.text();
+      try {
+        const data = JSON.parse(text);
+        apiUnavailableUntil = 0;
+        return data;
+      } catch (error) {
+        throw markApiUnavailable(new Error('AllPredictor вернул HTML вместо JSON'));
+      }
+    } catch (error) {
+      if (
+        error.status === 401 ||
+        error.status === 403 ||
+        error.status >= 500 ||
+        error.name === 'AbortError' ||
+        error.name === 'TimeoutError'
+      ) {
+        apiUnavailableUntil = Date.now() + API_RETRY_DELAY_MS;
+      }
+      throw error;
+    } finally {
+      if (timeout) clearTimeout(timeout);
+    }
+  }
+
+  function coefficientValue(item) {
+    if (!item || typeof item !== 'object') return null;
+    const value = Number(item.topCoefficient);
+    return isFinite(value) && value >= 1 ? value : null;
+  }
+
+  function normalizeRoundTimestamp(value) {
+    if (value === undefined || value === null || value === '') return null;
+    if (typeof value === 'number' || /^\d+$/.test(String(value))) {
+      let numeric = Number(value);
+      if (!isFinite(numeric)) return null;
+      if (numeric < 100000000000) numeric *= 1000;
+      return numeric > 0 ? numeric : null;
+    }
+    const parsed = Date.parse(String(value));
+    return isFinite(parsed) ? parsed : null;
+  }
+
+  function roundTimestamp(item) {
+    const candidates = [
+      item.createdAt, item.created_at, item.endedAt, item.ended_at,
+      item.endTime, item.timestamp, item.time, item.date
+    ];
+    for (let index = 0; index < candidates.length; index += 1) {
+      const timestamp = normalizeRoundTimestamp(candidates[index]);
+      if (timestamp !== null) return timestamp;
+    }
+    return null;
+  }
+
+  function simpleHash(value) {
+    let hash = 2166136261;
+    for (let index = 0; index < value.length; index += 1) {
+      hash ^= value.charCodeAt(index);
+      hash = Math.imul(hash, 16777619);
+    }
+    return (hash >>> 0).toString(16);
+  }
+
+  function normalizeCoefficientRows(items) {
+    if (!Array.isArray(items)) return [];
+    return items.map(function (item, index) {
+      const coef = coefficientValue(item);
+      if (coef === null) return null;
+      const timestamp = roundTimestamp(item);
+      const explicitId = item.id || item.round_id || item.roundId || item.hash || item.gameId;
+      return {
+        coef: coef,
+        id: String(explicitId || ('top:' + simpleHash(JSON.stringify(item)) + (timestamp ? ':' + timestamp : ''))),
+        timestamp: timestamp
+      };
+    }).filter(function (item) {
+      return item !== null;
+    });
+  }
+
+  function renderRecentCoefficients(rows) {
+    recentCoefficientsEl.textContent = '';
+    rows.slice(0, 10).forEach(function (item, index) {
+      const chip = document.createElement('span');
+      const level = item.coef >= 10 ? ' high' : (item.coef >= 2 ? ' mid' : '');
+      chip.className = 'recent-coef' + level;
+      chip.textContent = item.coef.toFixed(2) + 'X';
+      if (index === 0) chip.title = 'Последний завершённый раунд';
+      recentCoefficientsEl.appendChild(chip);
+    });
+  }
+
+  async function fetchDirectHistory(force) {
+    const now = Date.now();
+    if (
+      !force &&
+      directHistoryCache &&
+      now - directHistoryCachedAt < DIRECT_CACHE_MS
+    ) {
+      renderRecentCoefficients(directHistoryCache);
+      return directHistoryCache;
+    }
+
+    let controller = null;
+    let timeout = null;
+    const options = {
+      method: 'GET',
+      headers: DIRECT_HISTORY_HEADERS,
+      cache: 'no-store'
+    };
+
+    if (typeof AbortController !== 'undefined') {
+      controller = new AbortController();
+      options.signal = controller.signal;
+      timeout = setTimeout(function () {
+        controller.abort();
+      }, API_TIMEOUT_MS);
+    }
+
+    try {
+      const response = await fetch(DIRECT_HISTORY_URL, options);
+      if (!response.ok) {
+        const error = apiError(response.status, 'Источник коэффициентов недоступен');
+        error.source = 'direct';
+        throw error;
+      }
+      const data = await response.json();
+      const rows = normalizeCoefficientRows(data);
+      if (!rows.length) {
+        const error = new Error('Источник не вернул коэффициенты');
+        error.source = 'direct';
+        throw error;
+      }
+      directHistoryCache = rows;
+      directHistoryCachedAt = Date.now();
+      mergeDailyRows(rows);
+      renderRecentCoefficients(rows);
+      return rows;
+    } catch (error) {
+      error.source = error.source || 'direct';
+      throw error;
+    } finally {
+      if (timeout) clearTimeout(timeout);
+    }
+  }
+
+  async function fetchRecentCoefficientRows(limit, force) {
+    try {
+      const directRows = await fetchDirectHistory(force);
+      return directRows.slice(0, limit);
+    } catch (directError) {
+      try {
+        const data = await apiGet('/luckyjet/coefficients?limit=' + limit);
+        const apiRows = normalizeCoefficientRows(data && data.data);
+        if (!apiRows.length) throw directError;
+        mergeDailyRows(apiRows);
+        renderRecentCoefficients(apiRows);
+        return apiRows.slice(0, limit);
+      } catch (apiFailure) {
+        throw directError;
+      }
+    }
+  }
+
+  function analyzeDirectMarket(rows) {
+    const today = todayDailyRows();
+    const source = today.length ? today : rows;
+    const stats = calculateBigXStats(source);
+    const level = stats.count < 20 ? 'danger' : (stats.count < 50 ? 'warn' : 'safe');
+    return {level: level, score: stats.readiness, average: stats.average, stats: stats};
+  }
+
+  function calculateBigXStats(rows) {
+    const values = rows.map(function (item) {
+      return item.coef;
+    }).filter(function (value) {
+      return isFinite(value);
+    });
+    const threshold = Math.max(1.01, Number(range.min) || BIG_X_DEFAULT);
+    const highIndexes = [];
+    values.forEach(function (value, index) {
+      if (value >= threshold) highIndexes.push(index);
+    });
+    const gaps = [];
+    for (let index = 1; index < highIndexes.length; index += 1) {
+      gaps.push(highIndexes[index] - highIndexes[index - 1]);
+    }
+    gaps.sort(function (a, b) { return a - b; });
+    const expectedGap = gaps.length
+      ? gaps[Math.floor((gaps.length - 1) / 2)]
+      : Math.max(12, Math.round(values.length / Math.max(1, highIndexes.length)));
+    const currentGap = highIndexes.length ? highIndexes[0] : values.length;
+    const average = values.length
+      ? values.reduce(function (sum, value) { return sum + value; }, 0) / values.length
+      : 0;
+    const maximum = values.length ? Math.max.apply(null, values) : 0;
+    const sampleScore = Math.min(35, values.length / 2);
+    const historyScore = Math.min(25, highIndexes.length * 5);
+    const gapScore = Math.min(30, currentGap / Math.max(1, expectedGap) * 30);
+    const readiness = Math.max(20, Math.min(90, Math.round(sampleScore + historyScore + gapScore)));
+    return {
+      count: values.length,
+      threshold: threshold,
+      highCount: highIndexes.length,
+      currentGap: currentGap,
+      expectedGap: expectedGap,
+      maximum: maximum,
+      average: average,
+      readiness: readiness,
+      highValues: values.filter(function (value) { return value >= threshold; })
+    };
+  }
+
+  function buildDirectPrediction(rows) {
+    const stats = calculateBigXStats(rows);
+    if (stats.count < 20) throw new Error('Нужно минимум 20 topCoefficient за текущие сутки');
+
+    const min = Math.max(1.01, Number(range.min) || BIG_X_DEFAULT);
+    const max = Math.max(min + 0.01, Number(range.max) || 100);
+    const sortedHigh = stats.highValues.slice().sort(function (a, b) { return a - b; });
+    const historicalTarget = sortedHigh.length
+      ? sortedHigh[Math.floor((sortedHigh.length - 1) * 0.25)]
+      : min;
+    const predicted = Math.min(max, Math.max(min, historicalTarget));
+    const confidence = stats.readiness;
+    const signal = confidence >= 75 ? 'safe' : (confidence >= 55 ? 'warn' : 'danger');
+    const generated = new Date();
+    const target = new Date(generated.getTime() + 60 * 1000);
+    const betTime =
+      String(target.getUTCHours()).padStart(2, '0') + ':' +
+      String(target.getUTCMinutes()).padStart(2, '0');
+
+    return {
+      success: true,
+      predicted_coef: Number(predicted.toFixed(2)),
+      confidence: confidence,
+      signal: signal,
+      bet_time: betTime,
+      market_score: confidence,
+      avg_recent_coef: Number(stats.average.toFixed(2)),
+      daily_max: Number(stats.maximum.toFixed(2)),
+      rounds_today: stats.count,
+      big_hits_today: stats.highCount,
+      current_big_gap: stats.currentGap,
+      expected_big_gap: stats.expectedGap,
+      generated_at: generated.toISOString(),
+      source: 'daily-topCoefficient'
+    };
+  }
+
+  function apiErrorText(error) {
+    if (!error) return 'Неизвестная ошибка API';
+    if (error.message && /topCoefficient|текущие сутки/i.test(error.message)) return error.message;
+    if (error.source === 'direct') return 'Не удалось получить реальные коэффициенты';
+    if (error.status === 401 || error.status === 403) return 'API-ключ недействителен или доступ закрыт';
+    if (error.status === 429) return 'Лимит запросов API исчерпан. Попробуйте позже';
+    if (error.status >= 500) return 'Сервер AllPredictor временно недоступен';
+    if (error.name === 'AbortError' || error.name === 'TimeoutError') return 'Сервер AllPredictor не ответил вовремя';
+    if (navigator.onLine === false) return 'Нет подключения к интернету';
+    return 'Не удалось подключиться к AllPredictor API';
+  }
+
+  async function pollMarket(silent) {
+    try {
+      const rows = await fetchRecentCoefficientRows(200, false);
+      const directMarket = analyzeDirectMarket(rows);
+      marketLevel = directMarket.level;
+      mbDot.className = 'mb-dot ' + marketLevel;
+      const labels = {
+        safe: 'topCoefficient: данных за сутки достаточно',
+        warn: 'topCoefficient: продолжаем собирать сутки',
+        danger: 'topCoefficient: нужно минимум 20 раундов'
+      };
+      mbText.textContent = labels[marketLevel] || 'Состояние суточной истории неизвестно';
+      return true;
+    } catch (directFailure) {
+      marketLevel = null;
+      mbDot.className = 'mb-dot';
+      mbText.textContent = 'Источники topCoefficient недоступны';
+      if (!silent) setStatus(apiErrorText(directFailure), 'ko');
+      return false;
+    }
+  }
+
+  async function checkMarket() {
+    const rows = await fetchRecentCoefficientRows(200, true);
+    const today = mergeDailyRows(rows);
+    if (today.length < 20) throw new Error('Недостаточно topCoefficient за текущие сутки: ' + today.length + '/20');
+    marketLevel = analyzeDirectMarket(today).level;
+    return true;
+  }
+
+  async function fetchPrediction() {
+    const rows = await fetchRecentCoefficientRows(200, true);
+    const today = mergeDailyRows(rows);
+    return buildDirectPrediction(today);
+  }
+
+  async function fetchLatestRound() {
+    const rows = await fetchRecentCoefficientRows(5, true);
+    if (!rows.length) return null;
+    return {
+      coef: rows[0].coef,
+      signature: rows.map(function (item) {
+        return item.id;
+      }).join('|')
+    };
+  }
+
+  function isCycleActive() {
+    return scheduledStart !== null || verificationStarted || pending !== null;
+  }
+
+  function updateMainButton() {
+    generateButton.disabled = requestInFlight;
+    generateButton.classList.toggle('cancel', isCycleActive());
+    if (requestInFlight) {
+      generateButton.textContent = 'ПОЛУЧАЕМ СИГНАЛ...';
+    } else if (isCycleActive()) {
+      generateButton.textContent = 'ОТМЕНИТЬ СИГНАЛ';
+    } else {
+      generateButton.textContent = 'РУЧНОЙ СИГНАЛ';
+    }
+  }
+
+  function updateClockAndCountdown() {
+    kyivClockEl.textContent = formatKyivTime(Date.now(), true);
+
+    if (scheduledStart === null) {
+      countdownEl.textContent = '';
+      return;
+    }
+
+    const remaining = scheduledStart - Date.now();
+    if (remaining > 0) {
+      const totalSeconds = Math.ceil(remaining / 1000);
+      const minutes = Math.floor(totalSeconds / 60);
+      const seconds = String(totalSeconds % 60).padStart(2, '0');
+      countdownEl.textContent = 'До времени сигнала: ' + minutes + ':' + seconds;
+    } else if (!verificationStarted) {
+      countdownEl.textContent = 'Ждём завершения текущего раунда';
+    } else {
+      countdownEl.textContent = 'Проверяем результат сигнала';
+    }
+  }
+
+  function signalLabel(signal) {
+    const labels = {
+      safe: 'БЕЗОПАСНО',
+      warn: 'ОСТОРОЖНО',
+      danger: 'ОПАСНО'
+    };
+    return labels[String(signal || '').toLowerCase()] || 'ГОТОВ';
+  }
+
+  function startCoefficientPolling() {
+    if (coefficientTimer) return;
+    pollCoefficient();
+    coefficientTimer = setInterval(pollCoefficient, 5000);
+  }
+
+  function stopCoefficientPolling() {
+    if (coefficientTimer) clearInterval(coefficientTimer);
+    coefficientTimer = null;
+  }
+
+  function beginVerification() {
+    verificationStarted = true;
+    pending = {predictedOdds: currentPredicted, currentRound: 0};
+    roundEl.textContent = '0';
+    setStatus('Ставь сейчас. Проверяем следующие 3 раунда', '');
+    countdownEl.textContent = 'Проверяем результат сигнала';
+    circle.classList.add('verifying');
+    spin.classList.remove('ok', 'ko');
+    updateMainButton();
+    saveActiveState();
+  }
+
+  async function pollCoefficient() {
+    if (!isCycleActive() || coefficientRequestInFlight) return;
+    coefficientRequestInFlight = true;
+
+    try {
+      const latest = await fetchLatestRound();
+      coefficientErrors = 0;
+      if (!latest) return;
+
+      if (lastRoundSignature === null) {
+        lastRoundSignature = latest.signature;
+        lastCrashAt = Date.now();
+        saveActiveState();
+        return;
+      }
+
+      if (latest.signature === lastRoundSignature) return;
+      lastRoundSignature = latest.signature;
+      lastCrashAt = Date.now();
+      saveActiveState();
+
+      if (!verificationStarted) {
+        if (scheduledStart !== null && lastCrashAt >= scheduledStart) {
+          beginVerification();
+        }
+        return;
+      }
+
+      if (!pending) return;
+      const rounded = parseFloat(Number(latest.coef === 1 ? 1.01 : latest.coef).toFixed(2));
+      pending.currentRound += 1;
+      roundEl.textContent = pending.currentRound;
+      saveActiveState();
+
+      if (rounded >= pending.predictedOdds) {
+        finishResult(true);
+        return;
+      }
+
+      if (pending.currentRound >= 3) {
+        finishResult(false);
+      }
+    } catch (error) {
+      coefficientErrors += 1;
+      if (coefficientErrors >= 3) {
+        setStatus(apiErrorText(error) + '. Проверка продолжится автоматически', 'ko');
+      }
+    } finally {
+      coefficientRequestInFlight = false;
+    }
+  }
+
+  function clearCycleState() {
+    pending = null;
+    verificationStarted = false;
+    scheduledStart = null;
+    scheduledDisplayTime = null;
+    currentPredicted = null;
+    lastRoundSignature = null;
+    lastCrashAt = null;
+    coefficientErrors = 0;
+    coefficientRequestInFlight = false;
+    currentConfidence = null;
+    currentSignal = null;
+    storageRemove(ACTIVE_KEY);
+    stopCoefficientPolling();
+    updateClockAndCountdown();
+    updateMainButton();
+  }
+
+  function finishResult(success) {
+    const predicted = pending ? pending.predictedOdds : currentPredicted;
+    const currentRound = pending ? pending.currentRound : 0;
+
+    if (success) {
+      setStatus('Зашло на раунде ' + currentRound, 'ok');
+      multEl.textContent = 'ЗАШЛО';
+      multEl.style.color = '#10b981';
+      circle.classList.remove('verifying', 'ko');
+      circle.classList.add('ok');
+      spin.classList.remove('ko');
+      spin.classList.add('ok');
+      counts.ok += 1;
+    } else {
+      setStatus('Не зашло после 3 раундов', 'ko');
+      multEl.textContent = 'НЕ ЗАШЛО';
+      multEl.style.color = '#ef4444';
+      circle.classList.remove('verifying', 'ok');
+      circle.classList.add('ko');
+      spin.classList.remove('ok');
+      spin.classList.add('ko');
+      counts.ko += 1;
+    }
+
+    saveCounts();
+    refreshCounts();
+    pushHistory({
+      coef: predicted,
+      status: success ? 'ok' : 'ko',
+      time: new Date().toISOString(),
+      round: currentRound
+    });
+    renderHistory();
+    clearCycleState();
+    if (autoMode) scheduleAuto(3000);
+  }
+
+  function cancelSignal() {
+    if (autoMode) setAutoMode(false);
+    clearCycleState();
+    multEl.textContent = '0.00X';
+    multEl.style.color = '#00ff66';
+    betTimeEl.textContent = '--:--';
+    betTimeEl.removeAttribute('title');
+    confCell.textContent = '—';
+    roundEl.textContent = '0';
+    circle.classList.remove('verifying', 'ok', 'ko');
+    spin.classList.remove('ok', 'ko');
+    setStatus('Сигнал отменён. Можно получить новый', '');
+  }
+
+  async function generateSignal() {
+    if (requestInFlight || isCycleActive()) return false;
+
+    requestInFlight = true;
+    updateMainButton();
+    multEl.textContent = 'АНАЛИЗ...';
+    multEl.style.color = '#f4a51c';
+    circle.classList.remove('ok', 'ko');
+    circle.classList.add('verifying');
+    spin.classList.remove('ok', 'ko');
+    setStatus('Собираем topCoefficient и анализируем максимум дня...', '');
+
+    try {
+      await pollMarket(true);
+      const safe = await checkMarket();
+      if (!safe) {
+        multEl.textContent = 'НЕТ СИГНАЛА';
+        multEl.style.color = '#f4a51c';
+        circle.classList.remove('verifying');
+        return false;
+      }
+
+      if (marketLevel === 'danger') {
+        setStatus('Рынок опасный. Сигнал отменён', 'ko');
+        multEl.textContent = 'НЕТ СИГНАЛА';
+        multEl.style.color = '#f4a51c';
+        circle.classList.remove('verifying');
+        return false;
+      }
+
+      const prediction = await fetchPrediction();
+      const min = Math.max(1, Number(range.min));
+      const max = Math.max(min + 0.01, Number(range.max));
+      let coefficient = Number(prediction.predicted_coef);
+      if (!isFinite(coefficient)) throw new Error('API вернул неверный коэффициент');
+      coefficient = Math.min(Math.max(coefficient, min), max);
+      currentPredicted = parseFloat(coefficient.toFixed(2));
+
+      const schedule = parseApiSchedule(prediction);
+      if (schedule) {
+        scheduledStart = schedule.timerTimestamp;
+        scheduledDisplayTime = schedule.absoluteTimestamp;
+      } else {
+        scheduledStart = Date.now() + 60 * 1000;
+        scheduledDisplayTime = scheduledStart;
+      }
+
+      multEl.textContent = currentPredicted.toFixed(2) + 'X';
+      multEl.style.color = '#00ff66';
+      currentConfidence = prediction.confidence !== undefined && prediction.confidence !== null
+        ? prediction.confidence
+        : null;
+      currentSignal = prediction.signal || null;
+      confCell.textContent = currentConfidence !== null
+        ? String(currentConfidence) + '%'
+        : '—';
+      betTimeEl.textContent = formatKyivTime(scheduledDisplayTime, false);
+      betTimeEl.title = formatKyivFull(scheduledDisplayTime) + ' по времени Украины';
+      roundEl.textContent = '0';
+      lastRoundSignature = null;
+      lastCrashAt = null;
+      setStatus(
+        (prediction.source === 'daily-topCoefficient'
+          ? 'Только topCoefficient за сутки. Максимум дня: ' + Number(prediction.daily_max).toFixed(2) + 'X. '
+          : '') +
+        'Готовность: ' + signalLabel(prediction.signal) +
+        '. Время ставки по Украине: ' + betTimeEl.textContent,
+        ''
+      );
+      saveActiveState();
+      startCoefficientPolling();
+      updateClockAndCountdown();
+      return true;
+    } catch (error) {
+      setStatus(apiErrorText(error), 'ko');
+      multEl.textContent = 'ОШИБКА';
+      multEl.style.color = '#ef4444';
+      circle.classList.remove('verifying');
+      return false;
+    } finally {
+      requestInFlight = false;
+      updateMainButton();
+    }
+  }
+
+  function scheduleAuto(delay) {
+    if (!autoMode) return;
+    if (autoTimer) clearTimeout(autoTimer);
+    autoTimer = setTimeout(runAuto, delay);
+  }
+
+  async function runAuto() {
+    if (!autoMode) return;
+    if (requestInFlight || isCycleActive()) {
+      scheduleAuto(5000);
+      return;
+    }
+    const started = await generateSignal();
+    if (!started && autoMode) scheduleAuto(15000);
+  }
+
+  function setAutoMode(enabled) {
+    autoMode = enabled;
+    autoButton.classList.toggle('active', autoMode);
+    autoButton.textContent = autoMode ? 'АВТО: ВКЛ' : 'АВТОМАТ';
+    if (autoTimer) clearTimeout(autoTimer);
+    autoTimer = null;
+
+    if (autoMode) {
+      setStatus('Автоматический режим включён', '');
+      scheduleAuto(500);
+    } else if (!isCycleActive()) {
+      setStatus('Автоматический режим выключен', '');
+    }
+  }
+
+  function renderHistory() {
+    const container = document.getElementById('chipsContainer');
+    container.innerHTML = '';
+
+    if (!history.length) {
+      const empty = document.createElement('div');
+      empty.textContent = 'Прогнозов пока нет.';
+      empty.style.opacity = '.85';
+      container.appendChild(empty);
+      return;
+    }
+
+    history.forEach(function (item) {
+      const chip = document.createElement('div');
+      chip.className = 'chip ' + (item.status === 'ok' ? 'ok' : 'ko');
+
+      const coefficient = document.createElement('div');
+      coefficient.textContent = Number(item.coef).toFixed(2) + 'x';
+
+      const details = document.createElement('small');
+      details.style.display = 'block';
+      details.style.fontSize = '10px';
+      details.style.opacity = '.85';
+      details.textContent =
+        (item.status === 'ok' ? 'Зашло' : 'Не зашло') +
+        ' • ' + formatKyivTime(new Date(item.time).getTime(), false);
+
+      chip.appendChild(coefficient);
+      chip.appendChild(details);
+      container.appendChild(chip);
+    });
+  }
+
+  function togglePanel(panel, open) {
+    panel.classList.toggle('open', open);
+  }
+
+  generateButton.addEventListener('click', function () {
+    if (isCycleActive()) {
+      cancelSignal();
+    } else {
+      generateSignal();
+    }
+  });
+
+  autoButton.addEventListener('click', function () {
+    setAutoMode(!autoMode);
+  });
+
+  keepAwakeButton.addEventListener('click', function () {
+    if (wakeLock && wakeLock.released !== true) {
+      disableWakeLock();
+    } else {
+      requestWakeLock(true);
+    }
+  });
+
+  document.getElementById('openHistory').addEventListener('click', function () {
+    renderHistory();
+    togglePanel(document.getElementById('historyPanel'), true);
+  });
+
+  document.getElementById('closeHistory').addEventListener('click', function () {
+    togglePanel(document.getElementById('historyPanel'), false);
+  });
+
+  document.getElementById('openSettings').addEventListener('click', function () {
+    document.getElementById('minOddsInput').value = Number(range.min).toFixed(2);
+    document.getElementById('maxOddsInput').value = Number(range.max).toFixed(2);
+    document.getElementById('settingsMsg').textContent = '';
+    togglePanel(document.getElementById('settingsPanel'), true);
+  });
+
+  document.getElementById('closeSettings').addEventListener('click', function () {
+    togglePanel(document.getElementById('settingsPanel'), false);
+  });
+
+  document.getElementById('saveRange').addEventListener('click', function () {
+    const min = Number(document.getElementById('minOddsInput').value);
+    const max = Number(document.getElementById('maxOddsInput').value);
+    const message = document.getElementById('settingsMsg');
+
+    if (!isFinite(min) || !isFinite(max)) {
+      message.textContent = 'Введите числовые значения.';
+      return;
+    }
+    if (min < 1) {
+      message.textContent = 'Минимум не может быть меньше 1.00x.';
+      return;
+    }
+    if (max <= min) {
+      message.textContent = 'Максимум должен быть больше минимума.';
+      return;
+    }
+
+    range = {min: min, max: max};
+    saveRange();
+    message.textContent =
+      'Сохранено: ' + range.min.toFixed(2) + 'x - ' + range.max.toFixed(2) + 'x';
+  });
+
+  document.getElementById('resetStats').addEventListener('click', function () {
+    counts = {ok: 0, ko: 0};
+    saveCounts();
+    refreshCounts();
+    document.getElementById('settingsMsg').textContent = 'Статистика сброшена.';
+  });
+
+  document.getElementById('resetDailyData').addEventListener('click', function () {
+    dailyRows = [];
+    directHistoryCache = null;
+    storageRemove(DAILY_ROWS_KEY);
+    updateDailyStats();
+    recentCoefficientsEl.textContent = '';
+    document.getElementById('settingsMsg').textContent = 'Суточные topCoefficient очищены.';
+  });
+
+  document.getElementById('resetHistory').addEventListener('click', function () {
+    history = [];
+    saveHistory();
+    renderHistory();
+    document.getElementById('settingsMsg').textContent = 'История сброшена.';
+  });
+
+  document.addEventListener('keydown', function (event) {
+    if (event.key !== 'Escape') return;
+    togglePanel(document.getElementById('historyPanel'), false);
+    togglePanel(document.getElementById('settingsPanel'), false);
+  });
+
+  function resumeFromBackground() {
+    updateClockAndCountdown();
+    pollMarket(true);
+    if (isCycleActive()) {
+      startCoefficientPolling();
+      pollCoefficient();
+    }
+    if (wakeRequested && (!wakeLock || wakeLock.released === true)) {
+      requestWakeLock(false);
+    }
+  }
+
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'hidden') {
+      saveActiveState();
+      return;
+    }
+    resumeFromBackground();
+  });
+
+  window.addEventListener('pagehide', saveActiveState);
+  window.addEventListener('pageshow', resumeFromBackground);
+
+  refreshCounts();
+  renderHistory();
+  updateDailyStats();
+  updateMainButton();
+  updateWakeButton();
+  updateClockAndCountdown();
+  const restoredSignal = restoreActiveState();
+  if (restoredSignal) startCoefficientPolling();
+  setInterval(updateClockAndCountdown, 1000);
+  pollMarket(false);
+  setInterval(function () {
+    pollMarket(true);
+  }, 30000);
+  if (wakeRequested) requestWakeLock(false);
+  window.LuckyJetBetaV2 = {
+    generateSignal: generateSignal,
+    cancelSignal: cancelSignal,
+    parseApiSchedule: parseApiSchedule,
+    formatKyivTime: formatKyivTime,
+    restoreActiveState: restoreActiveState,
+    requestWakeLock: requestWakeLock,
+    disableWakeLock: disableWakeLock,
+    coefficientValue: coefficientValue,
+    normalizeCoefficientRows: normalizeCoefficientRows,
+    calculateBigXStats: calculateBigXStats,
+    buildDirectPrediction: buildDirectPrediction,
+    todayDailyRows: todayDailyRows
+  };
+})();
+</script>
+</body>
+</html>
