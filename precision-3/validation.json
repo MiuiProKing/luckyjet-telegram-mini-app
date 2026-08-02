@@ -9,7 +9,7 @@
     "minimumRoundsWithout10x": 3,
     "latestCoefficientMaximum": 2,
     "minimumCoefficientsAtOrBelow2InLast3": 2,
-    "entryState": "BETTING",
+    "entryState": "BETTING; if /state is unavailable, a 12-second post-history fallback window is used",
     "roundMatching": "unique roundConfig.id"
   },
   "historicalEvaluation": {
