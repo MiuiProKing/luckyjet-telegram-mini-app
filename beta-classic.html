@@ -86,26 +86,30 @@ h1{font-weight:800;letter-spacing:2px}.lucky{opacity:.9}.jet{color:var(--primary
 .coef-bar.mid{background:rgba(245,158,11,.5);}
 .coef-bar.low{background:rgba(239,68,68,.5);}
 .coef-val{font-size:.55rem;color:rgba(255,255,255,.4);font-weight:600}
-.circle{width:190px;height:190px;border-radius:50%;position:relative;display:flex;align-items:center;justify-content:center;background:radial-gradient(closest-side,#0a1022 0%,#111a35 80%,#091026 100%);box-shadow:0 10px 30px rgba(0,0,0,.45),inset 0 0 26px rgba(54,125,231,.25);overflow:hidden;animation:glow 3.2s ease-in-out infinite;}
-.ring{position:absolute;inset:8px;border-radius:50%;border:3px solid rgba(255,255,255,.12);pointer-events:none}
-.ring-spin{position:absolute;inset:-2px;border-radius:50%;background:conic-gradient(from 0deg,rgba(54,125,231,0) 0%,rgba(54,125,231,.45) 20%,rgba(54,125,231,0) 40%,rgba(54,125,231,0) 100%);-webkit-mask:radial-gradient(farthest-side,transparent calc(50% - 5px),#000 calc(50% - 4px));mask:radial-gradient(farthest-side,transparent calc(50% - 5px),#000 calc(50% - 4px));animation:spin 8s linear infinite;filter:drop-shadow(0 0 10px rgba(54,125,231,.35))}
+.circle{width:190px;height:190px;border-radius:50%;position:relative;display:flex;align-items:center;justify-content:center;background:radial-gradient(closest-side,#0a1022 0%,#111a35 80%,#091026 100%);box-shadow:0 10px 30px rgba(0,0,0,.45),inset 0 0 26px rgba(54,125,231,.25);overflow:hidden;animation:glow 3.2s ease-in-out infinite;isolation:isolate}
+.circle canvas{position:absolute;inset:0;width:100%;height:100%;z-index:1;transition:filter .3s ease,opacity .3s ease}
+.ring{position:absolute;inset:8px;border-radius:50%;border:3px solid rgba(255,255,255,.12);pointer-events:none;z-index:2;transition:border-color .3s ease,box-shadow .3s ease}
+.ring-spin{position:absolute;inset:-2px;border-radius:50%;background:conic-gradient(from 0deg,rgba(54,125,231,0) 0%,rgba(54,125,231,.45) 20%,rgba(54,125,231,0) 40%,rgba(54,125,231,0) 100%);-webkit-mask:radial-gradient(farthest-side,transparent calc(50% - 6px),#000 calc(50% - 5px));mask:radial-gradient(farthest-side,transparent calc(50% - 6px),#000 calc(50% - 5px));animation:spin 8s linear infinite;filter:drop-shadow(0 0 10px rgba(54,125,231,.35));pointer-events:none;z-index:3}
 .orb{position:absolute;width:6px;height:6px;border-radius:50%;background:#7aa7ff;opacity:.85;filter:blur(.2px);animation:orbit 6s linear infinite;transform-origin:95px 95px}.orb.o2{animation-duration:7.5s;opacity:.6}.orb.o3{animation-duration:9s;opacity:.5}
 #multiplier{font-size:20px;font-weight:800;text-align:center;line-height:1.35;padding:0 8px;color:#00ff66;text-shadow:0 0 14px rgba(0,255,102,.35);z-index:1}
 .circle.verifying{animation-duration:2.2s}.circle.ok{box-shadow:0 10px 30px rgba(0,0,0,.45),inset 0 0 30px rgba(16,185,129,.45)}.circle.ko{box-shadow:0 10px 30px rgba(0,0,0,.45),inset 0 0 30px rgba(239,68,68,.45)}
 .ring-spin.ok{background:conic-gradient(from 0deg,rgba(16,185,129,0) 0%,rgba(16,185,129,.55) 25%,rgba(16,185,129,0) 50%)}.ring-spin.ko{background:conic-gradient(from 0deg,rgba(239,68,68,0) 0%,rgba(239,68,68,.55) 25%,rgba(239,68,68,0) 50%)}
-.circle.ten-x{background:radial-gradient(closest-side,#210007 0%,#43000d 72%,#160006 100%);animation:tenXPulse 1.15s ease-in-out infinite;overflow:visible}
-.circle.ten-x .ring{border-color:#ff2948;box-shadow:0 0 18px rgba(255,25,65,.95),inset 0 0 16px rgba(255,25,65,.55)}
-.circle.ten-x .ring-spin{background:conic-gradient(from 0deg,transparent 0 8%,#ff153d 18%,#ff9bad 27%,transparent 42% 58%,#ff153d 72%,transparent 88%);animation:spin .85s linear infinite;filter:drop-shadow(0 0 13px rgba(255,25,65,.95))}
-.circle.ten-x #circleInner{border-color:#ff2948!important;background:#170006!important;box-shadow:0 0 28px rgba(255,25,65,.95),inset 0 0 22px rgba(255,25,65,.32)!important;animation:tenXInner .8s ease-in-out infinite}
-.circle.ten-x #multiplier{color:#ff314f!important;text-shadow:0 0 9px #fff,0 0 22px rgba(255,20,55,1);animation:tenXText .7s ease-in-out infinite}
-.circle.ten-x canvas{filter:drop-shadow(0 0 13px rgba(255,25,65,.9))}
+.circle.ten-x{background:radial-gradient(closest-side,#250007 0%,#3d000c 68%,#130004 100%);animation:tenXPulse 1.35s ease-in-out infinite;overflow:visible}
+.circle.ten-x::before{content:"";position:absolute;inset:-13px;border-radius:50%;border:1px solid rgba(255,48,78,.48);box-shadow:0 0 30px rgba(255,20,55,.5);z-index:0;pointer-events:none;animation:tenXHalo 1.8s ease-out infinite}
+.circle.ten-x::after{content:"";position:absolute;inset:18px;border-radius:50%;border:1px solid rgba(255,104,125,.4);box-shadow:inset 0 0 18px rgba(255,20,55,.28);z-index:3;pointer-events:none}
+.circle.ten-x .ring{border-color:#ff3554;box-shadow:0 0 14px rgba(255,30,66,.9),inset 0 0 12px rgba(255,30,66,.42)}
+.circle.ten-x .ring-spin{background:conic-gradient(from 0deg,transparent 0 10%,#ff2448 16%,#ffd4db 20%,transparent 27% 47%,#ff2448 55%,#ff758b 60%,transparent 68% 82%,#ff3554 88%,transparent 95%);animation:spin .95s linear infinite;filter:drop-shadow(0 0 9px rgba(255,32,68,.95))}
+.circle.ten-x #circleInner{border-color:#ff3554!important;background:radial-gradient(circle at 46% 38%,#2b0009 0%,#130004 66%,#080002 100%)!important;box-shadow:0 0 22px rgba(255,28,63,.85),inset 0 0 24px rgba(255,28,63,.25)!important;animation:tenXInner 1.05s ease-in-out infinite;z-index:4!important}
+.circle.ten-x #multiplier{color:#ff4963!important;font-size:24px;letter-spacing:.02em;text-shadow:0 0 6px rgba(255,255,255,.7),0 0 18px rgba(255,20,55,.95);animation:tenXText 1.05s ease-in-out infinite}
+.circle.ten-x canvas{filter:drop-shadow(0 0 9px rgba(255,25,65,.82));opacity:.88}
 @keyframes spin{to{transform:rotate(360deg)}}
 @keyframes glow{0%,100%{box-shadow:inset 0 0 22px rgba(54,125,231,.25),0 10px 30px rgba(0,0,0,.45)}50%{box-shadow:inset 0 0 34px rgba(54,125,231,.45),0 10px 30px rgba(0,0,0,.45)}}
 @keyframes orbit{from{transform:rotate(0deg) translateX(78px) rotate(0deg)}to{transform:rotate(360deg) translateX(78px) rotate(-360deg)}}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
-@keyframes tenXPulse{0%,100%{transform:scale(1);box-shadow:0 0 18px rgba(255,20,55,.55),inset 0 0 32px rgba(255,20,55,.45)}50%{transform:scale(1.045);box-shadow:0 0 48px rgba(255,20,55,1),0 0 82px rgba(255,0,38,.38),inset 0 0 48px rgba(255,20,55,.72)}}
-@keyframes tenXInner{0%,100%{transform:translate(-50%,-50%) scale(1)}50%{transform:translate(-50%,-50%) scale(1.055)}}
-@keyframes tenXText{0%,100%{opacity:1;filter:brightness(1)}50%{opacity:.72;filter:brightness(1.65)}}
+@keyframes tenXPulse{0%,100%{transform:scale(1);box-shadow:0 0 22px rgba(255,20,55,.6),inset 0 0 28px rgba(255,20,55,.38)}50%{transform:scale(1.025);box-shadow:0 0 42px rgba(255,20,55,.9),0 0 68px rgba(255,0,38,.26),inset 0 0 38px rgba(255,20,55,.55)}}
+@keyframes tenXHalo{0%{transform:scale(.94);opacity:.72}70%,100%{transform:scale(1.08);opacity:0}}
+@keyframes tenXInner{0%,100%{transform:translate(-50%,-50%) scale(1)}50%{transform:translate(-50%,-50%) scale(1.025)}}
+@keyframes tenXText{0%,100%{opacity:1;filter:brightness(1)}50%{opacity:.88;filter:brightness(1.25)}}
 @keyframes fadeIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
 @keyframes popIn{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:scale(1)}}
 .meta{width:100%;max-width:560px;display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
@@ -718,37 +722,53 @@ const particles = Array.from({length:200},(_,i)=>({
 
 function drawFrame(){
     const tenXActive=document.getElementById('circle').classList.contains('ten-x');
-    const targetHue=tenXActive?355:270;
+    const targetHue=tenXActive?352:270;
     waveColorHue+=(targetHue-waveColorHue)*0.08;
     ctx.clearRect(0,0,220,220); wavePhase+=0.022; waveAngle+=0.007;
     const grd=ctx.createRadialGradient(CX,CY,R-28,CX,CY,R+28);
+    const glowAccentHue=tenXActive?358:waveColorHue+40;
     grd.addColorStop(0,`hsla(${waveColorHue},100%,60%,0)`);
-    grd.addColorStop(0.4,`hsla(${waveColorHue},100%,60%,0.12)`);
-    grd.addColorStop(0.7,`hsla(${waveColorHue+40},100%,70%,0.08)`);
+    grd.addColorStop(0.4,`hsla(${waveColorHue},100%,60%,${tenXActive?0.18:0.12})`);
+    grd.addColorStop(0.7,`hsla(${glowAccentHue},100%,70%,${tenXActive?0.12:0.08})`);
     grd.addColorStop(1,`hsla(${waveColorHue},100%,60%,0)`);
     ctx.beginPath();ctx.arc(CX,CY,R+28,0,Math.PI*2);ctx.fillStyle=grd;ctx.fill();
-    for(let i=0;i<400;i++){
-        const a=(i/400)*Math.PI*2;
+    const wavePointCount=tenXActive?240:400;
+    for(let i=0;i<wavePointCount;i++){
+        const a=(i/wavePointCount)*Math.PI*2;
         const r=R+Math.sin(a*6+wavePhase)*8+Math.sin(a*3-wavePhase*1.2)*5+Math.cos(a*10+wavePhase*0.8)*3;
         const x=CX+Math.cos(a)*r, y=CY+Math.sin(a)*r;
-        const hue=waveColorHue+(i/400)*90+waveAngle*25;
-        ctx.beginPath();ctx.arc(x,y,0.7+(Math.sin(a*5+wavePhase)+1)*0.9,0,Math.PI*2);
-        ctx.fillStyle=`hsla(${hue},100%,72%,${0.45+Math.sin(a*4+wavePhase)*0.35})`;ctx.fill();
+        const hue=tenXActive
+            ? 350+Math.sin(a*3+wavePhase)*7+(i/wavePointCount)*8
+            : waveColorHue+(i/wavePointCount)*90+waveAngle*25;
+        const pointSize=(0.7+(Math.sin(a*5+wavePhase)+1)*0.9)*(tenXActive?0.76:1);
+        const pointAlpha=tenXActive
+            ? 0.35+Math.sin(a*4+wavePhase)*0.22
+            : 0.45+Math.sin(a*4+wavePhase)*0.35;
+        ctx.beginPath();ctx.arc(x,y,pointSize,0,Math.PI*2);
+        ctx.fillStyle=`hsla(${hue},100%,72%,${pointAlpha})`;ctx.fill();
     }
-    particles.forEach(p=>{
+    particles.forEach((p,particleIndex)=>{
         p.angle+=p.speed;
+        if(tenXActive&&particleIndex%2===1)return;
         const r=p.baseR+Math.sin(p.angle*5+wavePhase+p.offset)*11;
-        ctx.beginPath();ctx.arc(CX+Math.cos(p.angle+waveAngle*0.6)*r,CY+Math.sin(p.angle+waveAngle*0.6)*r,p.size,0,Math.PI*2);
-        ctx.fillStyle=`hsla(${waveColorHue+p.layer*40+(p.angle/(Math.PI*2))*70},100%,78%,${p.opacity*(0.55+Math.sin(wavePhase+p.offset)*0.35)})`;ctx.fill();
+        const particleHue=tenXActive
+            ? 350+p.layer*5+Math.sin(p.angle*4+p.offset)*7
+            : waveColorHue+p.layer*40+(p.angle/(Math.PI*2))*70;
+        const particleAlpha=p.opacity*(tenXActive
+            ? 0.35+Math.sin(wavePhase+p.offset)*0.18
+            : 0.55+Math.sin(wavePhase+p.offset)*0.35);
+        ctx.beginPath();ctx.arc(CX+Math.cos(p.angle+waveAngle*0.6)*r,CY+Math.sin(p.angle+waveAngle*0.6)*r,p.size*(tenXActive?0.72:1),0,Math.PI*2);
+        ctx.fillStyle=`hsla(${particleHue},100%,78%,${particleAlpha})`;ctx.fill();
     });
     const lx1=CX+Math.cos(waveAngle)*(R-18),ly1=CY+Math.sin(waveAngle)*(R-18);
     const lx2=CX+Math.cos(waveAngle)*(R+18),ly2=CY+Math.sin(waveAngle)*(R+18);
     const lg=ctx.createLinearGradient(lx1,ly1,lx2,ly2);
-    lg.addColorStop(0,`hsla(${waveColorHue+60},100%,85%,0)`);
-    lg.addColorStop(0.5,`hsla(${waveColorHue+60},100%,95%,0.95)`);
-    lg.addColorStop(1,`hsla(${waveColorHue+60},100%,85%,0)`);
+    const sweepHue=tenXActive?358:waveColorHue+60;
+    lg.addColorStop(0,`hsla(${sweepHue},100%,85%,0)`);
+    lg.addColorStop(0.5,`hsla(${sweepHue},100%,95%,${tenXActive?0.72:0.95})`);
+    lg.addColorStop(1,`hsla(${sweepHue},100%,85%,0)`);
     ctx.beginPath();ctx.moveTo(lx1,ly1);ctx.lineTo(lx2,ly2);
-    ctx.strokeStyle=lg;ctx.lineWidth=2.5;ctx.stroke();
+    ctx.strokeStyle=lg;ctx.lineWidth=tenXActive?1.8:2.5;ctx.stroke();
     requestAnimationFrame(drawFrame);
 }
 requestAnimationFrame(drawFrame);
