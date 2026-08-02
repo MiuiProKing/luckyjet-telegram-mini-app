@@ -64,7 +64,7 @@
     <section class="feed"><h2>ПОСЛЕДНИЕ TOPCOEFFICIENT</h2><div class="coefs" id="coefs"></div></section>
     <div class="cert" id="certificate">⏳ LIVE-ТЕСТ 10X+ загружается…</div>
     <section class="history"><h2>ИСТОРИЯ ПОДТВЕРЖДЕНИЙ</h2><div id="records"></div></section>
-    <p class="note">Надпись «СТАВЬ СЕЙЧАС» появляется только в открытом окне BETTING и фиксируется с Киевским временем до результата. Проверяются только следующие уникальные ID. 10X+ не гарантирован: прошлые коэффициенты не позволяют надёжно предсказать случайный crash‑раунд.</p>
+    <p class="note">Надпись «СТАВЬ СЕЙЧАС» появляется в BETTING; если /state временно недоступен — сразу после нового завершённого уникального раунда. Киевское время фиксируется до следующего результата. 10X+ не гарантирован: прошлые коэффициенты не позволяют надёжно предсказать случайный crash‑раунд.</p>
   </main>
 
   <script>
@@ -116,6 +116,8 @@
     let wakeLock = null;
     let lastState = null;
     let lastStateRoundId = null;
+    let stateAvailable = false;
+    let lastCompletedObservedAt = 0;
     let certifiedRecords = [];
     let certifiedStreak = 0;
     let resultFlash = null;
@@ -213,7 +215,8 @@
     }
 
     function isBettingState() {
-      return /BETTING|WAITING/.test(String(lastState || '').toUpperCase());
+      if (stateAvailable) return /BETTING|WAITING/.test(String(lastState || '').toUpperCase());
+      return lastCompletedObservedAt > 0 && Date.now() - lastCompletedObservedAt <= 12000;
     }
 
     function currentStreak() {
@@ -250,7 +253,7 @@
       els.dryCount.textContent = String(metrics.dryRounds);
       els.sourceDot.className = 'dot ' + (recentRows.length >= 20 && dayTopRows.length ? 'ok' : 'bad');
       els.sourceText.textContent = recentRows.length >= 20 && dayTopRows.length
-        ? 'DAY TOP-' + dayTopRows.length + ' • /history • ' + (lastState || 'LIVE')
+        ? 'DAY TOP-' + dayTopRows.length + ' • /history • ' + (stateAvailable ? (lastState || 'LIVE') : 'STATE FALLBACK')
         : 'Один из источников временно недоступен';
       els.coefs.textContent = '';
       recentRows.slice(0, 12).forEach(function (row) {
@@ -440,7 +443,8 @@
         if (results[0].status !== 'fulfilled') throw results[0].reason;
         const nextRecent = results[0].value;
         if (results[1].status === 'fulfilled') dayTopRows = normalize(results[1].value);
-        if (results[2].status === 'fulfilled') {
+        stateAvailable = results[2].status === 'fulfilled' && Boolean(results[2].value && results[2].value.currentState);
+        if (stateAvailable) {
           lastState = String(results[2].value.currentState || 'LIVE').toUpperCase();
           lastStateRoundId = results[2].value.roundConfig && results[2].value.roundConfig.id
             ? String(results[2].value.roundConfig.id) : null;
@@ -454,6 +458,7 @@
         } else {
           const newRows = nextRecent.filter(function (row) { return !seen.has(row.id); }).reverse();
           newRows.forEach(function (row) { seen.add(row.id); });
+          if (newRows.length) lastCompletedObservedAt = Date.now();
           processNewRows(newRows);
           recentRows = nextRecent;
         }
