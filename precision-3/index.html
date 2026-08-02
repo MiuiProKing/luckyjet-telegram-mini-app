@@ -1,0 +1,438 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#05050a" />
+  <title>LuckyJet PRECISION 3</title>
+  <style>
+    :root{--bg:#05050a;--panel:#121225;--line:#29284a;--text:#f7f7ff;--muted:#9696b4;--green:#20e89b;--yellow:#ffbc3b;--red:#ff4268;--violet:#8b5cff;--cyan:#3adfff}
+    *{box-sizing:border-box}html,body{min-height:100%;margin:0;background:radial-gradient(circle at 50% 22%,#20104a 0,#090817 36%,var(--bg) 68%);color:var(--text);font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+    body{padding:calc(16px + env(safe-area-inset-top)) 14px calc(28px + env(safe-area-inset-bottom))}.app{width:min(720px,100%);margin:auto}
+    .top{display:grid;grid-template-columns:54px 1fr 54px;gap:10px;align-items:center}.icon,.back{height:52px;border:1px solid #313153;background:#111126;color:#fff;border-radius:17px;display:grid;place-items:center;text-decoration:none;font-size:22px}.top h1{font-size:clamp(20px,5vw,30px);margin:0;text-align:center;letter-spacing:.5px}.top h1 span{color:var(--cyan)}
+    .badge{margin:16px 0 10px;padding:14px 16px;border:1px solid #2f2e52;border-radius:18px;background:rgba(16,16,36,.88);display:flex;align-items:center;gap:10px;font-weight:800}.dot{width:12px;height:12px;border-radius:50%;background:var(--yellow);box-shadow:0 0 16px currentColor}.dot.ok{background:var(--green)}.dot.bad{background:var(--red)}.clock{margin-left:auto;color:var(--muted);font-variant-numeric:tabular-nums}
+    .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin:10px 0}.card{min-width:0;padding:13px 8px;border:1px solid var(--line);border-radius:17px;background:linear-gradient(145deg,rgba(24,24,51,.96),rgba(11,11,25,.96));text-align:center}.label{font-size:12px;color:var(--muted);line-height:1.25}.value{font-size:clamp(18px,5vw,25px);font-weight:900;margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .orb-wrap{min-height:320px;display:grid;place-items:center;position:relative}.pulse{position:absolute;width:245px;height:245px;border-radius:50%;border:2px solid rgba(139,92,255,.38);animation:pulse 2.2s ease-out infinite}.pulse.p2{animation-delay:1.1s}.orb{width:225px;height:225px;border-radius:50%;display:grid;place-items:center;text-align:center;background:radial-gradient(circle at 50% 42%,#26145d,#0e0b22 62%,#05050a 64%);border:4px solid var(--violet);box-shadow:0 0 26px #8b5cff88,0 0 70px #35148b66;position:relative;z-index:2;transition:.3s}.orb.active{border-color:var(--yellow);box-shadow:0 0 28px #ffbc3baa,0 0 76px #ff7a184f}.orb.win{border-color:var(--green);box-shadow:0 0 30px #20e89baa,0 0 82px #00ff884d}.orb.fail{border-color:var(--red);box-shadow:0 0 30px #ff4268aa}.target{font-size:45px;font-weight:1000;letter-spacing:-2px}.target small{display:block;font-size:12px;letter-spacing:1.2px;color:var(--muted);margin-top:8px}.attempt-dots{display:flex;justify-content:center;gap:9px;margin-top:13px}.attempt-dots i{width:14px;height:14px;border-radius:50%;background:#393858}.attempt-dots i.used{background:var(--red);box-shadow:0 0 12px #ff4268}.attempt-dots i.hit{background:var(--green);box-shadow:0 0 12px #20e89b}
+    @keyframes pulse{0%{transform:scale(.8);opacity:.85}100%{transform:scale(1.25);opacity:0}}
+    .actions{display:grid;grid-template-columns:1.5fr 1fr;gap:10px}.btn{min-height:58px;border:0;border-radius:18px;font-weight:950;font-size:16px;letter-spacing:.4px;color:#080810;background:linear-gradient(110deg,#2ff0a7,#38d5ff);box-shadow:0 10px 30px #00d99933}.btn.secondary{color:#fff;background:#17172f;border:1px solid #33325a;box-shadow:none}.btn.active{background:linear-gradient(110deg,#ffca42,#ff8b31);color:#17100a}.btn:disabled{opacity:.48}
+    .status{margin:12px 0;padding:14px;border-radius:16px;background:#111124;border:1px solid var(--line);text-align:center;font-weight:750;line-height:1.45}.status.ok{border-color:#1e8c69;color:#87ffd5}.status.bad{border-color:#9d2947;color:#ff9ab0}
+    .feed,.history{margin-top:12px;padding:14px;border:1px solid var(--line);border-radius:18px;background:rgba(15,15,32,.92)}.feed h2,.history h2{font-size:13px;color:var(--muted);letter-spacing:1.2px;margin:0 0 11px}.coefs{display:flex;gap:7px;overflow:auto;padding-bottom:2px}.coef{flex:0 0 auto;min-width:58px;padding:9px 7px;border-radius:11px;background:#20203d;text-align:center;font-weight:900}.coef.mid{color:var(--yellow)}.coef.high{color:var(--green)}
+    .record{display:grid;grid-template-columns:1fr auto;gap:8px;padding:11px 0;border-top:1px solid #292846}.record:first-of-type{border-top:0}.record strong{font-size:14px}.record small{display:block;color:var(--muted);margin-top:4px}.win-text{color:var(--green)}.fail-text{color:var(--red)}.cert{margin-top:12px;padding:12px 14px;border:1px solid #286d57;background:#0e2924;border-radius:15px;color:#8fffd9;font-weight:800}.note{font-size:12px;line-height:1.45;color:var(--muted);text-align:center;margin:14px 8px}
+    @media(max-width:430px){body{padding-left:9px;padding-right:9px}.grid{gap:6px}.card{padding:12px 5px}.label{font-size:10px}.orb-wrap{min-height:285px}.orb{width:205px;height:205px}.pulse{width:220px;height:220px}.actions{grid-template-columns:1fr}.top{grid-template-columns:48px 1fr 48px}.icon,.back{height:48px}}
+  </style>
+</head>
+<body>
+  <main class="app">
+    <div class="top">
+      <a class="back" href="../index.html#pro" aria-label="Выйти назад">⏪</a>
+      <h1>LUCKYJET <span>PRECISION 3</span></h1>
+      <button class="icon" type="button" id="wakeButton" aria-label="Не гасить экран">☀️</button>
+    </div>
+
+    <div class="badge"><i class="dot" id="sourceDot"></i><span id="sourceText">Подключение к источникам…</span><span class="clock" id="clock">--:--:--</span></div>
+
+    <section class="grid">
+      <div class="card"><div class="label">Максимум DAY</div><div class="value" id="dayMax">—</div></div>
+      <div class="card"><div class="label">Минимум TOP-20</div><div class="value" id="dayFloor">—</div></div>
+      <div class="card"><div class="label">Последних раундов</div><div class="value" id="recentCount">0</div></div>
+    </section>
+
+    <section class="orb-wrap">
+      <div class="pulse"></div><div class="pulse p2"></div>
+      <div class="orb" id="orb">
+        <div>
+          <div class="target" id="target">1.50X<small>ЦЕЛЬ • ДО 3 РАУНДОВ</small></div>
+          <div class="attempt-dots"><i id="try1"></i><i id="try2"></i><i id="try3"></i></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="grid">
+      <div class="card"><div class="label">Попытка</div><div class="value"><span id="attempt">0</span>/3</div></div>
+      <div class="card"><div class="label">История ≤3</div><div class="value" id="confidence">—</div></div>
+      <div class="card"><div class="label">Подряд</div><div class="value"><span id="streak">0</span>/5</div></div>
+    </section>
+
+    <div class="actions">
+      <button class="btn" type="button" id="signalButton">ПОЛУЧИТЬ СИГНАЛ</button>
+      <button class="btn secondary" type="button" id="autoButton">АВТО: ВЫКЛ</button>
+    </div>
+    <div class="status" id="status">Загружаю реальные коэффициенты…</div>
+
+    <section class="feed"><h2>ПОСЛЕДНИЕ TOPCOEFFICIENT</h2><div class="coefs" id="coefs"></div></section>
+    <div class="cert" id="certificate">⏳ Сертифицированный тест 5 подряд загружается…</div>
+    <section class="history"><h2>ИСТОРИЯ ПОДТВЕРЖДЕНИЙ</h2><div id="records"></div></section>
+    <p class="note">Сигнал фиксируется до результата и проверяется только по новым уникальным ID. Цель не гарантирует выигрыш: результаты crash‑игры случайны, а пять удачных проверок не являются доказательством будущей доходности.</p>
+  </main>
+
+  <script>
+  (function () {
+    'use strict';
+
+    const HISTORY_URL = 'https://crash-gateway-grm-cr.100hp.app/history';
+    const STATE_URL = 'https://crash-gateway-grm-cr.100hp.app/state';
+    const DAY_TOP_URL = 'https://crash-gateway-grm-cr.100hp.app/leaderboard/top-coefficients?interval=DAY';
+    const FALLBACK_URL = 'https://allpredictor.com/api/v1/luckyjet/coefficients?limit=20';
+    const API_KEY = 'ap_de0cc6901c6303fe93388c94934c30ceac8baf126e2474b6';
+    const HEADERS = {
+      'customer-id': '077dee8d-c923-4c02-9bee-757573662e69',
+      'session-id': '0f6d1875-7cd1-4547-a506-4f4aac77bc7c',
+      'accept': 'application/json'
+    };
+    const TARGET = 1.50;
+    const MAX_ATTEMPTS = 3;
+    const STORAGE_RECORDS = 'lj_precision3_records_v1';
+    const STORAGE_ACTIVE = 'lj_precision3_active_v1';
+    const STORAGE_AUTO = 'lj_precision3_auto_v1';
+    const STORAGE_WAKE = 'lj_precision3_wake_v1';
+    const KYIV_TZ = 'Europe/Kyiv';
+
+    const $ = function (id) { return document.getElementById(id); };
+    const els = {
+      sourceDot: $('sourceDot'), sourceText: $('sourceText'), clock: $('clock'),
+      dayMax: $('dayMax'), dayFloor: $('dayFloor'), recentCount: $('recentCount'),
+      orb: $('orb'), target: $('target'), attempt: $('attempt'), confidence: $('confidence'),
+      streak: $('streak'), signalButton: $('signalButton'), autoButton: $('autoButton'),
+      wakeButton: $('wakeButton'), status: $('status'), coefs: $('coefs'),
+      records: $('records'), certificate: $('certificate')
+    };
+
+    let recentRows = [];
+    let dayTopRows = [];
+    let seen = new Set();
+    let active = loadJson(STORAGE_ACTIVE, null);
+    let records = loadJson(STORAGE_RECORDS, []);
+    let autoMode = localStorage.getItem(STORAGE_AUTO) === '1';
+    let initialized = false;
+    let requestBusy = false;
+    let wakeLock = null;
+    let lastState = null;
+    let certifiedRecords = [];
+    let certifiedStreak = 0;
+
+    function loadJson(key, fallback) {
+      try {
+        const value = JSON.parse(localStorage.getItem(key) || 'null');
+        return value === null ? fallback : value;
+      } catch (error) {
+        return fallback;
+      }
+    }
+
+    function saveJson(key, value) {
+      try { localStorage.setItem(key, JSON.stringify(value)); } catch (error) {}
+    }
+
+    function normalize(items) {
+      if (!Array.isArray(items)) return [];
+      return items.map(function (item) {
+        const coefficient = Number(item && item.topCoefficient);
+        const id = item && (item.id || item.roundId || item.round_id || item.hash);
+        if (!id || !isFinite(coefficient) || coefficient < 1) return null;
+        return {id: String(id), coefficient: coefficient};
+      }).filter(Boolean);
+    }
+
+    async function fetchJson(url, headers) {
+      const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+      const timer = controller ? setTimeout(function () { controller.abort(); }, 15000) : null;
+      try {
+        const response = await fetch(url, {headers: headers, cache: 'no-store', signal: controller && controller.signal});
+        if (!response.ok) {
+          const error = new Error('HTTP ' + response.status);
+          error.status = response.status;
+          throw error;
+        }
+        return await response.json();
+      } finally {
+        if (timer) clearTimeout(timer);
+      }
+    }
+
+    async function fetchRecent() {
+      try {
+        return normalize(await fetchJson(HISTORY_URL, HEADERS));
+      } catch (directError) {
+        const fallback = await fetchJson(FALLBACK_URL, {'X-API-Key': API_KEY});
+        const rows = normalize(fallback && fallback.data);
+        if (!rows.length) throw directError;
+        return rows;
+      }
+    }
+
+    function kyivTime(timestamp, seconds) {
+      return new Intl.DateTimeFormat('ru-UA', {
+        timeZone: KYIV_TZ, hour: '2-digit', minute: '2-digit',
+        second: seconds ? '2-digit' : undefined, hour12: false
+      }).format(new Date(timestamp));
+    }
+
+    function confidenceScore(rows) {
+      const sample = rows.slice(0, 20);
+      if (sample.length < MAX_ATTEMPTS) return 0;
+      let windows = 0;
+      let hits = 0;
+      for (let index = 0; index <= sample.length - MAX_ATTEMPTS; index += 1) {
+        windows += 1;
+        if (sample.slice(index, index + MAX_ATTEMPTS).some(function (row) {
+          return row.coefficient >= TARGET;
+        })) hits += 1;
+      }
+      return windows ? Math.round(hits / windows * 100) : 0;
+    }
+
+    function currentStreak() {
+      let count = 0;
+      for (let index = 0; index < records.length; index += 1) {
+        if (!records[index].success) break;
+        count += 1;
+      }
+      return count;
+    }
+
+    function setStatus(text, kind) {
+      els.status.textContent = text;
+      els.status.className = 'status' + (kind ? ' ' + kind : '');
+    }
+
+    function renderAttempts() {
+      const used = active ? active.attempts.length : 0;
+      els.attempt.textContent = String(used);
+      for (let index = 1; index <= 3; index += 1) {
+        const dot = $('try' + index);
+        dot.className = '';
+        if (index <= used) dot.className = active && active.success && index === used ? 'hit' : 'used';
+      }
+    }
+
+    function renderSources() {
+      els.recentCount.textContent = String(recentRows.length);
+      const values = dayTopRows.map(function (row) { return row.coefficient; });
+      els.dayMax.textContent = values.length ? Math.max.apply(null, values).toFixed(2) + 'X' : '—';
+      els.dayFloor.textContent = values.length ? Math.min.apply(null, values).toFixed(2) + 'X' : '—';
+      els.sourceDot.className = 'dot ' + (recentRows.length >= 20 && dayTopRows.length ? 'ok' : 'bad');
+      els.sourceText.textContent = recentRows.length >= 20 && dayTopRows.length
+        ? 'DAY TOP-' + dayTopRows.length + ' • /history • ' + (lastState || 'LIVE')
+        : 'Один из источников временно недоступен';
+      els.coefs.textContent = '';
+      recentRows.slice(0, 12).forEach(function (row) {
+        const chip = document.createElement('span');
+        chip.className = 'coef' + (row.coefficient >= 10 ? ' high' : row.coefficient >= TARGET ? ' mid' : '');
+        chip.textContent = row.coefficient.toFixed(2) + 'X';
+        els.coefs.appendChild(chip);
+      });
+    }
+
+    function renderRecords() {
+      els.records.textContent = '';
+      const displayRecords = records.concat(certifiedRecords);
+      if (!displayRecords.length) {
+        els.records.textContent = 'Подтверждений пока нет.';
+        return;
+      }
+      displayRecords.slice(0, 20).forEach(function (record) {
+        const row = document.createElement('div');
+        row.className = 'record';
+        const left = document.createElement('div');
+        const title = document.createElement('strong');
+        title.className = record.success ? 'win-text' : 'fail-text';
+        title.textContent = record.success
+          ? '✅ ЗАШЁЛ НА ' + record.winningAttempt + '-М РАУНДЕ'
+          : '❌ НЕ ЗАШЁЛ ЗА 3 РАУНДА';
+        const details = document.createElement('small');
+        details.textContent = (record.certified ? 'LIVE TEST • ' : '') + 'Цель ' + record.target.toFixed(2) + 'X • ' + record.attempts.map(function (item) {
+          return item.coefficient.toFixed(2) + 'X';
+        }).join(' / ');
+        left.appendChild(title); left.appendChild(details);
+        const time = document.createElement('small');
+        time.textContent = kyivTime(record.completedAt, false);
+        row.appendChild(left); row.appendChild(time); els.records.appendChild(row);
+      });
+    }
+
+    function render() {
+      els.clock.textContent = kyivTime(Date.now(), true);
+      els.confidence.textContent = recentRows.length ? confidenceScore(recentRows) + '%' : '—';
+      els.streak.textContent = String(Math.max(currentStreak(), certifiedStreak));
+      els.orb.className = 'orb' + (active ? ' active' : '');
+      els.signalButton.textContent = active ? 'СИГНАЛ АКТИВЕН' : 'ПОЛУЧИТЬ СИГНАЛ';
+      els.signalButton.disabled = Boolean(active) || recentRows.length < 20 || !dayTopRows.length;
+      els.autoButton.textContent = autoMode ? 'АВТО: ВКЛ' : 'АВТО: ВЫКЛ';
+      els.autoButton.className = 'btn secondary' + (autoMode ? ' active' : '');
+      renderAttempts(); renderSources(); renderRecords();
+    }
+
+    function armSignal() {
+      if (active || recentRows.length < 20 || !dayTopRows.length) return false;
+      active = {
+        target: TARGET,
+        maxAttempts: MAX_ATTEMPTS,
+        confidence: confidenceScore(recentRows),
+        createdAt: Date.now(),
+        baselineRoundId: recentRows[0].id,
+        attempts: []
+      };
+      saveJson(STORAGE_ACTIVE, active);
+      setStatus('Сигнал зафиксирован ДО результата. Ждём максимум 3 новых раунда.', '');
+      render();
+      return true;
+    }
+
+    function completeSignal(success) {
+      active.success = success;
+      active.completedAt = Date.now();
+      active.winningAttempt = success ? active.attempts.length : null;
+      records.unshift(active);
+      if (records.length > 100) records.length = 100;
+      saveJson(STORAGE_RECORDS, records);
+      localStorage.removeItem(STORAGE_ACTIVE);
+      els.orb.className = 'orb ' + (success ? 'win' : 'fail');
+      setStatus(success
+        ? 'Подтверждено: цель ' + TARGET.toFixed(2) + 'X зашла на ' + active.winningAttempt + '-м раунде.'
+        : 'Цель не зашла за 3 раунда. Серия подтверждений сброшена.', success ? 'ok' : 'bad');
+      active = null;
+      setTimeout(function () {
+        render();
+        if (autoMode && !active) armSignal();
+      }, 2500);
+    }
+
+    function processNewRows(rows) {
+      if (!rows.length) return;
+      let resolved = false;
+      rows.forEach(function (row) {
+        if (!active || resolved) return;
+        active.attempts.push({roundId: row.id, coefficient: row.coefficient, observedAt: Date.now()});
+        saveJson(STORAGE_ACTIVE, active);
+        if (row.coefficient >= active.target) {
+          resolved = true;
+          completeSignal(true);
+        } else if (active.attempts.length >= MAX_ATTEMPTS) {
+          resolved = true;
+          completeSignal(false);
+        }
+      });
+      render();
+    }
+
+    function restoreAgainst(rows) {
+      if (!active) return;
+      if (Date.now() - Number(active.createdAt) > 30 * 60 * 1000) {
+        active = null; localStorage.removeItem(STORAGE_ACTIVE); return;
+      }
+      const baselineIndex = rows.findIndex(function (row) { return row.id === active.baselineRoundId; });
+      if (baselineIndex < 0) {
+        active = null; localStorage.removeItem(STORAGE_ACTIVE);
+        setStatus('Старый сигнал нельзя восстановить: его базовый раунд вышел из /history.', 'bad');
+        return;
+      }
+      const counted = new Set((active.attempts || []).map(function (item) { return item.roundId; }));
+      processNewRows(rows.slice(0, baselineIndex).reverse().filter(function (row) { return !counted.has(row.id); }));
+    }
+
+    async function refreshSources(forceInit) {
+      if (requestBusy) return;
+      requestBusy = true;
+      try {
+        const results = await Promise.allSettled([
+          fetchRecent(), fetchJson(DAY_TOP_URL, HEADERS), fetchJson(STATE_URL, HEADERS)
+        ]);
+        if (results[0].status !== 'fulfilled') throw results[0].reason;
+        const nextRecent = results[0].value;
+        if (results[1].status === 'fulfilled') dayTopRows = normalize(results[1].value);
+        if (results[2].status === 'fulfilled') lastState = String(results[2].value.currentState || 'LIVE').toUpperCase();
+
+        if (!initialized || forceInit) {
+          recentRows = nextRecent;
+          seen = new Set(nextRecent.map(function (row) { return row.id; }));
+          initialized = true;
+          restoreAgainst(nextRecent);
+        } else {
+          const newRows = nextRecent.filter(function (row) { return !seen.has(row.id); }).reverse();
+          newRows.forEach(function (row) { seen.add(row.id); });
+          processNewRows(newRows);
+          recentRows = nextRecent;
+        }
+        render();
+        if (!active && autoMode) armSignal();
+        if (!active && els.status.className.indexOf('bad') < 0 && els.status.className.indexOf('ok') < 0) {
+          setStatus('Готово. Цель ' + TARGET.toFixed(2) + 'X проверяется по следующим трём уникальным раундам.', '');
+        }
+      } catch (error) {
+        els.sourceDot.className = 'dot bad';
+        setStatus('Ошибка источника: ' + (error.message || 'нет подключения'), 'bad');
+      } finally {
+        requestBusy = false;
+      }
+    }
+
+    async function loadCertificate() {
+      try {
+        const response = await fetch('validation.json?v=1', {cache: 'no-store'});
+        if (!response.ok) throw new Error('pending');
+        const data = await response.json();
+        if (Number(data.consecutiveConfirmations) < 5) throw new Error('pending');
+        const firstHits = data.confirmations.filter(function (item) { return item.winningAttempt === 1; }).length;
+        certifiedStreak = 5;
+        certifiedRecords = data.confirmations.slice().reverse().map(function (item) {
+          return {
+            certified: true,
+            success: true,
+            target: Number(item.target),
+            winningAttempt: Number(item.winningAttempt),
+            attempts: (item.attempts || []).map(function (attempt) {
+              return {coefficient: Number(attempt.coefficient)};
+            }),
+            completedAt: Date.parse(item.completedAt) || Date.now()
+          };
+        });
+        els.certificate.textContent = '✅ LIVE-ТЕСТ: 5/5 подряд подтверждено • с первого раунда: ' + firstHits + '/5';
+        render();
+      } catch (error) {
+        els.certificate.textContent = '⏳ LIVE-тест 5 подряд ещё не опубликован.';
+      }
+    }
+
+    async function toggleWake() {
+      if (wakeLock && !wakeLock.released) {
+        await wakeLock.release(); wakeLock = null; localStorage.removeItem(STORAGE_WAKE);
+        els.wakeButton.textContent = '☀️'; return;
+      }
+      try {
+        wakeLock = await navigator.wakeLock.request('screen');
+        localStorage.setItem(STORAGE_WAKE, '1'); els.wakeButton.textContent = '🔆';
+      } catch (error) {
+        setStatus('На этом устройстве режим «не гасить экран» недоступен.', 'bad');
+      }
+    }
+
+    els.signalButton.addEventListener('click', armSignal);
+    els.autoButton.addEventListener('click', function () {
+      autoMode = !autoMode;
+      localStorage.setItem(STORAGE_AUTO, autoMode ? '1' : '0');
+      render();
+      if (autoMode && !active) armSignal();
+    });
+    els.wakeButton.addEventListener('click', toggleWake);
+    document.addEventListener('visibilitychange', function () {
+      if (document.visibilityState === 'visible') refreshSources(true);
+    });
+
+    render();
+    refreshSources(true);
+    loadCertificate();
+    setInterval(function () { refreshSources(false); }, 2500);
+    setInterval(function () { els.clock.textContent = kyivTime(Date.now(), true); }, 1000);
+    if (localStorage.getItem(STORAGE_WAKE) === '1') toggleWake();
+
+    window.LuckyJetPrecision3 = {
+      normalize: normalize,
+      confidenceScore: confidenceScore,
+      armSignal: armSignal,
+      processNewRows: processNewRows,
+      refreshSources: refreshSources
+    };
+  })();
+  </script>
+</body>
+</html>
