@@ -1,0 +1,79 @@
+{
+  "validatedAt": "2026-08-02T21:36:17.330Z",
+  "source": "https://crash-gateway-grm-cr.100hp.app/history",
+  "rule": "target >= 1.50X within 3 subsequent unique rounds",
+  "consecutiveConfirmations": 5,
+  "confirmations": [
+    {
+      "number": 1,
+      "target": 1.5,
+      "maxAttempts": 3,
+      "confidence": 75,
+      "createdAt": "2026-08-02T21:33:23.644Z",
+      "baselineRoundId": "690d16c3-a25d-409e-bf74-3449fec1383c",
+      "attempts": [
+        {"attempt": 1, "roundId": "e25a8563-daa8-4473-a7bd-0a23aa8f20db", "coefficient": 1.35, "observedAt": "2026-08-02T21:33:37.253Z"},
+        {"attempt": 2, "roundId": "d15039d6-414b-4c0e-af18-d156ebd5af7a", "coefficient": 4.76, "observedAt": "2026-08-02T21:34:07.198Z"}
+      ],
+      "success": true,
+      "winningAttempt": 2,
+      "completedAt": "2026-08-02T21:34:07.198Z"
+    },
+    {
+      "number": 2,
+      "target": 1.5,
+      "maxAttempts": 3,
+      "confidence": 75,
+      "createdAt": "2026-08-02T21:34:07.198Z",
+      "baselineRoundId": "d15039d6-414b-4c0e-af18-d156ebd5af7a",
+      "attempts": [
+        {"attempt": 1, "roundId": "bb0c0f52-ece3-4de5-ae13-2fca6ba645c1", "coefficient": 1.58, "observedAt": "2026-08-02T21:34:23.452Z"}
+      ],
+      "success": true,
+      "winningAttempt": 1,
+      "completedAt": "2026-08-02T21:34:23.452Z"
+    },
+    {
+      "number": 3,
+      "target": 1.5,
+      "maxAttempts": 3,
+      "confidence": 76,
+      "createdAt": "2026-08-02T21:34:23.452Z",
+      "baselineRoundId": "bb0c0f52-ece3-4de5-ae13-2fca6ba645c1",
+      "attempts": [
+        {"attempt": 1, "roundId": "936a7c9a-5726-4c42-9e67-5b056838a4c1", "coefficient": 33.34, "observedAt": "2026-08-02T21:35:14.914Z"}
+      ],
+      "success": true,
+      "winningAttempt": 1,
+      "completedAt": "2026-08-02T21:35:14.914Z"
+    },
+    {
+      "number": 4,
+      "target": 1.5,
+      "maxAttempts": 3,
+      "confidence": 76,
+      "createdAt": "2026-08-02T21:35:14.914Z",
+      "baselineRoundId": "936a7c9a-5726-4c42-9e67-5b056838a4c1",
+      "attempts": [
+        {"attempt": 1, "roundId": "c62703e8-595b-457a-9505-b7d4b3c8886d", "coefficient": 1.68, "observedAt": "2026-08-02T21:35:33.822Z"}
+      ],
+      "success": true,
+      "winningAttempt": 1,
+      "completedAt": "2026-08-02T21:35:33.822Z"
+    },
+    {
+      "number": 5,
+      "target": 1.5,
+      "maxAttempts": 3,
+      "confidence": 78,
+      "createdAt": "2026-08-02T21:35:33.822Z",
+      "baselineRoundId": "c62703e8-595b-457a-9505-b7d4b3c8886d",
+      "attempts": [
+        {"attempt": 1, "roundId": "8f3eee50-13e2-4e5d-93e5-2b34f96a2113", "coefficient": 15.31, "observedAt": "2026-08-02T21:36:17.330Z"}
+      ],
+      "success": true,
+      "winningAttempt": 1,
+      "completedAt": "2026-08-02T21:36:17.330Z"
+    }
+  ]
+}
