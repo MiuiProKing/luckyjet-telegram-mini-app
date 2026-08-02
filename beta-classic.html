@@ -93,10 +93,19 @@ h1{font-weight:800;letter-spacing:2px}.lucky{opacity:.9}.jet{color:var(--primary
 #multiplier{font-size:20px;font-weight:800;text-align:center;line-height:1.35;padding:0 8px;color:#00ff66;text-shadow:0 0 14px rgba(0,255,102,.35);z-index:1}
 .circle.verifying{animation-duration:2.2s}.circle.ok{box-shadow:0 10px 30px rgba(0,0,0,.45),inset 0 0 30px rgba(16,185,129,.45)}.circle.ko{box-shadow:0 10px 30px rgba(0,0,0,.45),inset 0 0 30px rgba(239,68,68,.45)}
 .ring-spin.ok{background:conic-gradient(from 0deg,rgba(16,185,129,0) 0%,rgba(16,185,129,.55) 25%,rgba(16,185,129,0) 50%)}.ring-spin.ko{background:conic-gradient(from 0deg,rgba(239,68,68,0) 0%,rgba(239,68,68,.55) 25%,rgba(239,68,68,0) 50%)}
+.circle.ten-x{background:radial-gradient(closest-side,#210007 0%,#43000d 72%,#160006 100%);animation:tenXPulse 1.15s ease-in-out infinite;overflow:visible}
+.circle.ten-x .ring{border-color:#ff2948;box-shadow:0 0 18px rgba(255,25,65,.95),inset 0 0 16px rgba(255,25,65,.55)}
+.circle.ten-x .ring-spin{background:conic-gradient(from 0deg,transparent 0 8%,#ff153d 18%,#ff9bad 27%,transparent 42% 58%,#ff153d 72%,transparent 88%);animation:spin .85s linear infinite;filter:drop-shadow(0 0 13px rgba(255,25,65,.95))}
+.circle.ten-x #circleInner{border-color:#ff2948!important;background:#170006!important;box-shadow:0 0 28px rgba(255,25,65,.95),inset 0 0 22px rgba(255,25,65,.32)!important;animation:tenXInner .8s ease-in-out infinite}
+.circle.ten-x #multiplier{color:#ff314f!important;text-shadow:0 0 9px #fff,0 0 22px rgba(255,20,55,1);animation:tenXText .7s ease-in-out infinite}
+.circle.ten-x canvas{filter:drop-shadow(0 0 13px rgba(255,25,65,.9))}
 @keyframes spin{to{transform:rotate(360deg)}}
 @keyframes glow{0%,100%{box-shadow:inset 0 0 22px rgba(54,125,231,.25),0 10px 30px rgba(0,0,0,.45)}50%{box-shadow:inset 0 0 34px rgba(54,125,231,.45),0 10px 30px rgba(0,0,0,.45)}}
 @keyframes orbit{from{transform:rotate(0deg) translateX(78px) rotate(0deg)}to{transform:rotate(360deg) translateX(78px) rotate(-360deg)}}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+@keyframes tenXPulse{0%,100%{transform:scale(1);box-shadow:0 0 18px rgba(255,20,55,.55),inset 0 0 32px rgba(255,20,55,.45)}50%{transform:scale(1.045);box-shadow:0 0 48px rgba(255,20,55,1),0 0 82px rgba(255,0,38,.38),inset 0 0 48px rgba(255,20,55,.72)}}
+@keyframes tenXInner{0%,100%{transform:translate(-50%,-50%) scale(1)}50%{transform:translate(-50%,-50%) scale(1.055)}}
+@keyframes tenXText{0%,100%{opacity:1;filter:brightness(1)}50%{opacity:.72;filter:brightness(1.65)}}
 @keyframes fadeIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
 @keyframes popIn{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:scale(1)}}
 .meta{width:100%;max-width:560px;display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
@@ -105,6 +114,8 @@ h1{font-weight:800;letter-spacing:2px}.lucky{opacity:.9}.jet{color:var(--primary
 button{background:linear-gradient(135deg,var(--primary),var(--primary-dark));border:none;color:white;font-weight:800;letter-spacing:.8px;border-radius:5px;width:220px;height:50px;cursor:pointer;box-shadow:0 10px 24px rgba(54,125,231,.35);transition:transform .15s,opacity .15s}
 button:active{transform:translateY(1px) scale(.99)}button:disabled{opacity:.55;cursor:not-allowed}
 .status{min-height:22px;font-size:14px;opacity:.95;text-align:center}
+.countdown{min-height:20px;font-size:13px;font-weight:800;color:#fbbf24;text-align:center;margin-top:-9px;font-variant-numeric:tabular-nums}
+#autoButton.active,#keepAwakeButton.active{background:linear-gradient(135deg,#0f5132,#10b981);box-shadow:0 10px 24px rgba(16,185,129,.28)}
 .ok{color:var(--good)}.ko{color:var(--bad)}.warn{color:var(--warn)}
 .voice-toggle{position:fixed;bottom:24px;right:20px;z-index:150;width:48px;height:48px;border-radius:50%;background:#221d3b;border:1.5px solid rgba(255,255,255,.18);display:none;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 6px 20px rgba(0,0,0,.5);transition:background .2s,transform .15s;font-size:1.3rem}
 .voice-toggle:hover{transform:scale(1.08)}.voice-toggle.on{background:#1a3a2a;border-color:#10b981}.voice-toggle.off{background:#3a1a1a;border-color:#ef4444}
@@ -168,17 +179,6 @@ button:active{transform:translateY(1px) scale(.99)}button:disabled{opacity:.55;c
 
 <div class="voice-toggle on" id="voiceToggle">🔊</div>
 <div class="voice-toast" id="voiceToast"></div>
-
-<div class="pause-overlay" id="pauseOverlay">
-  <div class="pause-card">
-    <div class="pause-icon">⚠️</div>
-    <h3>Серия проигрышей обнаружена</h3>
-    <p>Рынок сейчас неблагоприятный. Рекомендуется пауза, чтобы избежать дальнейших потерь.</p>
-    <div class="pause-timer" id="pauseTimer">05:00</div>
-    <div class="pause-reason" id="pauseReason">Анализ в процессе…</div>
-    <button class="btn-skip-pause" id="btnSkipPause">Пропустить и продолжить</button>
-  </div>
-</div>
 
 <div id="lockOverlay" class="lock-overlay">
   <div class="lock-card">
@@ -244,8 +244,10 @@ button:active{transform:translateY(1px) scale(.99)}button:disabled{opacity:.55;c
 
 <button id="generateButton">HACK SIGNAL</button>
 <button id="autoButton">АВТОМАТИЧЕСКИЙ</button>
+<button id="keepAwakeButton">НЕ ГАСИТЬ ЭКРАН</button>
 
   <div id="verifyStatus" class="status"></div>
+  <div id="countdown" class="countdown" aria-live="polite"></div>
 </div>
 
 <div class="panel" id="historyPanel">
@@ -265,8 +267,8 @@ button:active{transform:translateY(1px) scale(.99)}button:disabled{opacity:.55;c
   </div>
   <div class="panel-body">
     <div class="grid">
-      <div class="field"><div class="label">Минимум (x)</div><div class="controls"><input type="number" step="0.01" min="1.00" id="minOddsInput"/></div><div class="hint">По умолчанию: 2.00</div></div>
-      <div class="field"><div class="label">Максимум (x)</div><div class="controls"><input type="number" step="0.01" min="1.00" id="maxOddsInput"/></div><div class="hint">По умолчанию: 8.00</div></div>
+      <div class="field"><div class="label">Минимум (x)</div><div class="controls"><input type="number" step="0.01" min="1.50" max="9.99" id="minOddsInput"/></div><div class="hint">По умолчанию: 1.50</div></div>
+      <div class="field"><div class="label">Максимум (x)</div><div class="controls"><input type="number" step="0.01" min="1.51" max="10.00" id="maxOddsInput"/></div><div class="hint">По умолчанию: 10.00</div></div>
     </div>
     <div class="actions">
       <button class="btn-secondary" id="saveRange">Сохранить</button>
@@ -277,7 +279,7 @@ button:active{transform:translateY(1px) scale(.99)}button:disabled{opacity:.55;c
   </div>
 </div>
 
-<script type="module">
+<script type="text/plain" id="legacyClassicEngine">
 import { initializeApp }   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, collection, addDoc, doc, getDoc, serverTimestamp }
                            from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -698,6 +700,7 @@ document.getElementById('voiceToggle').style.display = 'flex';
 document.getElementById('gate-checking').style.display = 'none';
 </script>
 
+<script src="beta-classic-engine-v2.js?v=20260802-1"></script>
 <script>
 const canvas = document.getElementById('waveCanvas');
 const ctx    = canvas.getContext('2d');
@@ -712,6 +715,9 @@ const particles = Array.from({length:200},(_,i)=>({
 }));
 
 function drawFrame(){
+    const tenXActive=document.getElementById('circle').classList.contains('ten-x');
+    const targetHue=tenXActive?355:270;
+    waveColorHue+=(targetHue-waveColorHue)*0.08;
     ctx.clearRect(0,0,220,220); wavePhase+=0.022; waveAngle+=0.007;
     const grd=ctx.createRadialGradient(CX,CY,R-28,CX,CY,R+28);
     grd.addColorStop(0,`hsla(${waveColorHue},100%,60%,0)`);
