@@ -1084,17 +1084,21 @@
     }
 
     if (freshRecentRows.length) mergeDailyRows(freshRecentRows);
-    const recentToday = todayDailyRows();
+    const recentSequence = freshRecentRows.length
+      ? freshRecentRows
+      : dailyRows.slice().sort(function (a, b) {
+          return b.timestamp - a.timestamp;
+        }).slice(0, 200);
     const topToday = todayDailyTopRows();
     updateDailyStats();
 
-    if (!recentToday.length && !topToday.length) {
+    if (!recentSequence.length && !topToday.length) {
       throw recentError || topError || new Error('Источники topCoefficient недоступны');
     }
 
     return {
       recentRows: freshRecentRows,
-      recentToday: recentToday,
+      recentToday: recentSequence,
       topRows: freshTopRows,
       topToday: topToday,
       recentFresh: !recentError,
@@ -1105,8 +1109,7 @@
   }
 
   function analyzeDirectMarket(rows, topRows) {
-    const today = todayDailyRows();
-    const source = today.length ? today : rows;
+    const source = rows && rows.length ? rows : dailyRows.slice(0, 200);
     const stats = calculateBigXStats(source);
     const level = stats.count < 20 ? 'danger' : (topRows && topRows.length ? 'safe' : 'warn');
     return {level: level, score: stats.readiness, average: stats.average, stats: stats};
