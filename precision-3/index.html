@@ -494,10 +494,15 @@
             completedAt: Date.parse(item.completedAt) || Date.now()
           };
         });
+        const latestHit = (test.signals || []).slice().reverse().find(function (item) { return item.success; });
+        const hitCoefficient = latestHit && latestHit.attempts && latestHit.attempts.length
+          ? Number(latestHit.attempts[latestHit.attempts.length - 1].coefficient) : 0;
         els.certificate.className = 'cert' + (Number(test.successes) > 0 ? '' : ' bad');
         els.certificate.textContent = Number(test.completedSignals) >= 3 && Number(test.successes) === 0
           ? '⚠️ ЭКСПЕРИМЕНТ 10X+: 0/' + Number(test.completedSignals) + ' • точность пока не подтверждена'
-          : 'LIVE-ТЕСТ 10X+: ' + Number(test.successes || 0) + '/' + Number(test.completedSignals || 0) + ' • успешных подряд: ' + certifiedStreak;
+          : latestHit
+            ? '✅ LIVE-ТЕСТ 10X+: ' + Number(test.successes || 0) + '/' + Number(test.completedSignals || 0) + ' • ' + hitCoefficient.toFixed(2) + 'X на ' + Number(latestHit.winningAttempt) + '-м • выборка мала'
+            : 'LIVE-ТЕСТ 10X+: ' + Number(test.successes || 0) + '/' + Number(test.completedSignals || 0) + ' • успешных подряд: ' + certifiedStreak;
         render();
       } catch (error) {
         els.certificate.className = 'cert bad';
