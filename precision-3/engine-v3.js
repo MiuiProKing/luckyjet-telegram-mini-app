@@ -297,14 +297,17 @@
     const currentFeatures = featuresAt(rows, rows.length);
     const model = selectValidatedRule(rows);
     const selectedReady = Boolean(model && model.validated && ruleMatches(model.name, currentFeatures));
+    const warmupReady = sampleSize >= 20 && !(model && model.validated);
+    const entryReady = selectedReady || warmupReady;
+    const entryMode = selectedReady ? 'validated-filter' : warmupReady ? 'live-test-sequential' : 'collecting';
     const firstTime = rows.length ? rows[0].observedAt : currentTime;
     const lastTime = rows.length ? rows[rows.length - 1].observedAt : currentTime;
 
     let status = 'СБОР ДАННЫХ';
     if (sampleSize >= MIN_MODEL_ROWS && model && model.validated) {
       status = selectedReady ? 'УСЛОВИЯ ГОТОВЫ' : 'ЖДИ УСЛОВИЙ';
-    } else if (sampleSize >= MIN_MODEL_ROWS) {
-      status = 'ПРЕИМУЩЕСТВО НЕ ДОКАЗАНО';
+    } else if (sampleSize >= 20) {
+      status = 'LIVE-ТЕСТ ГОТОВ';
     }
 
     return {
@@ -320,7 +323,10 @@
       coverageMinutes: Math.max(0, Math.round((lastTime - firstTime) / 60000)),
       model: model,
       status: status,
-      entryReady: selectedReady,
+      entryReady: entryReady,
+      entryMode: entryMode,
+      warmupReady: warmupReady,
+      validatedReady: selectedReady,
       generatedAt: currentTime
     };
   }
