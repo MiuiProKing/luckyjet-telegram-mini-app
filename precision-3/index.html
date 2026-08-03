@@ -16,9 +16,10 @@
     @keyframes pulse{0%{transform:scale(.8);opacity:.85}100%{transform:scale(1.25);opacity:0}}@keyframes signalPulse{0%{transform:scale(.76);opacity:1}100%{transform:scale(1.34);opacity:0}}@keyframes spin{to{transform:rotate(360deg)}}@keyframes signalGlow{0%,100%{transform:scale(1);filter:brightness(1)}50%{transform:scale(1.035);filter:brightness(1.28)}}@keyframes cueBlink{0%,100%{opacity:1}50%{opacity:.48}}
     .actions{display:grid;grid-template-columns:1.5fr 1fr;gap:10px}.btn{min-height:58px;border:0;border-radius:18px;font-weight:950;font-size:16px;letter-spacing:.4px;color:#080810;background:linear-gradient(110deg,#2ff0a7,#38d5ff);box-shadow:0 10px 30px #00d99933}.btn.secondary{color:#fff;background:#17172f;border:1px solid #33325a;box-shadow:none}.btn.active{background:linear-gradient(110deg,#ffca42,#ff8b31);color:#17100a}.btn:disabled{opacity:.48}
     .status{margin:12px 0;padding:14px;border-radius:16px;background:#111124;border:1px solid var(--line);text-align:center;font-weight:750;line-height:1.45}.status.ok{border-color:#1e8c69;color:#87ffd5}.status.bad{border-color:#9d2947;color:#ff9ab0}
-    .feed,.history{margin-top:12px;padding:14px;border:1px solid var(--line);border-radius:18px;background:rgba(15,15,32,.92)}.feed h2,.history h2{font-size:13px;color:var(--muted);letter-spacing:1.2px;margin:0 0 11px}.coefs{display:flex;gap:7px;overflow:auto;padding-bottom:2px}.coef{flex:0 0 auto;min-width:58px;padding:9px 7px;border-radius:11px;background:#20203d;text-align:center;font-weight:900}.coef.mid{color:var(--yellow)}.coef.high{color:var(--green)}
+    .feed,.history,.math-panel{margin-top:12px;padding:14px;border:1px solid var(--line);border-radius:18px;background:rgba(15,15,32,.92)}.feed h2,.history h2,.math-panel h2{font-size:13px;color:var(--muted);letter-spacing:1.2px;margin:0 0 11px}.coefs{display:flex;gap:7px;overflow:auto;padding-bottom:2px}.coef{flex:0 0 auto;min-width:58px;padding:9px 7px;border-radius:11px;background:#20203d;text-align:center;font-weight:900}.coef.mid{color:var(--yellow)}.coef.high{color:var(--green)}
+    .math-head{display:flex;gap:10px;align-items:center;justify-content:space-between}.model-badge{max-width:62%;padding:7px 9px;border:1px solid #725c21;border-radius:999px;background:#2c2510;color:#ffd66d;font-size:10px;font-weight:950;text-align:center}.model-badge.ok{border-color:#23765d;background:#0d2b23;color:#7cffd1}.model-badge.bad{border-color:#85304a;background:#2b101a;color:#ff9eb3}.math-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.math-stat{padding:10px 6px;border-radius:13px;background:#1a1a35;text-align:center}.math-stat small{display:block;color:var(--muted);font-size:10px}.math-stat strong{display:block;margin-top:5px;font-size:17px}.model-detail,.top-times{margin-top:10px;padding-top:10px;border-top:1px solid #292846;color:#c5c5dd;font-size:12px;line-height:1.45}.top-times{color:#8fe7ff;font-variant-numeric:tabular-nums}
     .record{display:grid;grid-template-columns:1fr auto;gap:8px;padding:11px 0;border-top:1px solid #292846}.record:first-of-type{border-top:0}.record strong{font-size:14px}.record small{display:block;color:var(--muted);margin-top:4px}.win-text{color:var(--green)}.fail-text{color:var(--red)}.cert{margin-top:12px;padding:12px 14px;border:1px solid #286d57;background:#0e2924;border-radius:15px;color:#8fffd9;font-weight:800}.cert.bad{border-color:#7f2940;background:#2a1019;color:#ff9db0}.note{font-size:12px;line-height:1.45;color:var(--muted);text-align:center;margin:14px 8px}
-    @media(max-width:430px){body{padding-left:9px;padding-right:9px}.grid{gap:6px}.card{padding:12px 5px}.label{font-size:10px}.orb-wrap{min-height:285px}.orb{width:205px;height:205px}.pulse{width:220px;height:220px}.actions{grid-template-columns:1fr}.top{grid-template-columns:48px 1fr 48px}.icon,.back{height:48px}}
+    @media(max-width:430px){body{padding-left:9px;padding-right:9px}.grid{gap:6px}.card{padding:12px 5px}.label{font-size:10px}.orb-wrap{min-height:285px}.orb{width:205px;height:205px}.pulse{width:220px;height:220px}.actions{grid-template-columns:1fr}.top{grid-template-columns:48px 1fr 48px}.icon,.back{height:48px}.math-stat strong{font-size:14px}.model-badge{max-width:58%;font-size:9px}}
   </style>
 </head>
 <body>
@@ -37,6 +38,17 @@
       <div class="card"><div class="label">Без 10X подряд</div><div class="value" id="dryCount">0</div></div>
     </section>
 
+    <section class="math-panel">
+      <div class="math-head"><h2>МАТЕМАТИКА 24 ЧАСА</h2><span class="model-badge" id="modelBadge">СБОР ДАННЫХ</span></div>
+      <div class="math-grid">
+        <div class="math-stat"><small>Уникальных раундов</small><strong id="daySample">0/180</strong></div>
+        <div class="math-stat"><small>10X+ собрано</small><strong id="dayHits">0</strong></div>
+        <div class="math-stat"><small>Оценка ≤3</small><strong id="dayChance">—</strong></div>
+      </div>
+      <div class="model-detail" id="modelDetail">Сохраняю каждый новый ID и проверяю фильтры без просмотра будущих раундов.</div>
+      <div class="top-times" id="topTimes">Точные минуты DAY‑событий загружаются…</div>
+    </section>
+
     <section class="orb-wrap" id="orbWrap">
       <div class="pulse"></div><div class="pulse p2"></div>
       <div class="orb" id="orb">
@@ -51,7 +63,7 @@
 
     <section class="grid">
       <div class="card"><div class="label">Сейчас попытка</div><div class="value"><span id="attempt">0</span>/3</div></div>
-      <div class="card"><div class="label">История ≤3</div><div class="value" id="confidence">—</div></div>
+      <div class="card"><div class="label">Модель ≤3</div><div class="value" id="confidence">—</div></div>
       <div class="card"><div class="label">Успешных подряд</div><div class="value"><span id="streak">0</span></div></div>
     </section>
 
@@ -64,17 +76,20 @@
     <section class="feed"><h2>ПОСЛЕДНИЕ TOPCOEFFICIENT</h2><div class="coefs" id="coefs"></div></section>
     <div class="cert" id="certificate">⏳ LIVE-ТЕСТ 10X+ загружается…</div>
     <section class="history"><h2>ИСТОРИЯ ПОДТВЕРЖДЕНИЙ</h2><div id="records"></div></section>
-    <p class="note">Надпись «СТАВЬ СЕЙЧАС» появляется в BETTING; если /state временно недоступен — сразу после нового завершённого уникального раунда. Киевское время фиксируется до следующего результата. 10X+ не гарантирован: прошлые коэффициенты не позволяют надёжно предсказать случайный crash‑раунд.</p>
+    <p class="note">/history отдаёт последние 20 раундов, поэтому полная 24‑часовая последовательность накапливается локально, пока страница открыта. DAY даёт TOP‑20 с точным серверным startTime. Фильтр выбирается на прошлой части данных и проверяется на следующей. 10X+ не гарантирован: прошлые коэффициенты не позволяют надёжно предсказать случайный crash‑раунд.</p>
   </main>
 
+  <script src="engine-v3.js?v=1"></script>
   <script>
   (function () {
     'use strict';
 
+    const MathV3 = window.LuckyJetMathV3;
+    if (!MathV3) throw new Error('LuckyJetMathV3 is not loaded');
     const HISTORY_URL = 'https://crash-gateway-grm-cr.100hp.app/history';
     const STATE_URL = 'https://crash-gateway-grm-cr.100hp.app/state';
     const DAY_TOP_URL = 'https://crash-gateway-grm-cr.100hp.app/leaderboard/top-coefficients?interval=DAY';
-    const FALLBACK_URL = 'https://allpredictor.com/api/v1/luckyjet/coefficients?limit=20';
+    const FALLBACK_URL = 'https://allpredictor.com/api/v1/luckyjet/coefficients?limit=100';
     const API_KEY = 'ap_de0cc6901c6303fe93388c94934c30ceac8baf126e2474b6';
     const HEADERS = {
       'customer-id': '077dee8d-c923-4c02-9bee-757573662e69',
@@ -87,10 +102,9 @@
     const STORAGE_ACTIVE = 'lj_precision10_active_v2';
     const STORAGE_AUTO = 'lj_precision10_auto_v2';
     const STORAGE_WAKE = 'lj_precision3_wake_v1';
+    const STORAGE_DAY_HISTORY = 'lj_precision10_day_history_v3';
+    const STORAGE_TOP_EVENTS = 'lj_precision10_day_top_events_v3';
     const KYIV_TZ = 'Europe/Kyiv';
-    const MIN_DRY_ROUNDS = 3;
-    const LOW_LIMIT = 2.00;
-    const MIN_LOW_IN_LAST3 = 2;
 
     const $ = function (id) { return document.getElementById(id); };
     const els = {
@@ -100,7 +114,9 @@
       attempt: $('attempt'), confidence: $('confidence'),
       streak: $('streak'), signalButton: $('signalButton'), autoButton: $('autoButton'),
       wakeButton: $('wakeButton'), status: $('status'), coefs: $('coefs'),
-      records: $('records'), certificate: $('certificate')
+      records: $('records'), certificate: $('certificate'),
+      modelBadge: $('modelBadge'), daySample: $('daySample'), dayHits: $('dayHits'),
+      dayChance: $('dayChance'), modelDetail: $('modelDetail'), topTimes: $('topTimes')
     };
 
     let recentRows = [];
@@ -122,6 +138,9 @@
     let certifiedStreak = 0;
     let resultFlash = null;
     let cooldownUntil = 0;
+    let dayHistory = loadJson(STORAGE_DAY_HISTORY, []);
+    let dayTopEvents = loadJson(STORAGE_TOP_EVENTS, []);
+    let mathAnalysis = MathV3.analyzeDay(dayHistory, Date.now());
 
     function loadJson(key, fallback) {
       try {
@@ -137,13 +156,7 @@
     }
 
     function normalize(items) {
-      if (!Array.isArray(items)) return [];
-      return items.map(function (item) {
-        const coefficient = Number(item && item.topCoefficient);
-        const id = item && (item.id || item.roundId || item.round_id || item.hash);
-        if (!id || !isFinite(coefficient) || coefficient < 1) return null;
-        return {id: String(id), coefficient: coefficient};
-      }).filter(Boolean);
+      return MathV3.normalizeRows(items);
     }
 
     async function fetchJson(url, headers) {
@@ -181,37 +194,32 @@
     }
 
     function confidenceScore(rows) {
-      const sample = rows.slice(0, 20);
-      if (sample.length < MAX_ATTEMPTS) return 0;
-      let windows = 0;
-      let hits = 0;
-      for (let index = 0; index <= sample.length - MAX_ATTEMPTS; index += 1) {
-        windows += 1;
-        if (sample.slice(index, index + MAX_ATTEMPTS).some(function (row) {
-          return row.coefficient >= TARGET;
-        })) hits += 1;
-      }
-      return windows ? Math.round(hits / windows * 100) : 0;
+      if (!rows || !rows.length) return 0;
+      return Math.round(mathAnalysis.threeRoundRate * 100);
     }
 
     function scannerMetrics(rows) {
       const sample = rows.slice(0, 20);
-      let dryRounds = 0;
-      for (let index = 0; index < sample.length; index += 1) {
-        if (sample[index].coefficient >= TARGET) break;
-        dryRounds += 1;
-      }
       const lowInLast3 = sample.slice(0, 3).filter(function (row) {
-        return row.coefficient <= LOW_LIMIT;
+        return row.coefficient <= 2;
       }).length;
       const latest = sample.length ? sample[0].coefficient : 0;
       return {
-        dryRounds: dryRounds,
+        dryRounds: mathAnalysis.dryRounds || 0,
         lowInLast3: lowInLast3,
         latest: latest,
-        ready: sample.length >= 20 && dryRounds >= MIN_DRY_ROUNDS &&
-          latest <= LOW_LIMIT && lowInLast3 >= MIN_LOW_IN_LAST3
+        ready: Boolean(mathAnalysis.entryReady),
+        model: mathAnalysis.model
       };
+    }
+
+    function updateMathData(rows, now) {
+      const timestamp = Number(now) || Date.now();
+      dayHistory = MathV3.mergeDayHistory(dayHistory, rows, timestamp);
+      dayTopEvents = MathV3.mergeTopEvents(dayTopEvents, dayTopRows, timestamp);
+      saveJson(STORAGE_DAY_HISTORY, dayHistory);
+      saveJson(STORAGE_TOP_EVENTS, dayTopEvents);
+      mathAnalysis = MathV3.analyzeDay(dayHistory, timestamp);
     }
 
     function isBettingState() {
@@ -253,7 +261,7 @@
       els.dryCount.textContent = String(metrics.dryRounds);
       els.sourceDot.className = 'dot ' + (recentRows.length >= 20 && dayTopRows.length ? 'ok' : 'bad');
       els.sourceText.textContent = recentRows.length >= 20 && dayTopRows.length
-        ? 'DAY TOP-' + dayTopRows.length + ' • /history • ' + (stateAvailable ? (lastState || 'LIVE') : 'STATE FALLBACK')
+        ? '24Ч ' + mathAnalysis.sampleSize + ' • DAY TOP-' + dayTopRows.length + ' • ' + (stateAvailable ? (lastState || 'LIVE') : 'STATE FALLBACK')
         : 'Один из источников временно недоступен';
       els.coefs.textContent = '';
       recentRows.slice(0, 12).forEach(function (row) {
@@ -262,6 +270,44 @@
         chip.textContent = row.coefficient.toFixed(2) + 'X';
         els.coefs.appendChild(chip);
       });
+    }
+
+    function renderMath() {
+      const model = mathAnalysis.model;
+      const top = MathV3.summarizeTopEvents(dayTopEvents, Date.now());
+      els.daySample.textContent = mathAnalysis.sampleSize + '/' + mathAnalysis.minimumRows;
+      els.dayHits.textContent = String(mathAnalysis.hits);
+      els.dayChance.textContent = mathAnalysis.sampleSize
+        ? '≈' + Math.round(mathAnalysis.threeRoundRate * 100) + '%'
+        : '—';
+      els.confidence.textContent = mathAnalysis.sampleSize
+        ? Math.round(mathAnalysis.threeRoundRate * 100) + '%'
+        : '—';
+      els.modelBadge.textContent = mathAnalysis.status;
+      els.modelBadge.className = 'model-badge' + (mathAnalysis.entryReady ? ' ok' :
+        mathAnalysis.sampleSize >= mathAnalysis.minimumRows ? ' bad' : '');
+
+      if (mathAnalysis.sampleSize < mathAnalysis.minimumRows) {
+        els.modelDetail.textContent = 'Собрано ' + mathAnalysis.sampleSize + ' уникальных раундов. Нужно минимум ' +
+          mathAnalysis.minimumRows + ': затем фильтр выбирается на первых 67% истории и проверяется на последних 33%.';
+      } else if (model && model.validated) {
+        els.modelDetail.textContent = 'Фильтр: ' + model.label + '. Проверка: ' +
+          model.validation.successes + '/' + model.validation.signals + ' против базы ' +
+          Math.round(model.baselineValidation.rate * 100) + '%. ' + (mathAnalysis.entryReady ? 'Условия совпали.' : 'Текущие условия не совпали.');
+      } else {
+        els.modelDetail.textContent = (model && model.reason ? model.reason : 'Недостаточно проверочных сигналов.') +
+          ' Новая ставка не показывается, пока математическое преимущество не подтверждено.';
+      }
+
+      if (!top.count) {
+        els.topTimes.textContent = 'DAY TOP‑20 пока не дал серверные минуты startTime.';
+      } else {
+        const times = top.latest.map(function (event) {
+          return kyivTime(event.sourceTime, false) + ' (' + event.coefficient.toFixed(2) + 'X)';
+        }).join(' • ');
+        els.topTimes.textContent = 'Точные минуты DAY: ' + times +
+          (top.medianGapMinutes === null ? '' : ' • медиана между TOP‑событиями ' + Math.round(top.medianGapMinutes) + ' мин.');
+      }
     }
 
     function renderRecords() {
@@ -294,7 +340,6 @@
     function render() {
       const signalNow = Boolean(active && active.pendingEntry && isBettingState());
       els.clock.textContent = kyivTime(Date.now(), true);
-      els.confidence.textContent = recentRows.length ? confidenceScore(recentRows) + '%' : '—';
       els.streak.textContent = String(Math.max(currentStreak(), certifiedStreak));
       els.orbWrap.className = 'orb-wrap' + (signalNow ? ' signal' : '');
       els.orb.className = 'orb' + (signalNow ? ' active' : resultFlash ? ' ' + resultFlash : '');
@@ -306,7 +351,7 @@
       els.signalButton.disabled = requestBusy;
       els.autoButton.textContent = autoMode ? 'СКАНЕР: ВКЛ' : 'СКАНЕР: ВЫКЛ';
       els.autoButton.className = 'btn secondary' + (autoMode ? ' active' : '');
-      renderAttempts(); renderSources(); renderRecords();
+      renderAttempts(); renderSources(); renderMath(); renderRecords();
     }
 
     function issueEntryWindow() {
@@ -328,6 +373,7 @@
     function armSignal() {
       const metrics = scannerMetrics(recentRows);
       if (active || resultFlash || Date.now() < cooldownUntil || !autoMode || !metrics.ready || !isBettingState() || recentRows.length < 20 || !dayTopRows.length) return false;
+      const model = metrics.model;
       active = {
         target: TARGET,
         maxAttempts: MAX_ATTEMPTS,
@@ -335,6 +381,14 @@
         baselineRoundId: recentRows[0].id,
         lastCountedRoundId: recentRows[0].id,
         gate: metrics,
+        model: model ? {
+          name: model.name,
+          label: model.label,
+          validationSignals: model.validation && model.validation.signals,
+          validationRate: model.validation && model.validation.rate,
+          baselineRate: model.baselineValidation && model.baselineValidation.rate,
+          sampleSize: mathAnalysis.sampleSize
+        } : null,
         attempts: [],
         entryWindows: [],
         pendingEntry: null
@@ -426,11 +480,21 @@
         return;
       }
       const metrics = scannerMetrics(recentRows);
-      if (metrics.ready && !isBettingState()) {
-        setStatus('Условия готовы. ЖДИ — вход появится при BETTING или сразу после нового уникального раунда.', '');
+      if (mathAnalysis.sampleSize < mathAnalysis.minimumRows) {
+        setStatus('СБОР 24Ч • ' + mathAnalysis.sampleSize + '/' + mathAnalysis.minimumRows +
+          ' уникальных раундов. Оставьте страницу открытой: каждый новый ID и время фиксации сохраняются.', '');
         return;
       }
-      setStatus('ЖДИ • без 10X: ' + metrics.dryRounds + ' • последний: ' + (metrics.latest ? metrics.latest.toFixed(2) + 'X' : '—') + ' • низких из 3: ' + metrics.lowInLast3 + '/2.', '');
+      if (!mathAnalysis.model || !mathAnalysis.model.validated) {
+        setStatus('Математическая проверка завершена, но преимущество фильтра на будущей части истории не доказано. Ставка не выдаётся.', 'bad');
+        return;
+      }
+      if (metrics.ready && !isBettingState()) {
+        setStatus('Фильтр «' + mathAnalysis.model.label + '» подтверждён и условия готовы. ЖДИ BETTING.', '');
+        return;
+      }
+      setStatus('ЖДИ • фильтр «' + mathAnalysis.model.label + '» • без 10X: ' + metrics.dryRounds +
+        ' • последний: ' + (metrics.latest ? metrics.latest.toFixed(2) + 'X' : '—') + '.', '');
     }
 
     async function refreshSources(forceInit) {
@@ -449,6 +513,7 @@
           lastStateRoundId = results[2].value.roundConfig && results[2].value.roundConfig.id
             ? String(results[2].value.roundConfig.id) : null;
         }
+        updateMathData(nextRecent, Date.now());
 
         if (!initialized || forceInit) {
           recentRows = nextRecent;
@@ -546,6 +611,9 @@
       normalize: normalize,
       confidenceScore: confidenceScore,
       scannerMetrics: scannerMetrics,
+      getMathAnalysis: function () { return mathAnalysis; },
+      getDayHistory: function () { return dayHistory.slice(); },
+      getDayTopEvents: function () { return dayTopEvents.slice(); },
       armSignal: armSignal,
       issueEntryWindow: issueEntryWindow,
       processNewRows: processNewRows,
