@@ -3,7 +3,7 @@
   "mode": "prospective-live",
   "target": 10,
   "maxAttempts": 3,
-  "lastUpdatedAt": "2026-08-03T04:41:26.000Z",
+  "lastUpdatedAt": "2026-08-03T11:41:41.891Z",
   "source": "https://crash-gateway-grm-cr.100hp.app/history",
   "validationProtocol": {
     "target": "10X or higher",
@@ -11,7 +11,7 @@
     "entryState": "BETTING; if /state is unavailable, a 12-second post-history fallback window is used",
     "roundMatching": "unique roundConfig.id",
     "timing": "every entry is fixed before its result",
-    "researchGate": "new signals require at least 180 unique locally accumulated rounds and a filter selected on the first 67% that also beats the sequential baseline on the last 33%"
+    "researchGate": "before 180 locally accumulated rounds, sequential LIVE TEST signals are recorded prospectively; after 180 rounds, a filter may replace warm-up only if it is selected on the first 67% and beats the sequential baseline on the last 33%"
   },
   "strategyHistory": [
     {
@@ -27,15 +27,22 @@
       "reason": "The first filter finished 0/3. Testing continued without claiming that past coefficients predict the next random round."
     },
     {
-      "signals": "6+",
-      "name": "24-hour train-validation research gate",
-      "status": "collecting data; no new signal is released until out-of-sample improvement is observed",
+      "signals": "6-15",
+      "name": "pre-registered sequential warm-up series",
+      "status": "completed 10/10 planned signals without stopping after a hit; 5 successes and 5 failures",
+      "result": "5/10",
       "candidateFilters": [
         "low cluster",
         "five-round compression",
         "rebound after volatility",
         "long dry sequence"
-      ]
+      ],
+      "candidateObservation": "low cluster / rebound matched two signal starts and finished 1/2; this does not show an advantage over the sequential 5/10 result"
+    },
+    {
+      "signals": "16+",
+      "name": "sequential LIVE TEST plus 24-hour shadow validation",
+      "status": "active; every entry remains fixed before the exact future round result"
     }
   ],
   "historicalEvaluation": {
@@ -45,13 +52,13 @@
     "dayLeaderboardHasStartTime": true,
     "localAccumulatorWindowHours": 24,
     "minimumUniqueRoundsForModelComparison": 180,
-    "note": "The page accumulates unique round IDs locally while it remains active. DAY startTime values are used as an activity timeline, not as proof that a future coefficient is predictable."
+    "note": "The page accumulates unique round IDs locally while it remains active. DAY startTime values are used as an activity timeline, not as proof that a future coefficient is predictable. Warm-up remains explicitly labeled LIVE TEST."
   },
   "prospective": {
-    "completedSignals": 5,
-    "successes": 1,
-    "failures": 4,
-    "consecutiveSuccesses": 1,
+    "completedSignals": 15,
+    "successes": 6,
+    "failures": 9,
+    "consecutiveSuccesses": 2,
     "signals": [
       {
         "number": 1,
@@ -249,6 +256,151 @@
         "success": true,
         "winningAttempt": 3,
         "completedAt": "2026-08-03T03:11:59.982Z"
+      },
+      {
+        "number": 6,
+        "strategy": "pre-registered sequential warm-up series 1/10",
+        "createdAt": "2026-08-03T11:24:03.950Z",
+        "baselineRoundId": "c210492b-20f7-437c-9d7b-9f2e131787f7",
+        "matchedFilters": [],
+        "attempts": [
+          {"attempt": 1, "entryState": "BETTING", "roundId": "dbf27ccb-1e28-4ad4-9616-51211b6c22e3", "coefficient": 1.47, "entryAt": "2026-08-03T11:24:03.950Z", "observedAt": "2026-08-03T11:24:16.856Z"},
+          {"attempt": 2, "entryState": "BETTING", "roundId": "a5ac4d18-b7ab-4e61-a4c0-15ff1c78c722", "coefficient": 1.4, "entryAt": "2026-08-03T11:24:21.203Z", "observedAt": "2026-08-03T11:24:32.631Z"},
+          {"attempt": 3, "entryState": "BETTING", "roundId": "9b1a22a3-36e5-4b91-bb07-b39612a18bcd", "coefficient": 26.01, "entryAt": "2026-08-03T11:24:36.876Z", "observedAt": "2026-08-03T11:25:22.558Z"}
+        ],
+        "success": true,
+        "winningAttempt": 3,
+        "completedAt": "2026-08-03T11:25:22.558Z"
+      },
+      {
+        "number": 7,
+        "strategy": "pre-registered sequential warm-up series 2/10",
+        "createdAt": "2026-08-03T11:25:37.986Z",
+        "baselineRoundId": "9b1a22a3-36e5-4b91-bb07-b39612a18bcd",
+        "matchedFilters": [],
+        "attempts": [
+          {"attempt": 1, "entryState": "BETTING", "roundId": "7cd24e5c-179d-442d-983a-cf998a1035d6", "coefficient": 3.5, "entryAt": "2026-08-03T11:25:37.986Z", "observedAt": "2026-08-03T11:25:59.285Z"},
+          {"attempt": 2, "entryState": "WAITING", "roundId": "e7aeb5fe-e0eb-43c7-b90e-26e6490ce02b", "coefficient": 1.09, "entryAt": "2026-08-03T11:26:06.460Z", "observedAt": "2026-08-03T11:26:12.375Z"},
+          {"attempt": 3, "entryState": "BETTING", "roundId": "d889d048-5363-4944-9cd1-cb8edb7f79e8", "coefficient": 1.35, "entryAt": "2026-08-03T11:26:16.533Z", "observedAt": "2026-08-03T11:26:28.042Z"}
+        ],
+        "success": false,
+        "winningAttempt": null,
+        "completedAt": "2026-08-03T11:26:28.042Z"
+      },
+      {
+        "number": 8,
+        "strategy": "pre-registered sequential warm-up series 3/10",
+        "createdAt": "2026-08-03T11:26:53.620Z",
+        "baselineRoundId": "d889d048-5363-4944-9cd1-cb8edb7f79e8",
+        "matchedFilters": ["low_cluster", "rebound_volatility"],
+        "attempts": [
+          {"attempt": 1, "entryState": "BETTING", "roundId": "52734e61-9255-4e20-bed0-d1fd6e09fcd1", "coefficient": 11.97, "entryAt": "2026-08-03T11:26:53.620Z", "observedAt": "2026-08-03T11:27:31.837Z"}
+        ],
+        "success": true,
+        "winningAttempt": 1,
+        "completedAt": "2026-08-03T11:27:31.837Z"
+      },
+      {
+        "number": 9,
+        "strategy": "pre-registered sequential warm-up series 4/10",
+        "createdAt": "2026-08-03T11:27:36.412Z",
+        "baselineRoundId": "52734e61-9255-4e20-bed0-d1fd6e09fcd1",
+        "matchedFilters": [],
+        "attempts": [
+          {"attempt": 1, "entryState": "BETTING", "roundId": "a86cf6a7-3f8a-4306-bead-f1c7f8b4c2e2", "coefficient": 1.1, "entryAt": "2026-08-03T11:27:36.412Z", "observedAt": "2026-08-03T11:27:43.634Z"},
+          {"attempt": 2, "entryState": "BETTING", "roundId": "8f35a352-8f2e-4d38-a3b8-a3c3f93ca7b4", "coefficient": 4.07, "entryAt": "2026-08-03T11:27:47.756Z", "observedAt": "2026-08-03T11:28:11.978Z"},
+          {"attempt": 3, "entryState": "BETTING", "roundId": "f62d479b-2e88-43db-b5c2-e673a49c2cc4", "coefficient": 5.38, "entryAt": "2026-08-03T11:28:29.114Z", "observedAt": "2026-08-03T11:28:57.472Z"}
+        ],
+        "success": false,
+        "winningAttempt": null,
+        "completedAt": "2026-08-03T11:28:57.472Z"
+      },
+      {
+        "number": 10,
+        "strategy": "pre-registered sequential warm-up series 5/10",
+        "createdAt": "2026-08-03T11:29:51.127Z",
+        "baselineRoundId": "f62d479b-2e88-43db-b5c2-e673a49c2cc4",
+        "matchedFilters": [],
+        "attempts": [
+          {"attempt": 1, "entryState": "BETTING", "roundId": "e450c988-4d1c-420c-ad6c-abed120b73b6", "coefficient": 1.03, "entryAt": "2026-08-03T11:29:51.127Z", "observedAt": "2026-08-03T11:29:59.789Z"},
+          {"attempt": 2, "entryState": "BETTING", "roundId": "d86cb42c-d1b8-4a74-83d8-9201c6344293", "coefficient": 1.94, "entryAt": "2026-08-03T11:30:04.075Z", "observedAt": "2026-08-03T11:30:19.870Z"},
+          {"attempt": 3, "entryState": "BETTING", "roundId": "9e84f24b-9efc-4801-8213-0e3c4ed48412", "coefficient": 10.06, "entryAt": "2026-08-03T11:30:54.035Z", "observedAt": "2026-08-03T11:31:29.625Z"}
+        ],
+        "success": true,
+        "winningAttempt": 3,
+        "completedAt": "2026-08-03T11:31:29.625Z"
+      },
+      {
+        "number": 11,
+        "strategy": "pre-registered sequential warm-up series 6/10",
+        "createdAt": "2026-08-03T11:31:34.431Z",
+        "baselineRoundId": "9e84f24b-9efc-4801-8213-0e3c4ed48412",
+        "matchedFilters": [],
+        "attempts": [
+          {"attempt": 1, "entryState": "BETTING", "roundId": "aafc25de-e259-4c16-935b-0e95dabf1596", "coefficient": 2.85, "entryAt": "2026-08-03T11:31:34.431Z", "observedAt": "2026-08-03T11:31:52.816Z"},
+          {"attempt": 2, "entryState": "BETTING", "roundId": "ab9fb783-e51e-43c7-ae2a-c5542a7f44c3", "coefficient": 1.22, "entryAt": "2026-08-03T11:31:56.959Z", "observedAt": "2026-08-03T11:32:07.035Z"},
+          {"attempt": 3, "entryState": "BETTING", "roundId": "b09450e5-666f-45c9-96bc-f47ef3be0d7d", "coefficient": 3.06, "entryAt": "2026-08-03T11:32:59.198Z", "observedAt": "2026-08-03T11:33:22.052Z"}
+        ],
+        "success": false,
+        "winningAttempt": null,
+        "completedAt": "2026-08-03T11:33:22.052Z"
+      },
+      {
+        "number": 12,
+        "strategy": "pre-registered sequential warm-up series 7/10",
+        "createdAt": "2026-08-03T11:33:41.828Z",
+        "baselineRoundId": "b09450e5-666f-45c9-96bc-f47ef3be0d7d",
+        "matchedFilters": [],
+        "attempts": [
+          {"attempt": 1, "entryState": "BETTING", "roundId": "038d1f91-693f-4d5f-b172-694342006a04", "coefficient": 7.87, "entryAt": "2026-08-03T11:33:41.828Z", "observedAt": "2026-08-03T11:34:12.731Z"},
+          {"attempt": 2, "entryState": "WAITING", "roundId": "e10ede71-2bc1-4ecc-8def-1d96144373cb", "coefficient": 1.99, "entryAt": "2026-08-03T11:34:20.079Z", "observedAt": "2026-08-03T11:34:33.004Z"},
+          {"attempt": 3, "entryState": "BETTING", "roundId": "58a1729a-e892-455c-a6e1-43f653413caa", "coefficient": 1.3, "entryAt": "2026-08-03T11:34:37.248Z", "observedAt": "2026-08-03T11:34:47.373Z"}
+        ],
+        "success": false,
+        "winningAttempt": null,
+        "completedAt": "2026-08-03T11:34:47.373Z"
+      },
+      {
+        "number": 13,
+        "strategy": "pre-registered sequential warm-up series 8/10",
+        "createdAt": "2026-08-03T11:35:22.349Z",
+        "baselineRoundId": "58a1729a-e892-455c-a6e1-43f653413caa",
+        "matchedFilters": ["low_cluster", "rebound_volatility"],
+        "attempts": [
+          {"attempt": 1, "entryState": "BETTING", "roundId": "09045be2-50a7-44e1-aafd-4df06883da29", "coefficient": 8.59, "entryAt": "2026-08-03T11:35:22.349Z", "observedAt": "2026-08-03T11:35:56.277Z"},
+          {"attempt": 2, "entryState": "BETTING", "roundId": "b5e908b6-1c4c-400e-924d-547e2e95229f", "coefficient": 2.14, "entryAt": "2026-08-03T11:36:00.620Z", "observedAt": "2026-08-03T11:36:17.690Z"},
+          {"attempt": 3, "entryState": "BETTING", "roundId": "36c2307f-2b95-4da9-afd1-905d3bfb64c5", "coefficient": 4.12, "entryAt": "2026-08-03T11:36:39.125Z", "observedAt": "2026-08-03T11:37:04.562Z"}
+        ],
+        "success": false,
+        "winningAttempt": null,
+        "completedAt": "2026-08-03T11:37:04.562Z"
+      },
+      {
+        "number": 14,
+        "strategy": "pre-registered sequential warm-up series 9/10",
+        "createdAt": "2026-08-03T11:37:09.142Z",
+        "baselineRoundId": "36c2307f-2b95-4da9-afd1-905d3bfb64c5",
+        "matchedFilters": [],
+        "attempts": [
+          {"attempt": 1, "entryState": "BETTING", "roundId": "9e851861-e0af-4b88-8482-7226f3114f57", "coefficient": 24.35, "entryAt": "2026-08-03T11:37:09.142Z", "observedAt": "2026-08-03T11:37:52.892Z"}
+        ],
+        "success": true,
+        "winningAttempt": 1,
+        "completedAt": "2026-08-03T11:37:52.892Z"
+      },
+      {
+        "number": 15,
+        "strategy": "pre-registered sequential warm-up series 10/10",
+        "createdAt": "2026-08-03T11:39:21.383Z",
+        "baselineRoundId": "9e851861-e0af-4b88-8482-7226f3114f57",
+        "matchedFilters": [],
+        "attempts": [
+          {"attempt": 1, "entryState": "BETTING", "roundId": "536c7d67-8938-4a01-91e3-cc7296319150", "coefficient": 2.32, "entryAt": "2026-08-03T11:39:21.383Z", "observedAt": "2026-08-03T11:39:40.173Z"},
+          {"attempt": 2, "entryState": "BETTING", "roundId": "dcf56861-08cd-47ba-b41b-89f8f2ec80f7", "coefficient": 13094.5, "entryAt": "2026-08-03T11:39:44.480Z", "observedAt": "2026-08-03T11:41:41.891Z"}
+        ],
+        "success": true,
+        "winningAttempt": 2,
+        "completedAt": "2026-08-03T11:41:41.891Z"
       }
     ]
   }
