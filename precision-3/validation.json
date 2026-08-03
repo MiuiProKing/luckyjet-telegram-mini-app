@@ -1,16 +1,17 @@
 {
-  "version": 2,
+  "version": 3,
   "mode": "prospective-live",
   "target": 10,
   "maxAttempts": 3,
-  "lastUpdatedAt": "2026-08-03T03:11:59.982Z",
+  "lastUpdatedAt": "2026-08-03T04:41:26.000Z",
   "source": "https://crash-gateway-grm-cr.100hp.app/history",
   "validationProtocol": {
     "target": "10X or higher",
     "maximumAttempts": 3,
     "entryState": "BETTING; if /state is unavailable, a 12-second post-history fallback window is used",
     "roundMatching": "unique roundConfig.id",
-    "timing": "every entry is fixed before its result"
+    "timing": "every entry is fixed before its result",
+    "researchGate": "new signals require at least 180 unique locally accumulated rounds and a filter selected on the first 67% that also beats the sequential baseline on the last 33%"
   },
   "strategyHistory": [
     {
@@ -24,12 +25,27 @@
       "signals": "4-5",
       "name": "sequential prospective windows",
       "reason": "The first filter finished 0/3. Testing continued without claiming that past coefficients predict the next random round."
+    },
+    {
+      "signals": "6+",
+      "name": "24-hour train-validation research gate",
+      "status": "collecting data; no new signal is released until out-of-sample improvement is observed",
+      "candidateFilters": [
+        "low cluster",
+        "five-round compression",
+        "rebound after volatility",
+        "long dry sequence"
+      ]
     }
   ],
   "historicalEvaluation": {
-    "snapshots": 2,
-    "roundsPerSnapshot": 20,
-    "note": "The available samples are too small to establish predictive power. Historical patterns are used only as a timing filter, not as a guarantee."
+    "serverHistoryLimit": 20,
+    "serverHistoryHasRoundTimestamps": false,
+    "dayLeaderboardLimit": 20,
+    "dayLeaderboardHasStartTime": true,
+    "localAccumulatorWindowHours": 24,
+    "minimumUniqueRoundsForModelComparison": 180,
+    "note": "The page accumulates unique round IDs locally while it remains active. DAY startTime values are used as an activity timeline, not as proof that a future coefficient is predictable."
   },
   "prospective": {
     "completedSignals": 5,
