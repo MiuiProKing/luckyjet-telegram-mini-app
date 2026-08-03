@@ -76,10 +76,10 @@
     <section class="feed"><h2>ПОСЛЕДНИЕ TOPCOEFFICIENT</h2><div class="coefs" id="coefs"></div></section>
     <div class="cert" id="certificate">⏳ LIVE-ТЕСТ 10X+ загружается…</div>
     <section class="history"><h2>ИСТОРИЯ ПОДТВЕРЖДЕНИЙ</h2><div id="records"></div></section>
-    <p class="note">/history отдаёт последние 20 раундов, поэтому полная 24‑часовая последовательность накапливается локально, пока страница открыта. DAY даёт TOP‑20 с точным серверным startTime. Фильтр выбирается на прошлой части данных и проверяется на следующей. 10X+ не гарантирован: прошлые коэффициенты не позволяют надёжно предсказать случайный crash‑раунд.</p>
+    <p class="note">До накопления 180 уникальных раундов работает последовательный LIVE‑тест: каждый вход фиксируется в BETTING до результата и проверяется максимум на трёх уникальных ID. Параллельно собирается 24‑часовая история; затем фильтр выбирается на первых 67% данных и проверяется на последних 33%. 10X+ не гарантирован: прошлые коэффициенты не позволяют надёжно предсказать случайный crash‑раунд.</p>
   </main>
 
-  <script src="engine-v3.js?v=1"></script>
+  <script src="engine-v3.js?v=4"></script>
   <script>
   (function () {
     'use strict';
@@ -287,9 +287,9 @@
       els.modelBadge.className = 'model-badge' + (mathAnalysis.entryReady ? ' ok' :
         mathAnalysis.sampleSize >= mathAnalysis.minimumRows ? ' bad' : '');
 
-      if (mathAnalysis.sampleSize < mathAnalysis.minimumRows) {
-        els.modelDetail.textContent = 'Собрано ' + mathAnalysis.sampleSize + ' уникальных раундов. Нужно минимум ' +
-          mathAnalysis.minimumRows + ': затем фильтр выбирается на первых 67% истории и проверяется на последних 33%.';
+      if (mathAnalysis.entryMode === 'live-test-sequential') {
+        els.modelDetail.textContent = 'LIVE‑тест активен: следующий вход открывается только в BETTING и проверяется по точному ID максимум три раунда. ' +
+          'Параллельно собрано ' + mathAnalysis.sampleSize + '/' + mathAnalysis.minimumRows + ' для отдельной проверки математических фильтров.';
       } else if (model && model.validated) {
         els.modelDetail.textContent = 'Фильтр: ' + model.label + '. Проверка: ' +
           model.validation.successes + '/' + model.validation.signals + ' против базы ' +
@@ -377,6 +377,7 @@
       active = {
         target: TARGET,
         maxAttempts: MAX_ATTEMPTS,
+        entryMode: mathAnalysis.entryMode,
         createdAt: Date.now(),
         baselineRoundId: recentRows[0].id,
         lastCountedRoundId: recentRows[0].id,
@@ -407,7 +408,7 @@
       saveJson(STORAGE_RECORDS, records);
       localStorage.removeItem(STORAGE_ACTIVE);
       resultFlash = success ? 'win' : 'fail';
-      cooldownUntil = Date.now() + 60000;
+      cooldownUntil = Date.now() + 15000;
       setStatus(success
         ? '✅ Подтверждено: 10X+ зашёл на ' + completed.winningAttempt + '-м раунде.'
         : 'Цель не зашла за 3 раунда. Серия подтверждений сброшена.', success ? 'ok' : 'bad');
@@ -480,9 +481,16 @@
         return;
       }
       const metrics = scannerMetrics(recentRows);
-      if (mathAnalysis.sampleSize < mathAnalysis.minimumRows) {
-        setStatus('СБОР 24Ч • ' + mathAnalysis.sampleSize + '/' + mathAnalysis.minimumRows +
-          ' уникальных раундов. Оставьте страницу открытой: каждый новый ID и время фиксации сохраняются.', '');
+      if (Date.now() < cooldownUntil) {
+        setStatus('LIVE‑ТЕСТ • короткая пауза ' + Math.ceil((cooldownUntil - Date.now()) / 1000) +
+          ' сек. после завершённого сигнала.', '');
+        return;
+      }
+      if (mathAnalysis.entryMode === 'live-test-sequential') {
+        setStatus(metrics.ready && !isBettingState()
+          ? 'LIVE‑ТЕСТ ГОТОВ • ждём BETTING для точного входа по будущему ID.'
+          : 'LIVE‑ТЕСТ • следующий сигнал откроется при BETTING. 24Ч собрано: ' +
+            mathAnalysis.sampleSize + '/' + mathAnalysis.minimumRows + '.', '');
         return;
       }
       if (!mathAnalysis.model || !mathAnalysis.model.validated) {
@@ -541,7 +549,7 @@
 
     async function loadCertificate() {
       try {
-        const response = await fetch('validation.json?v=2', {cache: 'no-store'});
+        const response = await fetch('validation.json?v=4', {cache: 'no-store'});
         if (!response.ok) throw new Error('pending');
         const data = await response.json();
         if (Number(data.target) !== TARGET || !data.prospective) throw new Error('pending');
@@ -560,10 +568,18 @@
           };
         });
         const latestHit = (test.signals || []).slice().reverse().find(function (item) { return item.success; });
+        const warmupSeries = (test.signals || []).filter(function (item) {
+          return String(item.strategy || '').indexOf('pre-registered sequential warm-up series') >= 0;
+        });
+        const warmupSuccesses = warmupSeries.filter(function (item) { return item.success; }).length;
         const hitCoefficient = latestHit && latestHit.attempts && latestHit.attempts.length
           ? Number(latestHit.attempts[latestHit.attempts.length - 1].coefficient) : 0;
         els.certificate.className = 'cert' + (Number(test.successes) > 0 ? '' : ' bad');
-        els.certificate.textContent = Number(test.completedSignals) >= 3 && Number(test.successes) === 0
+        els.certificate.textContent = warmupSeries.length >= 10
+          ? '✅ 10 LIVE‑ТЕСТОВ: ' + warmupSuccesses + '/' + warmupSeries.length + ' • общий журнал ' +
+            Number(test.successes || 0) + '/' + Number(test.completedSignals || 0) + ' • последний ' +
+            hitCoefficient.toFixed(2) + 'X на ' + Number(latestHit.winningAttempt) + '-м'
+          : Number(test.completedSignals) >= 3 && Number(test.successes) === 0
           ? '⚠️ ЭКСПЕРИМЕНТ 10X+: 0/' + Number(test.completedSignals) + ' • точность пока не подтверждена'
           : latestHit
             ? '✅ LIVE-ТЕСТ 10X+: ' + Number(test.successes || 0) + '/' + Number(test.completedSignals || 0) + ' • ' + hitCoefficient.toFixed(2) + 'X на ' + Number(latestHit.winningAttempt) + '-м • выборка мала'
