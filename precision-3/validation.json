@@ -3,25 +3,39 @@
   "mode": "prospective-live",
   "target": 10,
   "maxAttempts": 3,
-  "lastUpdatedAt": "2026-08-02T22:43:00.000Z",
+  "lastUpdatedAt": "2026-08-03T03:11:59.982Z",
   "source": "https://crash-gateway-grm-cr.100hp.app/history",
-  "rule": {
-    "minimumRoundsWithout10x": 3,
-    "latestCoefficientMaximum": 2,
-    "minimumCoefficientsAtOrBelow2InLast3": 2,
+  "validationProtocol": {
+    "target": "10X or higher",
+    "maximumAttempts": 3,
     "entryState": "BETTING; if /state is unavailable, a 12-second post-history fallback window is used",
-    "roundMatching": "unique roundConfig.id"
+    "roundMatching": "unique roundConfig.id",
+    "timing": "every entry is fixed before its result"
   },
+  "strategyHistory": [
+    {
+      "signals": "1-3",
+      "name": "low-cluster timing filter",
+      "minimumRoundsWithout10x": 3,
+      "latestCoefficientMaximum": 2,
+      "minimumCoefficientsAtOrBelow2InLast3": 2
+    },
+    {
+      "signals": "4-5",
+      "name": "sequential prospective windows",
+      "reason": "The first filter finished 0/3. Testing continued without claiming that past coefficients predict the next random round."
+    }
+  ],
   "historicalEvaluation": {
     "snapshots": 2,
     "roundsPerSnapshot": 20,
     "note": "The available samples are too small to establish predictive power. Historical patterns are used only as a timing filter, not as a guarantee."
   },
   "prospective": {
-    "completedSignals": 3,
-    "successes": 0,
-    "failures": 3,
-    "consecutiveSuccesses": 0,
+    "completedSignals": 5,
+    "successes": 1,
+    "failures": 4,
+    "consecutiveSuccesses": 1,
     "signals": [
       {
         "number": 1,
@@ -121,6 +135,104 @@
         "success": false,
         "winningAttempt": null,
         "completedAt": "2026-08-02T22:43:00.000Z"
+      },
+      {
+        "number": 4,
+        "strategy": "sequential prospective window",
+        "createdAt": "2026-08-03T03:09:54.870Z",
+        "baselineRoundId": "7a5f4f33-41ce-4f28-b8cb-0023f61047d9",
+        "entryWindows": [
+          {
+            "attempt": 1,
+            "issuedAt": "2026-08-03T03:09:54.870Z",
+            "roundId": "ebfe6352-0ee2-4266-9555-86f63723a1eb"
+          },
+          {
+            "attempt": 2,
+            "issuedAt": "2026-08-03T03:10:09.972Z",
+            "roundId": "8b1ea582-d365-449e-ad0e-21d690510278"
+          },
+          {
+            "attempt": 3,
+            "issuedAt": "2026-08-03T03:10:34.955Z",
+            "roundId": "08949e82-68c3-40c8-bc64-0da035546ace"
+          }
+        ],
+        "attempts": [
+          {
+            "attempt": 1,
+            "roundId": "ebfe6352-0ee2-4266-9555-86f63723a1eb",
+            "coefficient": 1.18,
+            "entryAt": "2026-08-03T03:09:54.870Z",
+            "observedAt": "2026-08-03T03:10:04.910Z"
+          },
+          {
+            "attempt": 2,
+            "roundId": "8b1ea582-d365-449e-ad0e-21d690510278",
+            "coefficient": 3.2,
+            "entryAt": "2026-08-03T03:10:09.972Z",
+            "observedAt": "2026-08-03T03:10:30.021Z"
+          },
+          {
+            "attempt": 3,
+            "roundId": "08949e82-68c3-40c8-bc64-0da035546ace",
+            "coefficient": 1.1,
+            "entryAt": "2026-08-03T03:10:34.955Z",
+            "observedAt": "2026-08-03T03:10:44.971Z"
+          }
+        ],
+        "success": false,
+        "winningAttempt": null,
+        "completedAt": "2026-08-03T03:10:44.971Z"
+      },
+      {
+        "number": 5,
+        "strategy": "sequential prospective window",
+        "createdAt": "2026-08-03T03:10:47.481Z",
+        "baselineRoundId": "08949e82-68c3-40c8-bc64-0da035546ace",
+        "entryWindows": [
+          {
+            "attempt": 1,
+            "issuedAt": "2026-08-03T03:10:47.481Z",
+            "roundId": "7275573c-d071-4c18-aac5-3bfbcd09ebac"
+          },
+          {
+            "attempt": 2,
+            "issuedAt": "2026-08-03T03:10:59.974Z",
+            "roundId": "9954d0d4-9b86-44dd-916a-86f0cad61ec0"
+          },
+          {
+            "attempt": 3,
+            "issuedAt": "2026-08-03T03:11:17.503Z",
+            "roundId": "fb7e41e0-6686-4ad5-9788-ea74cae895a3"
+          }
+        ],
+        "attempts": [
+          {
+            "attempt": 1,
+            "roundId": "7275573c-d071-4c18-aac5-3bfbcd09ebac",
+            "coefficient": 1.25,
+            "entryAt": "2026-08-03T03:10:47.481Z",
+            "observedAt": "2026-08-03T03:10:57.482Z"
+          },
+          {
+            "attempt": 2,
+            "roundId": "9954d0d4-9b86-44dd-916a-86f0cad61ec0",
+            "coefficient": 1.51,
+            "entryAt": "2026-08-03T03:10:59.974Z",
+            "observedAt": "2026-08-03T03:11:14.962Z"
+          },
+          {
+            "attempt": 3,
+            "roundId": "fb7e41e0-6686-4ad5-9788-ea74cae895a3",
+            "coefficient": 18.4,
+            "entryAt": "2026-08-03T03:11:17.503Z",
+            "observedAt": "2026-08-03T03:11:59.982Z"
+          }
+        ],
+        "success": true,
+        "winningAttempt": 3,
+        "completedAt": "2026-08-03T03:11:59.982Z"
       }
     ]
   }
