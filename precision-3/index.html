@@ -359,7 +359,8 @@
       const entry = {
         attempt: active.attempts.length + 1,
         issuedAt: Date.now(),
-        roundId: lastStateRoundId || null
+        roundId: stateAvailable ? (lastStateRoundId || null) : null,
+        roundSource: stateAvailable && lastStateRoundId ? 'state' : 'history-fallback'
       };
       if (!Array.isArray(active.entryWindows)) active.entryWindows = [];
       active.entryWindows.push(entry);
@@ -520,6 +521,14 @@
           lastState = String(results[2].value.currentState || 'LIVE').toUpperCase();
           lastStateRoundId = results[2].value.roundConfig && results[2].value.roundConfig.id
             ? String(results[2].value.roundConfig.id) : null;
+        } else {
+          lastState = null;
+          lastStateRoundId = null;
+          if (active && active.pendingEntry && active.pendingEntry.roundId) {
+            active.pendingEntry.roundId = null;
+            active.pendingEntry.roundSource = 'history-fallback';
+            saveJson(STORAGE_ACTIVE, active);
+          }
         }
         updateMathData(nextRecent, Date.now());
 
