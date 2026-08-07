@@ -1,5 +1,8 @@
 <!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
 <meta name="theme-color" content="#000000" id="themeColorMeta">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -277,6 +280,11 @@
   .c-violet{background:linear-gradient(145deg,#822de8,#321477)}
   .c-navy{background:linear-gradient(145deg,#1554a1,#071a4c)}
   .c-lime{background:linear-gradient(145deg,#87d929,#1a7c2e)}
+  .casino-oracle-card{background:radial-gradient(circle at 50% 24%,#8b5cf6 0,#4c1d95 38%,#12051f 100%);box-shadow:0 16px 38px rgba(124,58,237,.45),inset 0 0 0 1px rgba(255,255,255,.28)}
+  .casino-oracle-card .card-icon{font-size:clamp(62px,17vw,92px);filter:drop-shadow(0 0 16px rgba(216,180,254,.8)) drop-shadow(0 8px 8px rgba(0,0,0,.45))}
+  .casino-oracle-card .card-name{background:linear-gradient(90deg,#fff,#e9d5ff,#fef08a);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none;filter:drop-shadow(0 3px 5px rgba(0,0,0,.75))}
+  .casino-oracle-card .card-studio{color:#f5e9ff;letter-spacing:1.7px}
+  .casino-oracle-card .open-pill{background:linear-gradient(135deg,#facc15,#fb923c);color:#221500;box-shadow:0 4px 16px rgba(250,204,21,.36)}
   .catalog-toast{
     position:fixed;z-index:100;left:50%;bottom:calc(18px + env(safe-area-inset-bottom));
     transform:translate(-50%,18px);opacity:0;pointer-events:none;white-space:nowrap;
@@ -320,7 +328,7 @@
 <link rel="stylesheet" href="telegram.css">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="telegram.js?v=20260724-32"></script>
-<script src="theme.js"></script><script src="owner-tools.js?v=20260724-32"></script><script src="app-config.js?v=20260807-33"></script><script src="i18n-runtime.js?v=20260724-32"></script><script src="language-onboarding.js?v=20260724-32"></script><script src="license-client.js?v=20260724-32"></script><script src="access.js?v=20260724-32"></script><script src="analytics-client.js?v=20260724-32"></script><script src="app-center.js?v=20260724-32"></script></head>
+<script src="theme.js"></script><script src="owner-tools.js?v=20260724-32"></script><script src="app-config.js?v=20260807-34"></script><script src="i18n-runtime.js?v=20260724-32"></script><script src="language-onboarding.js?v=20260724-32"></script><script src="license-client.js?v=20260724-32"></script><script src="access.js?v=20260724-32"></script><script src="analytics-client.js?v=20260724-32"></script><script src="app-center.js?v=20260724-32"></script></head>
 <body class="catalog-active">
   <section class="catalog-view" id="selectorView" aria-label="Game selector">
     <div class="catalog-shell">
@@ -331,6 +339,7 @@
           <span class="card-copy"><span class="card-name">LUCKY JET</span><span class="card-studio">1WIN GAMES</span></span>
         </button>
         <button class="game-card has-art c-pink" type="button" data-open-game="rocketqueen" aria-label="Open Rocket Queen"><img class="card-art" src="rocketqueen-card.jpg" alt=""><span class="lock-pill open-pill">OPEN</span><span class="card-copy"><span class="card-name">ROCKET QUEEN</span><span class="card-studio">1WIN GAMES LIVE</span></span></button>
+        <button class="game-card c-purple casino-oracle-card" type="button" data-casino-oracle-card aria-label="Open Casino Oracle" onclick="window.location.href='https://entypublic.github.io/dogmain/'"><span class="card-icon">🔮</span><span class="lock-pill open-pill">AI PREDICT</span><span class="card-copy"><span class="card-name">CASINO ORACLE</span><span class="card-studio">LIVE PREDICTION HUB</span></span></button>
         <button class="game-card locked c-green" type="button" data-locked-game><span class="card-icon">●</span><span class="lock-pill">🔒 SOON</span><span class="card-copy"><span class="card-name">CRASH</span><span class="card-studio">COMING SOON</span></span></button>
         <button class="game-card locked c-red" type="button" data-locked-game><span class="card-icon">🚀</span><span class="lock-pill">🔒 SOON</span><span class="card-copy"><span class="card-name">ASTRONAUT</span><span class="card-studio">COMING SOON</span></span></button>
         <button class="game-card locked c-blue" type="button" data-locked-game><span class="card-icon">🌐</span><span class="lock-pill">🔒 SOON</span><span class="card-copy"><span class="card-name">META CRASH</span><span class="card-studio">COMING SOON</span></span></button>
@@ -339,7 +348,7 @@
         <button class="game-card locked c-cyan" type="button" data-locked-game><span class="card-icon">🌴</span><span class="lock-pill">🔒 SOON</span><span class="card-copy"><span class="card-name">TROPICANA</span><span class="card-studio">COMING SOON</span></span></button>
         <button class="game-card has-art c-red" type="button" data-open-game="aviator" aria-label="Open Aviator"><img class="card-art" src="aviator-card-v2.png" alt=""><span class="lock-pill open-pill">OPEN</span><span class="card-copy"><span class="card-name">AVIATOR</span><span class="card-studio">SPRIBE LIVE</span></span></button>
         <button class="game-card c-violet" type="button" data-now-card-direct aria-label="Open NoW" onclick="window.location.href='https://entypublic.github.io/snakegameminivladis/'"><span class="card-icon">▶</span><span class="lock-pill open-pill">OPEN</span><span class="card-copy"><span class="card-name">NoW</span><span class="card-studio">LIVE GAME</span></span></button>
-        <button class="game-card c-green" type="button" data-dog-play-card aria-label="Open DOG PLAY" onclick="window.location.href='https://entypublic.github.io/dogmain/'"><span class="card-icon">🐶</span><span class="lock-pill open-pill">OPEN</span><span class="card-copy"><span class="card-name">DOG PLAY</span><span class="card-studio">GAME HUB</span></span></button>
+
         <button class="game-card locked c-cyan" type="button" data-locked-game><span class="card-icon">💣</span><span class="lock-pill">🔒 SOON</span><span class="card-copy"><span class="card-name">MINES</span><span class="card-studio">COMING SOON</span></span></button>
         <button class="game-card locked c-blue" type="button" data-locked-game><span class="card-icon">💎</span><span class="lock-pill">🔒 SOON</span><span class="card-copy"><span class="card-name">MINES 2</span><span class="card-studio">COMING SOON</span></span></button>
         <button class="game-card locked c-navy" type="button" data-locked-game><span class="card-icon">♠</span><span class="lock-pill">🔒 SOON</span><span class="card-copy"><span class="card-name">BLACKJACK</span><span class="card-studio">COMING SOON</span></span></button>
