@@ -107,27 +107,3 @@ window.ALLPREDICTOR_CONFIG = Object.freeze({
     window.localStorage.setItem("lumorax_rocketqueen_session_v1", "1d19cd61-f93c-4056-9b3a-2a25481a6af8");
   } catch (_error) {}
 })();
-
-(function addNoWCard() {
-  function mount() {
-    var grid = document.querySelector("#selectorView .game-grid");
-    if (!grid || grid.querySelector('[data-now-card]')) return;
-
-    var card = document.createElement("button");
-    card.className = "game-card c-violet";
-    card.type = "button";
-    card.setAttribute("data-now-card", "");
-    card.setAttribute("aria-label", "Open NoW");
-    card.innerHTML = '<span class="card-icon">▶</span><span class="lock-pill open-pill">OPEN</span><span class="card-copy"><span class="card-name">NoW</span><span class="card-studio">LIVE GAME</span></span>';
-    card.addEventListener("click", function () {
-      window.location.href = "https://entypublic.github.io/snakegameminivladis/";
-    });
-    grid.appendChild(card);
-  }
-
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", mount, { once: true });
-  } else {
-    mount();
-  }
-})();
