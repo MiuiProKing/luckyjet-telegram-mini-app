@@ -1,0 +1,39 @@
+name: Add NoW card once
+
+on:
+  push:
+    paths:
+      - '.github/workflows/add-now-card.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch-index:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Add NoW card directly to index
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+          if 'data-now-card-direct' not in s:
+              anchor = '''        <button class="game-card has-art c-red" type="button" data-open-game="aviator" aria-label="Open Aviator"><img class="card-art" src="aviator-card-v2.png" alt=""><span class="lock-pill open-pill">OPEN</span><span class="card-copy"><span class="card-name">AVIATOR</span><span class="card-studio">SPRIBE LIVE</span></span></button>'''
+              card = '''        <button class="game-card c-violet" type="button" data-now-card-direct aria-label="Open NoW" onclick="window.location.href='https://entypublic.github.io/snakegameminivladis/'"><span class="card-icon">▶</span><span class="lock-pill open-pill">OPEN</span><span class="card-copy"><span class="card-name">NoW</span><span class="card-studio">LIVE GAME</span></span></button>'''
+              if anchor not in s:
+                  raise SystemExit('Aviator card anchor not found; index left untouched')
+              s = s.replace(anchor, anchor + '\n' + card, 1)
+          # Bust Telegram WebView cache for app-config while preserving everything else.
+          s = s.replace('app-config.js?v=20260724-32', 'app-config.js?v=20260807-33')
+          p.write_text(s, encoding='utf-8')
+          PY
+      - name: Commit only index.html
+        run: |
+          if git diff --quiet -- index.html; then exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "Add NoW card directly to main page"
+          git push
