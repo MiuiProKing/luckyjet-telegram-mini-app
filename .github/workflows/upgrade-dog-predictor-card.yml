@@ -1,0 +1,53 @@
+name: Upgrade DOG predictor card once
+
+on:
+  push:
+    paths:
+      - '.github/workflows/upgrade-dog-predictor-card.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch-index:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Upgrade card in index
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+
+          old = '''        <button class="game-card c-green" type="button" data-dog-play-card aria-label="Open DOG PLAY" onclick="window.location.href='https://entypublic.github.io/dogmain/'"><span class="card-icon">🐶</span><span class="lock-pill open-pill">OPEN</span><span class="card-copy"><span class="card-name">DOG PLAY</span><span class="card-studio">GAME HUB</span></span></button>'''
+          if old in s:
+              s = s.replace(old, '', 1)
+
+          anchor = '''        <button class="game-card has-art c-pink" type="button" data-open-game="rocketqueen" aria-label="Open Rocket Queen"><img class="card-art" src="rocketqueen-card.jpg" alt=""><span class="lock-pill open-pill">OPEN</span><span class="card-copy"><span class="card-name">ROCKET QUEEN</span><span class="card-studio">1WIN GAMES LIVE</span></span></button>'''
+          card = '''        <button class="game-card c-purple casino-oracle-card" type="button" data-casino-oracle-card aria-label="Open Casino Oracle" onclick="window.location.href='https://entypublic.github.io/dogmain/'"><span class="card-icon">🔮</span><span class="lock-pill open-pill">AI PREDICT</span><span class="card-copy"><span class="card-name">CASINO ORACLE</span><span class="card-studio">LIVE PREDICTION HUB</span></span></button>'''
+          if 'data-casino-oracle-card' not in s:
+              if anchor not in s:
+                  raise SystemExit('Rocket Queen anchor not found')
+              s = s.replace(anchor, anchor + '\n' + card, 1)
+
+          css_anchor = '''  .c-lime{background:linear-gradient(145deg,#87d929,#1a7c2e)}'''
+          css = '''\n  .casino-oracle-card{background:radial-gradient(circle at 50% 24%,#8b5cf6 0,#4c1d95 38%,#12051f 100%);box-shadow:0 16px 38px rgba(124,58,237,.45),inset 0 0 0 1px rgba(255,255,255,.28)}\n  .casino-oracle-card .card-icon{font-size:clamp(62px,17vw,92px);filter:drop-shadow(0 0 16px rgba(216,180,254,.8)) drop-shadow(0 8px 8px rgba(0,0,0,.45))}\n  .casino-oracle-card .card-name{background:linear-gradient(90deg,#fff,#e9d5ff,#fef08a);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none;filter:drop-shadow(0 3px 5px rgba(0,0,0,.75))}\n  .casino-oracle-card .card-studio{color:#f5e9ff;letter-spacing:1.7px}\n  .casino-oracle-card .open-pill{background:linear-gradient(135deg,#facc15,#fb923c);color:#221500;box-shadow:0 4px 16px rgba(250,204,21,.36)}'''
+          if '.casino-oracle-card{' not in s and css_anchor in s:
+              s = s.replace(css_anchor, css_anchor + css, 1)
+
+          # Add explicit no-cache hints for Telegram WebView and change a static version marker.
+          if '<meta http-equiv="Cache-Control"' not in s:
+              s = s.replace('<meta charset="UTF-8">', '<meta charset="UTF-8">\n<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">\n<meta http-equiv="Pragma" content="no-cache">\n<meta http-equiv="Expires" content="0">', 1)
+          s = s.replace('app-config.js?v=20260807-33', 'app-config.js?v=20260807-34')
+
+          p.write_text(s, encoding='utf-8')
+          PY
+      - name: Commit index only
+        run: |
+          if git diff --quiet -- index.html; then exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "Upgrade casino prediction card and bust Telegram cache"
+          git push
