@@ -28,8 +28,8 @@ targets:
         CFBundleInfoDictionaryVersion: "6.0"
         CFBundleName: $(PRODUCT_NAME)
         CFBundlePackageType: APPL
-        CFBundleShortVersionString: "1.2"
-        CFBundleVersion: "3"
+        CFBundleShortVersionString: "1.3"
+        CFBundleVersion: "4"
         LSRequiresIPhoneOS: true
         LSSupportsOpeningDocumentsInPlace: true
         UIFileSharingEnabled: true
@@ -48,8 +48,8 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.miuiproking.LuckyJet10xCollector
         PRODUCT_NAME: LuckyJet10xCollector
         INFOPLIST_FILE: LuckyJet10xCollector/Info.plist
-        CURRENT_PROJECT_VERSION: 3
-        MARKETING_VERSION: 1.2
+        CURRENT_PROJECT_VERSION: 4
+        MARKETING_VERSION: 1.3
     dependencies:
       - sdk: UIKit.framework
       - sdk: WebKit.framework
