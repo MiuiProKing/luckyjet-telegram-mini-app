@@ -1,0 +1,74 @@
+name: Build LuckyJet 10x Collector IPA
+
+on:
+  push:
+    branches:
+      - apcollector-ios27
+    paths:
+      - 'ios/LuckyJet10xCollector/**'
+      - '.github/workflows/build-luckyjet10x.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_26.6.app
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate project
+        working-directory: ios/LuckyJet10xCollector
+        run: xcodegen generate
+
+      - name: Build unsigned app
+        working-directory: ios/LuckyJet10xCollector
+        run: |
+          set -euo pipefail
+          rm -rf build
+          xcodebuild \
+            -project LuckyJet10xCollector.xcodeproj \
+            -scheme LuckyJet10xCollector \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            build
+
+      - name: Package IPA
+        working-directory: ios/LuckyJet10xCollector
+        run: |
+          set -euo pipefail
+          APP="build/Build/Products/Release-iphoneos/LuckyJet10xCollector.app"
+          test -d "$APP"
+          rm -rf Payload LuckyJet10xCollector-unsigned.ipa
+          mkdir Payload
+          cp -R "$APP" Payload/
+          /usr/bin/zip -qry LuckyJet10xCollector-unsigned.ipa Payload
+          ls -lh LuckyJet10xCollector-unsigned.ipa
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: LuckyJet10xCollector-unsigned-ipa
+          path: ios/LuckyJet10xCollector/LuckyJet10xCollector-unsigned.ipa
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="luckyjet10x-${GITHUB_RUN_NUMBER}"
+          gh release create "$TAG" \
+            ios/LuckyJet10xCollector/LuckyJet10xCollector-unsigned.ipa \
+            --target "$GITHUB_SHA" \
+            --title "LuckyJet 10x Collector IPA #${GITHUB_RUN_NUMBER}" \
+            --notes "Unsigned IPA. Opens LuckyJet in an embedded browser and records only new completed coefficients >=10x after the user starts a session. Keeps timestamps and intervals; no prediction guarantee." 
