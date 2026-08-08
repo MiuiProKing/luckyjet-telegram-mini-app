@@ -28,12 +28,12 @@ targets:
         CFBundleInfoDictionaryVersion: "6.0"
         CFBundleName: $(PRODUCT_NAME)
         CFBundlePackageType: APPL
-        CFBundleShortVersionString: "1.1"
-        CFBundleVersion: "2"
+        CFBundleShortVersionString: "1.2"
+        CFBundleVersion: "3"
         LSRequiresIPhoneOS: true
         LSSupportsOpeningDocumentsInPlace: true
         UIFileSharingEnabled: true
-        NSScreenCaptureUsageDescription: "Захват экрана включается только после вашего разрешения и используется для распознавания видимых коэффициентов, адресов страниц и сохранения кадров перед окном подписки."
+        NSScreenCaptureUsageDescription: "Захват экрана включается только после вашего разрешения и используется для распознавания видимых данных и сохранения кадров до и после перехода в выбранный predictor."
         UIBackgroundModes:
           - screen-capture
         UILaunchScreen: {}
@@ -51,8 +51,8 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.miuiproking.APCollector
         PRODUCT_NAME: APCollector
         INFOPLIST_FILE: APCollector/Info.plist
-        CURRENT_PROJECT_VERSION: 2
-        MARKETING_VERSION: 1.1
+        CURRENT_PROJECT_VERSION: 3
+        MARKETING_VERSION: 1.2
         SWIFT_VERSION: "5.0"
     dependencies:
       - sdk: UIKit.framework
