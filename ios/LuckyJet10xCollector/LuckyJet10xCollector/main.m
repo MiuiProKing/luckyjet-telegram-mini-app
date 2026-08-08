@@ -7,22 +7,29 @@ static NSString * const LJURLString = @"https://one-vv0199.com/casino/play/v_1wi
 @property (nonatomic, strong) WKWebView *webView;
 @property (nonatomic, strong) UILabel *statusLabel;
 @property (nonatomic, strong) UILabel *statsLabel;
+@property (nonatomic, strong) UILabel *timerLabel;
+@property (nonatomic, strong) UILabel *watchLabel;
 @property (nonatomic, strong) UITableView *tableView;
 @property (nonatomic, strong) UIButton *startButton;
+@property (nonatomic, strong) UIButton *hideButton;
+@property (nonatomic, strong) UIStackView *controlsStack;
+@property (nonatomic, strong) NSLayoutConstraint *controlsHeightConstraint;
 @property (nonatomic, strong) NSMutableArray<NSDictionary *> *events;
 @property (nonatomic, strong) NSDateFormatter *isoFormatter;
 @property (nonatomic, strong) NSDateFormatter *clockFormatter;
 @property (nonatomic, strong) NSDate *lastEventDate;
 @property (nonatomic, strong) NSDate *acceptAfterDate;
+@property (nonatomic, strong) NSTimer *timer;
 @property (nonatomic) double lastEventValue;
 @property (nonatomic) BOOL collecting;
+@property (nonatomic) BOOL controlsHidden;
 @end
 
 @implementation LJCollectorViewController
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-    self.title = @"LuckyJet 10x+";
+    self.title = @"LuckyJet 10x+ • 20";
     self.view.backgroundColor = UIColor.systemBackgroundColor;
     self.navigationController.navigationBar.prefersLargeTitles = NO;
     self.events = [NSMutableArray array];
@@ -52,80 +59,109 @@ static NSString * const LJURLString = @"https://one-vv0199.com/casino/play/v_1wi
     self.webView.navigationDelegate = self;
     self.webView.UIDelegate = self;
     self.webView.allowsBackForwardNavigationGestures = YES;
+    if (@available(iOS 14.0, *)) self.webView.pageZoom = 0.90;
+
+    self.timerLabel = [UILabel new];
+    self.timerLabel.translatesAutoresizingMaskIntoConstraints = NO;
+    self.timerLabel.textAlignment = NSTextAlignmentCenter;
+    self.timerLabel.font = [UIFont monospacedDigitSystemFontOfSize:24 weight:UIFontWeightBold];
+    self.timerLabel.textColor = UIColor.systemRedColor;
+    self.timerLabel.text = @"00:00";
+
+    self.watchLabel = [UILabel new];
+    self.watchLabel.translatesAutoresizingMaskIntoConstraints = NO;
+    self.watchLabel.textAlignment = NSTextAlignmentCenter;
+    self.watchLabel.numberOfLines = 2;
+    self.watchLabel.font = [UIFont systemFontOfSize:12 weight:UIFontWeightBold];
+    self.watchLabel.text = @"Наблюдение: ждём первый новый 10x+";
 
     self.statusLabel = [UILabel new];
     self.statusLabel.translatesAutoresizingMaskIntoConstraints = NO;
     self.statusLabel.numberOfLines = 2;
-    self.statusLabel.font = [UIFont systemFontOfSize:13 weight:UIFontWeightSemibold];
-    self.statusLabel.text = @"Откройте игру и дождитесь, пока она полностью загрузится. Затем нажмите «НАЧАТЬ НОВЫЙ ЗАМЕР».";
+    self.statusLabel.font = [UIFont systemFontOfSize:11 weight:UIFontWeightSemibold];
+    self.statusLabel.text = @"Откройте игру, дождитесь загрузки и нажмите «НОВЫЙ ЗАМЕР». Старые 10x+ не учитываются.";
 
     self.statsLabel = [UILabel new];
     self.statsLabel.translatesAutoresizingMaskIntoConstraints = NO;
     self.statsLabel.numberOfLines = 2;
-    self.statsLabel.font = [UIFont monospacedDigitSystemFontOfSize:14 weight:UIFontWeightSemibold];
-    self.statsLabel.text = @"Новых 10x+: 0 / 10\nСредний интервал: —";
+    self.statsLabel.font = [UIFont monospacedDigitSystemFontOfSize:11 weight:UIFontWeightSemibold];
+    self.statsLabel.text = @"Новых 10x+: 0 / 20 • среднее: —";
 
     self.startButton = [UIButton buttonWithType:UIButtonTypeSystem];
     self.startButton.translatesAutoresizingMaskIntoConstraints = NO;
     self.startButton.configuration = [UIButtonConfiguration filledButtonConfiguration];
-    [self.startButton setTitle:@"НАЧАТЬ НОВЫЙ ЗАМЕР" forState:UIControlStateNormal];
+    [self.startButton setTitle:@"НОВЫЙ ЗАМЕР" forState:UIControlStateNormal];
     [self.startButton addTarget:self action:@selector(startNewSession) forControlEvents:UIControlEventTouchUpInside];
 
     UIButton *reload = [UIButton buttonWithType:UIButtonTypeSystem];
-    reload.translatesAutoresizingMaskIntoConstraints = NO;
     reload.configuration = [UIButtonConfiguration borderedButtonConfiguration];
-    [reload setTitle:@"Открыть LuckyJet" forState:UIControlStateNormal];
+    [reload setTitle:@"LuckyJet" forState:UIControlStateNormal];
     [reload addTarget:self action:@selector(loadLuckyJet) forControlEvents:UIControlEventTouchUpInside];
 
     UIButton *export = [UIButton buttonWithType:UIButtonTypeSystem];
-    export.translatesAutoresizingMaskIntoConstraints = NO;
     export.configuration = [UIButtonConfiguration borderedButtonConfiguration];
-    [export setTitle:@"Экспорт результата" forState:UIControlStateNormal];
+    [export setTitle:@"Экспорт" forState:UIControlStateNormal];
     [export addTarget:self action:@selector(exportSession) forControlEvents:UIControlEventTouchUpInside];
 
+    self.hideButton = [UIButton buttonWithType:UIButtonTypeSystem];
+    self.hideButton.configuration = [UIButtonConfiguration borderedButtonConfiguration];
+    [self.hideButton setTitle:@"СКРЫТЬ ПАНЕЛЬ" forState:UIControlStateNormal];
+    [self.hideButton addTarget:self action:@selector(toggleControls) forControlEvents:UIControlEventTouchUpInside];
+
     UIStackView *buttons = [[UIStackView alloc] initWithArrangedSubviews:@[self.startButton, reload, export]];
-    buttons.translatesAutoresizingMaskIntoConstraints = NO;
     buttons.axis = UILayoutConstraintAxisHorizontal;
-    buttons.spacing = 6;
+    buttons.spacing = 5;
     buttons.distribution = UIStackViewDistributionFillEqually;
 
-    self.tableView = [[UITableView alloc] initWithFrame:CGRectZero style:UITableViewStyleInsetGrouped];
-    self.tableView.translatesAutoresizingMaskIntoConstraints = NO;
+    self.tableView = [[UITableView alloc] initWithFrame:CGRectZero style:UITableViewStylePlain];
     self.tableView.dataSource = self;
+    self.tableView.rowHeight = 42;
+    self.tableView.backgroundColor = UIColor.clearColor;
 
-    [self.view addSubview:self.statusLabel];
-    [self.view addSubview:self.statsLabel];
-    [self.view addSubview:buttons];
-    [self.view addSubview:self.tableView];
+    self.controlsStack = [[UIStackView alloc] initWithArrangedSubviews:@[self.statusLabel, self.statsLabel, buttons, self.tableView]];
+    self.controlsStack.translatesAutoresizingMaskIntoConstraints = NO;
+    self.controlsStack.axis = UILayoutConstraintAxisVertical;
+    self.controlsStack.spacing = 3;
+
+    [self.view addSubview:self.timerLabel];
+    [self.view addSubview:self.watchLabel];
+    [self.view addSubview:self.hideButton];
+    [self.view addSubview:self.controlsStack];
     [self.view addSubview:self.webView];
+    self.controlsHeightConstraint = [self.controlsStack.heightAnchor constraintEqualToConstant:250];
 
     UILayoutGuide *g = self.view.safeAreaLayoutGuide;
     [NSLayoutConstraint activateConstraints:@[
-        [self.statusLabel.topAnchor constraintEqualToAnchor:g.topAnchor constant:6],
-        [self.statusLabel.leadingAnchor constraintEqualToAnchor:g.leadingAnchor constant:10],
-        [self.statusLabel.trailingAnchor constraintEqualToAnchor:g.trailingAnchor constant:-10],
-        [self.statsLabel.topAnchor constraintEqualToAnchor:self.statusLabel.bottomAnchor constant:4],
-        [self.statsLabel.leadingAnchor constraintEqualToAnchor:self.statusLabel.leadingAnchor],
-        [self.statsLabel.trailingAnchor constraintEqualToAnchor:self.statusLabel.trailingAnchor],
-        [buttons.topAnchor constraintEqualToAnchor:self.statsLabel.bottomAnchor constant:6],
-        [buttons.leadingAnchor constraintEqualToAnchor:g.leadingAnchor constant:8],
-        [buttons.trailingAnchor constraintEqualToAnchor:g.trailingAnchor constant:-8],
-        [buttons.heightAnchor constraintEqualToConstant:42],
-        [self.tableView.topAnchor constraintEqualToAnchor:buttons.bottomAnchor constant:4],
-        [self.tableView.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor],
-        [self.tableView.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor],
-        [self.tableView.heightAnchor constraintEqualToConstant:235],
-        [self.webView.topAnchor constraintEqualToAnchor:self.tableView.bottomAnchor],
+        [self.timerLabel.topAnchor constraintEqualToAnchor:g.topAnchor constant:2],
+        [self.timerLabel.leadingAnchor constraintEqualToAnchor:g.leadingAnchor constant:8],
+        [self.timerLabel.widthAnchor constraintEqualToConstant:86],
+        [self.timerLabel.heightAnchor constraintEqualToConstant:30],
+        [self.hideButton.centerYAnchor constraintEqualToAnchor:self.timerLabel.centerYAnchor],
+        [self.hideButton.trailingAnchor constraintEqualToAnchor:g.trailingAnchor constant:-8],
+        [self.hideButton.widthAnchor constraintEqualToConstant:118],
+        [self.hideButton.heightAnchor constraintEqualToConstant:30],
+        [self.watchLabel.topAnchor constraintEqualToAnchor:self.timerLabel.bottomAnchor constant:1],
+        [self.watchLabel.leadingAnchor constraintEqualToAnchor:g.leadingAnchor constant:6],
+        [self.watchLabel.trailingAnchor constraintEqualToAnchor:g.trailingAnchor constant:-6],
+        [self.watchLabel.heightAnchor constraintGreaterThanOrEqualToConstant:28],
+        [self.controlsStack.topAnchor constraintEqualToAnchor:self.watchLabel.bottomAnchor constant:2],
+        [self.controlsStack.leadingAnchor constraintEqualToAnchor:g.leadingAnchor constant:6],
+        [self.controlsStack.trailingAnchor constraintEqualToAnchor:g.trailingAnchor constant:-6],
+        self.controlsHeightConstraint,
+        [self.tableView.heightAnchor constraintEqualToConstant:170],
+        [self.webView.topAnchor constraintEqualToAnchor:self.controlsStack.bottomAnchor constant:2],
         [self.webView.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor],
         [self.webView.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor],
         [self.webView.bottomAnchor constraintEqualToAnchor:self.view.bottomAnchor]
     ]];
 
+    self.timer = [NSTimer scheduledTimerWithTimeInterval:0.25 target:self selector:@selector(updateTimerUI) userInfo:nil repeats:YES];
     [UIApplication sharedApplication].idleTimerDisabled = YES;
     [self loadLuckyJet];
 }
 
 - (void)dealloc {
+    [self.timer invalidate];
     [self.webView.configuration.userContentController removeScriptMessageHandlerForName:@"lj10"];
     [UIApplication sharedApplication].idleTimerDisabled = NO;
 }
@@ -139,15 +175,14 @@ static NSString * const LJURLString = @"https://one-vv0199.com/casino/play/v_1wi
         @"function num(v){if(typeof v==='number')return v;if(typeof v==='string'){var s=v.replace(',','.').replace(/[^0-9.]/g,'');var n=parseFloat(s);return isFinite(n)?n:null;}return null;}",
         @"function emitBig(v,source,ctx){var n=num(v);if(n===null||n<10)return;post({type:'big',value:n,source:source||'unknown',context:String(ctx||'').slice(0,500),url:location.href});}",
         @"function exactX(t){var m=String(t||'').trim().match(/^(\\d{1,3}(?:[\\.,]\\d{1,3})?)\\s*[xX×]$/);return m?parseFloat(m[1].replace(',','.')):null;}",
-        @"function scanDom(){try{var nodes=document.querySelectorAll('span,div,li,p,b,strong,td');var now=Date.now();var begin=Math.max(0,nodes.length-900);for(var i=begin;i<nodes.length;i++){var el=nodes[i];if(!el||el.children.length>3)continue;var text=(el.textContent||'').trim();if(text.length>24)continue;var v=exactX(text);var st=elementState.get(el);if(!st){elementState.set(el,{text:text,changed:now,sent:true});continue;}if(st.text!==text){st.text=text;st.changed=now;st.sent=false;continue;}if(!st.sent&&v!==null&&v>=10&&(now-st.changed)>=1300){st.sent=true;emitBig(v,'dom-stable',text);}}}catch(e){}}",
-        @"setInterval(scanDom,350);document.addEventListener('DOMContentLoaded',function(){setTimeout(scanDom,300);});",
+        @"function scanDom(){try{var nodes=document.querySelectorAll('span,div,li,p,b,strong,td');var now=Date.now();var begin=Math.max(0,nodes.length-1200);for(var i=begin;i<nodes.length;i++){var el=nodes[i];if(!el||el.children.length>3)continue;var text=(el.textContent||'').trim();if(text.length>24)continue;var v=exactX(text);var st=elementState.get(el);if(!st){elementState.set(el,{text:text,changed:now,sent:true});continue;}if(st.text!==text){st.text=text;st.changed=now;st.sent=false;continue;}if(!st.sent&&v!==null&&v>=10&&(now-st.changed)>=1100){st.sent=true;emitBig(v,'dom-stable',text);}}}catch(e){}}",
+        @"setInterval(scanDom,300);document.addEventListener('DOMContentLoaded',function(){setTimeout(scanDom,250);});",
         @"function handleArray(key,a,source){var vals=a.map(num).filter(function(x){return x!==null;});if(!vals.length)return;var prev=arrState[key];arrState[key]=vals.slice(0);if(!prev||!prev.length)return;var cand=null;if(vals.length>prev.length){if(vals[0]!==prev[0])cand=vals[0];else cand=vals[vals.length-1];}else if(vals[0]!==prev[0])cand=vals[0];else if(vals[vals.length-1]!==prev[prev.length-1])cand=vals[vals.length-1];if(cand!==null)emitBig(cand,source+':'+key,'array-change');}",
-        @"function walk(o,source,depth){if(depth>6||o===null||o===undefined)return;if(Array.isArray(o)){for(var i=0;i<Math.min(o.length,80);i++)walk(o[i],source,depth+1);return;}if(typeof o!=='object')return;Object.keys(o).forEach(function(k){var v=o[k];var lk=k.toLowerCase();if(lk==='stopcoefficients'&&Array.isArray(v)){handleArray(k,v,source);return;}if(/^(stopcoefficient|finalmultiplier|crashpoint|resultcoefficient|resultmultiplier|finalcoefficient)$/i.test(k)){var n=num(v);var old=scalarState[k];scalarState[k]=n;if(old!==undefined&&n!==null&&n!==old)emitBig(n,source+':'+k,'scalar-change');return;}walk(v,source,depth+1);});}",
+        @"function walk(o,source,depth){if(depth>7||o===null||o===undefined)return;if(Array.isArray(o)){for(var i=0;i<Math.min(o.length,120);i++)walk(o[i],source,depth+1);return;}if(typeof o!=='object')return;Object.keys(o).forEach(function(k){var v=o[k];var lk=k.toLowerCase();if(lk==='stopcoefficients'&&Array.isArray(v)){handleArray(k,v,source);return;}if(/^(stopcoefficient|finalmultiplier|crashpoint|resultcoefficient|resultmultiplier|finalcoefficient)$/i.test(k)){var n=num(v);var old=scalarState[k];scalarState[k]=n;if(old!==undefined&&n!==null&&n!==old)emitBig(n,source+':'+k,'scalar-change');return;}walk(v,source,depth+1);});}",
         @"function inspect(data,source){try{if(typeof data==='string'){var t=data.trim();if(!t)return;try{walk(JSON.parse(t),source,0);}catch(e){var re=/(?:stopCoefficient|finalMultiplier|crashPoint|resultCoefficient|resultMultiplier)[^0-9]{0,20}(\\d{1,3}(?:[\\.,]\\d{1,3})?)/ig,m;while((m=re.exec(t)))emitBig(m[1],source,'raw-key');}}else if(typeof data==='object')walk(data,source,0);}catch(e){}}",
         @"var nativeFetch=window.fetch;if(nativeFetch){window.fetch=function(input,init){var u=(typeof input==='string')?input:(input&&input.url)||'';var p=nativeFetch.apply(this,arguments);try{p.then(function(r){try{r.clone().text().then(function(t){inspect(t,'fetch:'+u);});}catch(e){}});}catch(e){}return p;};}",
         @"var xo=XMLHttpRequest.prototype.open;var xs=XMLHttpRequest.prototype.send;XMLHttpRequest.prototype.open=function(m,u){this.__lj10url=u;return xo.apply(this,arguments);};XMLHttpRequest.prototype.send=function(){this.addEventListener('load',function(){try{inspect(this.responseText,'xhr:'+(this.__lj10url||''));}catch(e){}});return xs.apply(this,arguments);};",
-        @"try{var NativeWS=window.WebSocket;if(NativeWS){function APWS(){var args=[null].concat(Array.prototype.slice.call(arguments));var C=Function.prototype.bind.apply(NativeWS,args);var ws=new C();var u=arguments[0]||'';ws.addEventListener('message',function(ev){inspect(ev.data,'ws:'+u);});return ws;}APWS.prototype=NativeWS.prototype;['CONNECTING','OPEN','CLOSING','CLOSED'].forEach(function(k){try{APWS[k]=NativeWS[k];}catch(e){}});window.WebSocket=APWS;}}catch(e){post({type:'diag',message:'WebSocket hook error: '+e,url:location.href});}",
-        @"post({type:'ready',url:location.href});",
+        @"try{var NativeWS=window.WebSocket;if(NativeWS){function APWS(){var args=[null].concat(Array.prototype.slice.call(arguments));var C=Function.prototype.bind.apply(NativeWS,args);var ws=new C();var u=arguments[0]||'';ws.addEventListener('message',function(ev){inspect(ev.data,'ws:'+u);});return ws;}APWS.prototype=NativeWS.prototype;['CONNECTING','OPEN','CLOSING','CLOSED'].forEach(function(k){try{APWS[k]=NativeWS[k];}catch(e){}});window.WebSocket=APWS;}}catch(e){}",
         @"})();"
     ];
     return [parts componentsJoinedByString:@""];
@@ -156,9 +191,8 @@ static NSString * const LJURLString = @"https://one-vv0199.com/casino/play/v_1wi
 - (void)loadLuckyJet {
     NSURL *url = [NSURL URLWithString:LJURLString];
     if (!url) return;
-    self.statusLabel.text = @"Загрузка LuckyJet… После полной загрузки нажмите «НАЧАТЬ НОВЫЙ ЗАМЕР».";
-    NSURLRequest *request = [NSURLRequest requestWithURL:url cachePolicy:NSURLRequestReloadIgnoringLocalCacheData timeoutInterval:35];
-    [self.webView loadRequest:request];
+    self.statusLabel.text = @"Загрузка LuckyJet…";
+    [self.webView loadRequest:[NSURLRequest requestWithURL:url cachePolicy:NSURLRequestReloadIgnoringLocalCacheData timeoutInterval:35]];
 }
 
 - (void)startNewSession {
@@ -167,35 +201,38 @@ static NSString * const LJURLString = @"https://one-vv0199.com/casino/play/v_1wi
     self.lastEventValue = 0;
     self.collecting = YES;
     self.acceptAfterDate = [NSDate dateWithTimeIntervalSinceNow:2.0];
-    [self.startButton setTitle:@"СБОР ИДЁТ…" forState:UIControlStateNormal];
-    self.startButton.enabled = NO;
-    self.statusLabel.text = @"Считаю только НОВЫЕ коэффициенты ≥10.00x после этого момента. Старые значения на экране не учитываются.";
+    [self.startButton setTitle:@"СБОР ИДЁТ" forState:UIControlStateNormal];
+    self.statusLabel.text = @"Собираю только новые завершённые коэффициенты ≥10x после старта.";
     [self saveFiles];
     [self.tableView reloadData];
     [self updateStats];
+    [self updateTimerUI];
+}
+
+- (void)toggleControls {
+    self.controlsHidden = !self.controlsHidden;
+    [self.hideButton setTitle:(self.controlsHidden ? @"ОТКРЫТЬ ПАНЕЛЬ" : @"СКРЫТЬ ПАНЕЛЬ") forState:UIControlStateNormal];
+    self.controlsStack.hidden = self.controlsHidden;
+    self.controlsStack.alpha = self.controlsHidden ? 0 : 1;
+    self.controlsHeightConstraint.constant = self.controlsHidden ? 0 : 250;
+    [UIView animateWithDuration:0.18 animations:^{ [self.view layoutIfNeeded]; }];
 }
 
 - (void)acceptBig:(double)value source:(NSString *)source context:(NSString *)context pageURL:(NSString *)pageURL {
-    if (!self.collecting || self.events.count >= 10) return;
+    if (!self.collecting || self.events.count >= 20) return;
     NSDate *now = [NSDate date];
     if (self.acceptAfterDate && [now compare:self.acceptAfterDate] == NSOrderedAscending) return;
-
     if (self.lastEventDate) {
         NSTimeInterval since = [now timeIntervalSinceDate:self.lastEventDate];
         if (since < 3.0) return;
         if (fabs(value - self.lastEventValue) < 0.0001 && since < 20.0) return;
     }
-
     NSTimeInterval interval = self.lastEventDate ? [now timeIntervalSinceDate:self.lastEventDate] : 0;
     NSDictionary *event = @{
-        @"index": @(self.events.count + 1),
-        @"coefficient": @(value),
-        @"timestamp": [self.isoFormatter stringFromDate:now],
-        @"timeKyiv": [self.clockFormatter stringFromDate:now],
-        @"intervalSeconds": @(interval),
-        @"intervalMinutes": @(interval / 60.0),
-        @"source": source ?: @"unknown",
-        @"context": context ?: @"",
+        @"index": @(self.events.count + 1), @"coefficient": @(value),
+        @"timestamp": [self.isoFormatter stringFromDate:now], @"timeKyiv": [self.clockFormatter stringFromDate:now],
+        @"intervalSeconds": @(interval), @"intervalMinutes": @(interval / 60.0),
+        @"source": source ?: @"unknown", @"context": context ?: @"",
         @"pageURL": pageURL ?: self.webView.URL.absoluteString ?: @""
     };
     [self.events addObject:event];
@@ -203,59 +240,59 @@ static NSString * const LJURLString = @"https://one-vv0199.com/casino/play/v_1wi
     self.lastEventValue = value;
     [self saveFiles];
     [self.tableView reloadData];
+    [self.tableView scrollToRowAtIndexPath:[NSIndexPath indexPathForRow:self.events.count-1 inSection:0] atScrollPosition:UITableViewScrollPositionBottom animated:YES];
     [self updateStats];
-
-    if (self.events.count >= 10) {
+    [self updateTimerUI];
+    if (self.events.count >= 20) {
         self.collecting = NO;
-        self.startButton.enabled = YES;
-        [self.startButton setTitle:@"НАЧАТЬ НОВЫЙ ЗАМЕР" forState:UIControlStateNormal];
-        self.statusLabel.text = @"Готово: собрано 10 новых коэффициентов 10x+. Результат сохранён в JSON/CSV.";
-        UIAlertController *a = [UIAlertController alertControllerWithTitle:@"Готово" message:@"Собрано 10 новых коэффициентов ≥10x. Нажмите «Экспорт результата»." preferredStyle:UIAlertControllerStyleAlert];
+        [self.startButton setTitle:@"НОВЫЙ ЗАМЕР" forState:UIControlStateNormal];
+        self.statusLabel.text = @"Готово: собрано 20 новых коэффициентов ≥10x.";
+        UIAlertController *a = [UIAlertController alertControllerWithTitle:@"Готово" message:@"Собрано 20 новых коэффициентов ≥10x. Экспортируйте JSON/CSV." preferredStyle:UIAlertControllerStyleAlert];
         [a addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:nil]];
         [self presentViewController:a animated:YES completion:nil];
     }
 }
 
 - (void)updateStats {
-    double sum = 0;
-    NSInteger intervals = 0;
-    for (NSDictionary *e in self.events) {
-        double m = [e[@"intervalMinutes"] doubleValue];
-        if (m > 0) { sum += m; intervals++; }
-    }
+    double sum = 0; NSInteger intervals = 0;
+    for (NSDictionary *e in self.events) { double m = [e[@"intervalMinutes"] doubleValue]; if (m > 0) { sum += m; intervals++; } }
     NSString *avg = intervals ? [NSString stringWithFormat:@"%.2f мин", sum / intervals] : @"—";
-    self.statsLabel.text = [NSString stringWithFormat:@"Новых 10x+: %lu / 10\nСредний интервал: %@", (unsigned long)self.events.count, avg];
+    self.statsLabel.text = [NSString stringWithFormat:@"Новых 10x+: %lu / 20 • среднее: %@", (unsigned long)self.events.count, avg];
 }
 
-- (NSURL *)documentsDirectory {
-    return [[[NSFileManager defaultManager] URLsForDirectory:NSDocumentDirectory inDomains:NSUserDomainMask] firstObject];
+- (void)updateTimerUI {
+    if (!self.lastEventDate) {
+        self.timerLabel.text = @"00:00";
+        self.watchLabel.text = self.collecting ? @"Наблюдение: ждём первый новый 10x+" : @"Нажмите «НОВЫЙ ЗАМЕР»";
+        return;
+    }
+    NSTimeInterval elapsed = MAX(0, [[NSDate date] timeIntervalSinceDate:self.lastEventDate]);
+    NSInteger min = (NSInteger)(elapsed / 60.0); NSInteger sec = (NSInteger)elapsed % 60;
+    self.timerLabel.text = [NSString stringWithFormat:@"%02ld:%02ld", (long)min, (long)sec];
+    double minutes = elapsed / 60.0;
+    if (minutes < 2.0) self.watchLabel.text = @"Плотная зона по прошлой выборке • просто наблюдать";
+    else if (minutes < 4.5) self.watchLabel.text = @"Средняя зона по прошлой выборке • наблюдать следующий раунд";
+    else if (minutes <= 7.0) self.watchLabel.text = @"Длинный интервал по прошлой выборке • повышенное наблюдение";
+    else self.watchLabel.text = @"Интервал выше прошлой выборки • закономерность не подтверждена";
 }
 
+- (NSURL *)documentsDirectory { return [[[NSFileManager defaultManager] URLsForDirectory:NSDocumentDirectory inDomains:NSUserDomainMask] firstObject]; }
 - (NSURL *)jsonURL { return [[self documentsDirectory] URLByAppendingPathComponent:@"luckyjet_10x_session.json"]; }
 - (NSURL *)csvURL { return [[self documentsDirectory] URLByAppendingPathComponent:@"luckyjet_10x_session.csv"]; }
 
 - (void)saveFiles {
     NSMutableArray *intervals = [NSMutableArray array];
-    for (NSDictionary *e in self.events) {
-        if ([e[@"intervalSeconds"] doubleValue] > 0) [intervals addObject:e[@"intervalMinutes"] ?: @0];
-    }
-    double avg = 0;
-    for (NSNumber *n in intervals) avg += n.doubleValue;
-    if (intervals.count) avg /= intervals.count;
-
+    for (NSDictionary *e in self.events) if ([e[@"intervalSeconds"] doubleValue] > 0) [intervals addObject:e[@"intervalMinutes"] ?: @0];
+    double avg = 0; for (NSNumber *n in intervals) avg += n.doubleValue; if (intervals.count) avg /= intervals.count;
     NSDictionary *payload = @{
-        @"format": @"LuckyJet10xCollector/1",
-        @"rule": @"new completed coefficients >= 10.00x only",
-        @"targetCount": @10,
-        @"collectedCount": @(self.events.count),
-        @"timezone": @"Europe/Kyiv",
-        @"sourceURL": LJURLString,
-        @"averageIntervalMinutes": @(avg),
+        @"format": @"LuckyJet10xCollector/2", @"rule": @"new completed coefficients >= 10.00x only",
+        @"targetCount": @20, @"collectedCount": @(self.events.count), @"timezone": @"Europe/Kyiv",
+        @"sourceURL": LJURLString, @"averageIntervalMinutes": @(avg),
+        @"referenceFirst10": @{@"meanMinutes": @3.670, @"medianMinutes": @3.146, @"minMinutes": @0.821, @"maxMinutes": @6.837},
         @"events": self.events
     };
     NSData *json = [NSJSONSerialization dataWithJSONObject:payload options:NSJSONWritingPrettyPrinted error:nil];
     [json writeToURL:[self jsonURL] atomically:YES];
-
     NSMutableString *csv = [NSMutableString stringWithString:@"index,coefficient,timeKyiv,timestamp,intervalSeconds,intervalMinutes,source,pageURL\n"];
     for (NSDictionary *e in self.events) {
         NSString *line = [NSString stringWithFormat:@"%@,%.3f,%@,%@,%.3f,%.3f,\"%@\",\"%@\"\n",
@@ -275,70 +312,40 @@ static NSString * const LJURLString = @"https://one-vv0199.com/casino/play/v_1wi
     [self presentViewController:vc animated:YES completion:nil];
 }
 
-#pragma mark - WKScriptMessageHandler
-
 - (void)userContentController:(WKUserContentController *)userContentController didReceiveScriptMessage:(WKScriptMessage *)message {
     if (![message.name isEqualToString:@"lj10"] || ![message.body isKindOfClass:NSDictionary.class]) return;
     NSDictionary *d = message.body;
-    NSString *type = [d[@"type"] description] ?: @"";
-    if ([type isEqualToString:@"big"]) {
-        double v = [d[@"value"] doubleValue];
-        [self acceptBig:v source:[d[@"source"] description] context:[d[@"context"] description] pageURL:[d[@"url"] description]];
-    }
+    if ([[d[@"type"] description] isEqualToString:@"big"]) [self acceptBig:[d[@"value"] doubleValue] source:[d[@"source"] description] context:[d[@"context"] description] pageURL:[d[@"url"] description]];
 }
 
-#pragma mark - Web navigation
+- (void)webView:(WKWebView *)webView didFinishNavigation:(WKNavigation *)navigation { if (!self.collecting) self.statusLabel.text = @"LuckyJet открыт. Нажмите «НОВЫЙ ЗАМЕР», когда игра уже показывает раунды."; }
+- (void)webView:(WKWebView *)webView didFailProvisionalNavigation:(WKNavigation *)navigation withError:(NSError *)error { self.statusLabel.text = [NSString stringWithFormat:@"Ошибка: %@", error.localizedDescription ?: @"неизвестно"]; }
+- (WKWebView *)webView:(WKWebView *)webView createWebViewWithConfiguration:(WKWebViewConfiguration *)configuration forNavigationAction:(WKNavigationAction *)navigationAction windowFeatures:(WKWindowFeatures *)windowFeatures { if (navigationAction.request.URL) [webView loadRequest:navigationAction.request]; return nil; }
 
-- (void)webView:(WKWebView *)webView didFinishNavigation:(WKNavigation *)navigation {
-    NSString *u = webView.URL.absoluteString ?: @"";
-    if (!self.collecting) self.statusLabel.text = [NSString stringWithFormat:@"LuckyJet открыт: %@\nКогда игра работает — нажмите «НАЧАТЬ НОВЫЙ ЗАМЕР».", u.length ? u : @"—"];
-}
-
-- (void)webView:(WKWebView *)webView didFailProvisionalNavigation:(WKNavigation *)navigation withError:(NSError *)error {
-    self.statusLabel.text = [NSString stringWithFormat:@"Ошибка загрузки: %@", error.localizedDescription ?: @"неизвестно"];
-}
-
-- (WKWebView *)webView:(WKWebView *)webView createWebViewWithConfiguration:(WKWebViewConfiguration *)configuration forNavigationAction:(WKNavigationAction *)navigationAction windowFeatures:(WKWindowFeatures *)windowFeatures {
-    if (navigationAction.request.URL) [webView loadRequest:navigationAction.request];
-    return nil;
-}
-
-#pragma mark - Table
-
-- (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
-    return self.events.count;
-}
-
+- (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section { return self.events.count; }
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
     UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"event"];
     if (!cell) cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:@"event"];
     NSDictionary *e = self.events[indexPath.row];
-    double interval = [e[@"intervalMinutes"] doubleValue];
-    NSString *intervalText = indexPath.row == 0 ? @"первый 10x+" : [NSString stringWithFormat:@"через %.2f мин", interval];
-    cell.textLabel.text = [NSString stringWithFormat:@"#%@  %.2fx  — %@", e[@"index"], [e[@"coefficient"] doubleValue], e[@"timeKyiv"]];
-    cell.detailTextLabel.text = [NSString stringWithFormat:@"%@ • %@", intervalText, e[@"source"] ?: @""];
+    double seconds = [e[@"intervalSeconds"] doubleValue]; NSInteger m = (NSInteger)(seconds / 60.0); NSInteger s = (NSInteger)seconds % 60;
+    NSString *intervalText = indexPath.row == 0 ? @"первый новый 10x+" : [NSString stringWithFormat:@"+%02ld:%02ld", (long)m, (long)s];
+    cell.textLabel.font = [UIFont monospacedDigitSystemFontOfSize:12 weight:UIFontWeightBold];
+    cell.detailTextLabel.font = [UIFont systemFontOfSize:10 weight:UIFontWeightRegular];
+    cell.textLabel.text = [NSString stringWithFormat:@"#%@  %.2fx  %@  %@", e[@"index"], [e[@"coefficient"] doubleValue], e[@"timeKyiv"], intervalText];
+    cell.detailTextLabel.text = e[@"source"] ?: @"";
     return cell;
 }
-
 @end
 
 @interface LJAppDelegate : UIResponder <UIApplicationDelegate>
 @property (nonatomic, strong) UIWindow *window;
 @end
-
 @implementation LJAppDelegate
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
     self.window = [[UIWindow alloc] initWithFrame:UIScreen.mainScreen.bounds];
-    LJCollectorViewController *vc = [LJCollectorViewController new];
-    UINavigationController *nav = [[UINavigationController alloc] initWithRootViewController:vc];
-    self.window.rootViewController = nav;
-    [self.window makeKeyAndVisible];
-    return YES;
+    UINavigationController *nav = [[UINavigationController alloc] initWithRootViewController:[LJCollectorViewController new]];
+    self.window.rootViewController = nav; [self.window makeKeyAndVisible]; return YES;
 }
 @end
 
-int main(int argc, char * argv[]) {
-    @autoreleasepool {
-        return UIApplicationMain(argc, argv, nil, NSStringFromClass([LJAppDelegate class]));
-    }
-}
+int main(int argc, char * argv[]) { @autoreleasepool { return UIApplicationMain(argc, argv, nil, NSStringFromClass([LJAppDelegate class])); } }
