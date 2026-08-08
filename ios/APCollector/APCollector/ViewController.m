@@ -13,7 +13,7 @@
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-    self.title = @"AP Collector";
+    self.title = @"AP Collector 1.2";
     self.view.backgroundColor = UIColor.systemBackgroundColor;
     self.navigationController.navigationBar.prefersLargeTitles = YES;
 
@@ -21,7 +21,7 @@
     intro.translatesAutoresizingMaskIntoConstraints = NO;
     intro.numberOfLines = 0;
     intro.font = [UIFont systemFontOfSize:15 weight:UIFontWeightMedium];
-    intro.text = @"1) Нажмите «Начать сбор».\n2) В системном окне выберите весь экран.\n3) Перейдите в AllPredictor.\n4) Вернитесь сюда и экспортируйте JSON/CSV.";
+    intro.text = @"1) Нажмите «Начать сбор».\n2) Выберите «Весь экран».\n3) Откройте AllPredictor.\n4) Нажмите Lucky Jet или Rocket Queen.\n5) Collector сам сохранит ~4 сек ДО перехода и ~3 сек ПОСЛЕ.\n6) Кадры: Файлы → AP Collector → TargetTransitions.";
 
     self.statusLabel = [UILabel new];
     self.statusLabel.translatesAutoresizingMaskIntoConstraints = NO;
@@ -125,7 +125,7 @@
 - (void)exportCSV { [self exportURL:[[CaptureStore shared] csvURL]]; }
 
 - (void)clearTapped {
-    UIAlertController *a = [UIAlertController alertControllerWithTitle:@"Очистить данные?" message:@"JSON и CSV будут очищены." preferredStyle:UIAlertControllerStyleAlert];
+    UIAlertController *a = [UIAlertController alertControllerWithTitle:@"Очистить данные?" message:@"JSON и CSV будут очищены. Папки с кадрами в Files останутся." preferredStyle:UIAlertControllerStyleAlert];
     [a addAction:[UIAlertAction actionWithTitle:@"Отмена" style:UIAlertActionStyleCancel handler:nil]];
     [a addAction:[UIAlertAction actionWithTitle:@"Очистить" style:UIAlertActionStyleDestructive handler:^(UIAlertAction * _Nonnull action) { [[CaptureStore shared] clear]; }]];
     [self presentViewController:a animated:YES completion:nil];
