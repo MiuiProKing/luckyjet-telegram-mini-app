@@ -34,3 +34,4 @@ targets:
       - framework: CoreMedia.framework
       - framework: CoreVideo.framework
       - framework: CoreImage.framework
+      - framework: QuartzCore.framework
