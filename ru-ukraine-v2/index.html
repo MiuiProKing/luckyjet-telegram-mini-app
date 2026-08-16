@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<meta name="theme-color" content="#03050a"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<title>LuckyJet V2 • Evidence Engine</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+:root{--bg:#03050a;--card:rgba(12,18,31,.76);--card2:rgba(17,25,42,.92);--line:rgba(130,168,255,.16);--text:#f5f8ff;--muted:#91a0bb;--blue:#4b8cff;--cyan:#43e8ff;--green:#2ee69b;--yellow:#ffcc66;--red:#ff5d78;--purple:#9e73ff;--shadow:0 24px 80px rgba(0,0,0,.45)}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Arial,sans-serif}body{overflow-x:hidden}
+body:before{content:"";position:fixed;inset:-30%;z-index:-3;background:radial-gradient(circle at 18% 20%,rgba(75,140,255,.20),transparent 23%),radial-gradient(circle at 82% 18%,rgba(158,115,255,.18),transparent 25%),radial-gradient(circle at 58% 82%,rgba(67,232,255,.10),transparent 26%);animation:aurora 18s ease-in-out infinite alternate}
+body:after{content:"";position:fixed;inset:0;z-index:-2;opacity:.20;background-image:linear-gradient(rgba(255,255,255,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.03) 1px,transparent 1px);background-size:32px 32px;mask-image:linear-gradient(to bottom,#000,transparent 90%);animation:gridMove 14s linear infinite}
+@keyframes aurora{to{transform:translate3d(4%,-3%,0) scale(1.06)}}@keyframes gridMove{to{background-position:32px 32px}}
+.wrap{max-width:1180px;margin:0 auto;padding:22px 16px 100px}.glass{background:linear-gradient(180deg,rgba(19,29,49,.82),rgba(7,12,22,.84));border:1px solid var(--line);box-shadow:var(--shadow);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
+.hero{border-radius:28px;padding:22px;position:relative;overflow:hidden}.hero:before{content:"";position:absolute;width:260px;height:260px;border-radius:50%;right:-90px;top:-120px;background:radial-gradient(circle,rgba(67,232,255,.20),transparent 68%);animation:pulse 4s ease-in-out infinite}.hero:after{content:"";position:absolute;width:220px;height:220px;border-radius:50%;left:-100px;bottom:-140px;background:radial-gradient(circle,rgba(158,115,255,.18),transparent 65%);animation:pulse 5s ease-in-out infinite reverse}@keyframes pulse{50%{transform:scale(1.14);opacity:.7}}
+.top{display:flex;align-items:center;gap:12px;justify-content:space-between}.brand{display:flex;align-items:center;gap:12px}.orb{width:46px;height:46px;border-radius:16px;background:conic-gradient(from 90deg,var(--blue),var(--cyan),var(--purple),var(--blue));box-shadow:0 0 30px rgba(75,140,255,.32);animation:spin 7s linear infinite;position:relative}.orb:after{content:"";position:absolute;inset:4px;background:#070b14;border-radius:13px}.orb:before{content:"V2";position:absolute;inset:0;display:grid;place-items:center;font-weight:950;font-size:12px;z-index:2}@keyframes spin{to{transform:rotate(360deg)}}
+h1{font-size:clamp(22px,4.5vw,38px);margin:0;letter-spacing:-.8px}.sub{color:var(--muted);font-size:13px;margin-top:4px}.pill{display:inline-flex;align-items:center;gap:8px;border:1px solid rgba(46,230,155,.25);background:rgba(46,230,155,.08);padding:9px 12px;border-radius:999px;color:#caffea;font-size:12px;font-weight:800}.dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 12px var(--green);animation:blink 1.5s infinite}@keyframes blink{50%{opacity:.35}}
+.hero-grid{display:grid;grid-template-columns:1.4fr .9fr;gap:18px;margin-top:22px}.status-box{border-radius:22px;padding:20px;background:rgba(4,9,18,.55);border:1px solid rgba(255,255,255,.07);position:relative;overflow:hidden}.status-box:before{content:"";position:absolute;inset:0;background:linear-gradient(110deg,transparent 20%,rgba(255,255,255,.04) 42%,transparent 60%);transform:translateX(-100%);animation:shine 6s infinite}@keyframes shine{to{transform:translateX(100%)}}
+.label{font-size:11px;text-transform:uppercase;letter-spacing:1.4px;color:var(--muted);font-weight:900}.signal{font-size:clamp(30px,8vw,60px);font-weight:950;letter-spacing:-2px;margin:8px 0 4px}.signal.ok{color:var(--green);text-shadow:0 0 28px rgba(46,230,155,.25)}.signal.no{color:var(--yellow)}.signal.wait{color:#dfe7ff}.signal.bad{color:var(--red)}
+.target-line{display:flex;align-items:center;gap:10px;flex-wrap:wrap;color:#d6e1f6;font-weight:800}.target-chip{background:rgba(75,140,255,.12);border:1px solid rgba(75,140,255,.25);padding:7px 10px;border-radius:10px;color:#b9d2ff}.hero-metrics{display:grid;grid-template-columns:1fr 1fr;gap:10px}.metric{border-radius:18px;padding:14px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.065)}.metric b{display:block;font-size:23px;margin-top:5px}.metric small{color:var(--muted);font-size:11px}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}.btn,button{appearance:none;border:0;color:#fff;font-weight:900;cursor:pointer;border-radius:14px;min-height:46px;padding:0 16px;background:linear-gradient(135deg,#2e6cf6,#5b43e9);box-shadow:0 10px 24px rgba(57,94,220,.22);transition:.18s transform,.18s filter,.18s opacity}.btn:active,button:active{transform:scale(.98)}button.secondary{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.10);box-shadow:none}button.green{background:linear-gradient(135deg,#169c67,#24c98a)}button:disabled{opacity:.42;cursor:not-allowed}.select{min-height:46px;border-radius:14px;background:#0c1322;border:1px solid rgba(255,255,255,.10);color:#fff;padding:0 14px;font-weight:900;outline:none}
+.section{margin-top:18px;border-radius:24px;padding:18px}.section-title{display:flex;align-items:end;justify-content:space-between;gap:12px;margin-bottom:14px}.section-title h2{margin:0;font-size:18px}.section-title span{color:var(--muted);font-size:12px}.cards{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}.kpi{padding:14px;border-radius:18px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.065)}.kpi .v{font-weight:950;font-size:22px;margin-top:4px}.kpi .n{color:var(--muted);font-size:11px}.good{color:var(--green)}.warn{color:var(--yellow)}.bad{color:var(--red)}.blue{color:#84b1ff}
+.coefs{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}.coefs::-webkit-scrollbar{display:none}.coef{flex:0 0 auto;min-width:70px;text-align:center;padding:11px 9px;border-radius:14px;background:#11192a;border:1px solid rgba(255,255,255,.07);font-weight:950}.coef.mid{background:rgba(255,204,102,.10);border-color:rgba(255,204,102,.18);color:#ffe0a0}.coef.high{background:rgba(46,230,155,.10);border-color:rgba(46,230,155,.20);color:#a7ffd6}
+.table-wrap{overflow:auto;border-radius:18px;border:1px solid rgba(255,255,255,.07)}table{border-collapse:collapse;width:100%;min-width:880px;background:rgba(3,7,14,.34)}th,td{padding:12px 11px;border-bottom:1px solid rgba(255,255,255,.06);font-size:12px;text-align:right}th{position:sticky;top:0;background:#0d1422;color:#9fb0cd;font-size:10px;letter-spacing:.6px;text-transform:uppercase}th:first-child,td:first-child{text-align:left}.badge{display:inline-flex;padding:5px 8px;border-radius:8px;background:rgba(255,255,255,.06);font-weight:900}.row-best{background:rgba(46,230,155,.045)}
+.log{display:grid;gap:8px}.log-item{display:grid;grid-template-columns:1.1fr .7fr .7fr .7fr 1fr;gap:8px;align-items:center;padding:11px 12px;border:1px solid rgba(255,255,255,.07);background:rgba(255,255,255,.03);border-radius:14px;font-size:12px}.empty{padding:22px;text-align:center;color:var(--muted);border:1px dashed rgba(255,255,255,.10);border-radius:16px}.note{font-size:12px;color:#9fb0c8;line-height:1.55}.foot{margin-top:18px;color:#667590;text-align:center;font-size:11px;line-height:1.5}
+.progress{height:5px;border-radius:999px;overflow:hidden;background:rgba(255,255,255,.06);margin-top:10px}.progress i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--blue),var(--cyan));transition:width .3s ease;box-shadow:0 0 18px rgba(67,232,255,.35)}
+#toast{position:fixed;left:50%;bottom:22px;transform:translate(-50%,30px);background:#111a2a;border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:11px 14px;opacity:0;pointer-events:none;transition:.25s;z-index:30;max-width:90%;font-size:12px;box-shadow:0 18px 50px rgba(0,0,0,.45)}#toast.show{opacity:1;transform:translate(-50%,0)}
+@media(max-width:820px){.hero-grid{grid-template-columns:1fr}.cards{grid-template-columns:repeat(2,1fr)}.top{align-items:flex-start}.pill{display:none}.log-item{grid-template-columns:1fr 1fr}.log-item span:last-child{grid-column:1/-1}.wrap{padding:12px 10px 90px}.hero,.section{border-radius:20px}.hero{padding:16px}.section{padding:14px}}@media(max-width:420px){.hero-metrics{grid-template-columns:1fr 1fr}.metric b{font-size:19px}.cards{grid-template-columns:1fr 1fr}.toolbar>*{flex:1 1 42%}.select{min-width:0}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <section class="hero glass">
+    <div class="top">
+      <div class="brand"><div class="orb"></div><div><h1>LuckyJet <span style="color:#77a8ff">Evidence V2</span></h1><div class="sub">Walk‑Forward • Baseline • Calibration • NO SIGNAL</div></div></div>
+      <div class="pill"><span class="dot"></span><span id="sourcePill">Загрузка данных…</span></div>
+    </div>
+    <div class="hero-grid">
+      <div class="status-box">
+        <div class="label">Текущий вывод модели</div>
+        <div id="signalText" class="signal wait">АНАЛИЗ…</div>
+        <div class="target-line"><span id="signalExplain">Получаем реальные завершённые раунды и запускаем walk-forward.</span><span id="targetChip" class="target-chip">—</span></div>
+        <div class="progress"><i id="progressBar"></i></div>
+      </div>
+      <div class="hero-metrics">
+        <div class="metric"><small>Calibrated probability</small><b id="probKpi">—</b></div>
+        <div class="metric"><small>Baseline 3 rounds</small><b id="baseKpi">—</b></div>
+        <div class="metric"><small>Edge</small><b id="edgeKpi">—</b></div>
+        <div class="metric"><small>Sample / OOS</small><b id="sampleKpi">—</b></div>
+      </div>
+    </div>
+    <div class="toolbar">
+      <select id="modeSelect" class="select"><option value="SAFE">SAFE</option><option value="PRO" selected>PRO</option><option value="EXPERIMENTAL">EXPERIMENTAL</option></select>
+      <button id="refreshBtn">ОБНОВИТЬ И ПЕРЕСЧИТАТЬ</button>
+      <button id="fixBtn" class="green" disabled>ЗАФИКСИРОВАТЬ СИГНАЛ</button>
+      <button id="exportBtn" class="secondary">ЭКСПОРТ CSV</button>
+      <button id="uploadBtn" class="secondary">ЗАГРУЗИТЬ JSON</button>
+      <input id="fileInput" type="file" accept="application/json,.json,.jsonl,.txt" hidden/>
+    </div>
+  </section>
+
+  <section class="section glass">
+    <div class="section-title"><h2>Состояние данных</h2><span id="dataState">—</span></div>
+    <div class="cards">
+      <div class="kpi"><div class="n">Уникальных раундов</div><div class="v blue" id="roundsKpi">0</div></div>
+      <div class="kpi"><div class="n">Дубликатов удалено</div><div class="v" id="dupesKpi">0</div></div>
+      <div class="kpi"><div class="n">Max |ACF| lag 1–5</div><div class="v" id="acfKpi">—</div></div>
+      <div class="kpi"><div class="n">Distribution shift</div><div class="v" id="shiftKpi">—</div></div>
+      <div class="kpi"><div class="n">Последний раунд</div><div class="v" id="lastKpi">—</div></div>
+    </div>
+    <div style="margin-top:14px" class="label">Последние завершённые коэффициенты</div>
+    <div id="coefs" class="coefs" style="margin-top:9px"><span class="coef">…</span></div>
+  </section>
+
+  <section class="section glass">
+    <div class="section-title"><h2>Walk‑Forward backtest</h2><span>Каждый исторический прогноз видит только прошлое</span></div>
+    <div class="table-wrap"><table><thead><tr><th>Target</th><th>Prob</th><th>Baseline</th><th>Edge</th><th>OOS</th><th>Signals</th><th>Signal WR</th><th>Baseline WR</th><th>Brier</th><th>ECE</th><th>State N</th></tr></thead><tbody id="btBody"></tbody></table></div>
+    <p class="note">Высокий winrate сам по себе не считается преимуществом. Для каждого target модель сравнивается с обычной вероятностью получить хотя бы один коэффициент ≥ target за следующие 3 раунда. Если подтверждённого преимущества нет — V2 показывает «НЕТ СИГНАЛА».</p>
+  </section>
+
+  <section class="section glass">
+    <div class="section-title"><h2>Журнал зафиксированных сигналов</h2><span>Проверка только по следующим 3 завершённым раундам</span></div>
+    <div id="signalLog" class="log"></div>
+  </section>
+
+  <section class="section glass">
+    <div class="section-title"><h2>Что изменено в V2</h2><span>Старая версия не изменяется</span></div>
+    <p class="note">Нет Math.random(), нет искусственного ±0.01 и нет confidence по той же выборке. V2 удаляет дубликаты round ID, строит признаки только из доступного прошлого, делает причинный walk-forward, отдельно считает baseline, Brier Score, ECE, автокорреляцию и distribution shift. Для совместимости источник данных V2 временно читает параметры подключения из старой страницы <b>только во время выполнения</b> и не дублирует их в новом исходнике. Для полной защиты секретов следующий шаг — заменить старые ключи и перенести источник в backend/Edge Function.</p>
+  </section>
+  <div class="foot">Исследовательский статистический инструмент. Исторические результаты не гарантируют будущий результат.</div>
+</div>
+<div id="toast"></div>
+<script>
+(()=>{
+'use strict';
+const TARGETS=[1.5,2,3,5,10];
+const MODES={
+ SAFE:{minHistory:500,minTrain:300,minEdge:.08,maxECE:.08,minState:18,minSignals:20,z:1.64},
+ PRO:{minHistory:300,minTrain:200,minEdge:.04,maxECE:.10,minState:12,minSignals:15,z:1.28},
+ EXPERIMENTAL:{minHistory:150,minTrain:100,minEdge:.01,maxECE:.16,minState:7,minSignals:10,z:.67}
+};
+const H=3,WARMUP=100,LOG_KEY='luckyjet_v2_signal_log';
+let rows=[],analysis=null,dupes=0,sourceName='';
+const $=id=>document.getElementById(id), pct=v=>Number.isFinite(v)?(v*100).toFixed(1)+'%':'—', num=(v,d=2)=>Number.isFinite(v)?v.toFixed(d):'—';
+function toast(s){const el=$('toast');el.textContent=s;el.classList.add('show');clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),2600)}
+function setProgress(v){$('progressBar').style.width=Math.max(0,Math.min(100,v))+'%'}
+function arrFrom(data){if(Array.isArray(data))return data;if(!data||typeof data!=='object')return[];for(const k of ['data','history','results','items','rounds']){if(Array.isArray(data[k]))return data[k];if(data[k]&&Array.isArray(data[k].data))return data[k].data}return[]}
+function coefOf(x){if(!x||typeof x!=='object')return null;let v=x.topCoefficient??x.coef??x.crash??x.value??x.multiplier;if(v==null&&Array.isArray(x.finalValues)&&x.finalValues.length)v=x.finalValues[0];v=Number(v);return Number.isFinite(v)&&v>=1?v:null}
+function timeOf(x){for(const k of ['endedAt','ended_at','createdAt','created_at','timestamp','time','date','updated_at']){let v=x?.[k];if(v==null)continue;if(typeof v==='number'){if(v<1e12)v*=1000;if(Number.isFinite(v))return v}const t=Date.parse(v);if(Number.isFinite(t))return t}return null}
+function idOf(x,i){return String(x?.id??x?.round_id??x?.roundId??x?.roundConfig?.id??x?.hash??x?.provablyFair?.hash??('row-'+i))}
+function normalize(raw){const out=[],seen=new Set();let d=0;raw.forEach((x,i)=>{const c=coefOf(x);if(c==null)return;const id=idOf(x,i);if(seen.has(id)){d++;return}seen.add(id);out.push({id,coef:c,ts:timeOf(x),raw:x})});dupes=d;const timed=out.filter(x=>Number.isFinite(x.ts)).length;if(out.length&&timed/out.length>.65)out.sort((a,b)=>(a.ts??0)-(b.ts??0));else out.reverse();return out}
+async function legacyConfig(){const text=await fetch('../ru-ukraine/index.html?cfg='+Date.now(),{cache:'no-store'}).then(r=>{if(!r.ok)throw Error('legacy config '+r.status);return r.text()});const m=(re)=>text.match(re)?.[1]||'';return{base:m(/const\s+BASE\s*=\s*['\"]([^'\"]+)/),apiKey:m(/const\s+API_KEY\s*=\s*['\"]([^'\"]+)/),direct:m(/const\s+DIRECT_HISTORY_URL\s*=\s*['\"]([^'\"]+)/),customer:m(/['\"]customer-id['\"]\s*:\s*['\"]([^'\"]+)/),session:m(/['\"]session-id['\"]\s*:\s*['\"]([^'\"]+)/)}}
+async function fetchJSON(url,opt={}){const ctl=new AbortController(),t=setTimeout(()=>ctl.abort(),16000);try{const r=await fetch(url,{...opt,cache:'no-store',signal:ctl.signal});if(!r.ok)throw Error('HTTP '+r.status);return await r.json()}finally{clearTimeout(t)}}
+async function loadLive(){setProgress(8);const cfg=await legacyConfig();setProgress(18);const tries=[];
+ if(cfg.base&&cfg.apiKey){for(const lim of [2000,1000,500])tries.push((async()=>({name:'AllPredictor API '+lim,raw:arrFrom(await fetchJSON(cfg.base+'/luckyjet/coefficients?limit='+lim,{headers:{'X-API-Key':cfg.apiKey}}))}))())}
+ if(cfg.direct&&cfg.customer&&cfg.session){for(const suffix of ['?limit=2000',''])tries.push((async()=>({name:'Direct history',raw:arrFrom(await fetchJSON(cfg.direct+suffix,{headers:{'customer-id':cfg.customer,'session-id':cfg.session,'accept':'application/json'}}))}))())}
+ const settled=await Promise.allSettled(tries);const ok=settled.filter(x=>x.status==='fulfilled'&&x.value.raw.length).map(x=>x.value);if(!ok.length)throw Error('Не удалось получить историю из рабочих источников старой версии');ok.sort((a,b)=>b.raw.length-a.raw.length);sourceName=ok[0].name;setProgress(35);return normalize(ok[0].raw)}
+function q(a,p){if(!a.length)return 0;const s=a.slice().sort((x,y)=>x-y),i=(s.length-1)*p,l=Math.floor(i),h=Math.ceil(i);return l===h?s[l]:s[l]+(s[h]-s[l])*(i-l)}
+function mean(a){return a.length?a.reduce((s,v)=>s+v,0)/a.length:0}function median(a){return q(a,.5)}function mad(a){if(!a.length)return 0;const m=median(a);return median(a.map(v=>Math.abs(v-m)))}
+function ewma(a,alpha=.18){if(!a.length)return 0;let e=a[0];for(let i=1;i<a.length;i++)e=alpha*a[i]+(1-alpha)*e;return e}
+function streak(a,fn){let n=0;for(let i=a.length-1;i>=0;i--){if(fn(a[i]))n++;else break}return n}function since(a,thr){for(let i=a.length-1;i>=0;i--)if(a[i]>=thr)return a.length-1-i;return a.length}
+function featuresAt(v,t,target){const hist=v.slice(0,t),r20=hist.slice(-20),r50=hist.slice(-50),r100=hist.slice(-100),prev=hist.slice(-250,-50);const base=Math.max(1e-6,mean(hist.map(x=>x>=target?1:0)));const hit20=mean(r20.map(x=>x>=target?1:0)),hit50=mean(r50.map(x=>x>=target?1:0));const m20=median(r20),m50=median(r50),mPrev=median(prev.length?prev:r100);const scale=Math.max(.08,mad(prev.length?prev:r100));const shift=Math.min(9,Math.abs(m20-mPrev)/scale);return{median20:m20,median50:m50,q25:q(r50,.25),q75:q(r50,.75),q90:q(r50,.90),ewma20:ewma(r20),mad50:mad(r50),hit20,hit50,baseSingle:base,lowStreak:streak(hist,x=>x<=1.3),highStreak:streak(hist,x=>x>=2),since5:since(hist,5),since10:since(hist,10),shift,ratio2:mean(r50.map(x=>x>=2?1:0)),ratio3:mean(r50.map(x=>x>=3?1:0)),ratio5:mean(r50.map(x=>x>=5?1:0)),ratio10:mean(r50.map(x=>x>=10?1:0))}}
+function sig(f){const rate=f.hit20-f.baseSingle;const rb=rate>.12?'H':rate<-.12?'L':'N';const med=f.median20>f.median50*1.18?'H':f.median20<f.median50*.85?'L':'N';const vol=f.mad50>.55?'H':'L';const low=f.lowStreak>=3?'3':f.lowStreak>=1?'1':'0';const s10=f.since10<=10?'A':f.since10<=30?'B':'C';const sh=f.shift>1.5?'S':'N';return rb+med+vol+low+s10+sh}
+function coarse(f){return (f.hit20>f.baseSingle?'H':'L')+(f.mad50>.55?'H':'L')+(f.lowStreak>=2?'S':'N')}
+function outcome(v,t,target){for(let j=0;j<H;j++)if(v[t+j]>=target)return 1;return 0}
+function add(map,key,y){const z=map.get(key)||{n:0,h:0};z.n++;z.h+=y;map.set(key,z)}function horizonBase(p){return 1-Math.pow(1-p,H)}
+function modelProb(f,stateMap,coarseMap,base3){const s=stateMap.get(sig(f))||{n:0,h:0},c=coarseMap.get(coarse(f))||{n:0,h:0};const cp=(c.h+18*base3)/(c.n+18);const raw=(s.h+12*cp)/(s.n+12);return{raw,stateN:s.n,coarseN:c.n}}
+function calProb(raw,buckets,base3){const b=Math.max(0,Math.min(19,Math.floor(raw*20))),z=buckets[b];return{p:(z.h+16*raw+10*base3)/(z.n+26),n:z.n,b}}
+function ece(preds){if(!preds.length)return NaN;let sum=0;for(let b=0;b<10;b++){const g=preds.filter(x=>Math.min(9,Math.floor(x.p*10))===b);if(!g.length)continue;sum+=g.length/preds.length*Math.abs(mean(g.map(x=>x.p))-mean(g.map(x=>x.y)))}return sum}
+function brier(preds){return preds.length?mean(preds.map(x=>(x.p-x.y)**2)):NaN}
+function runTarget(v,target,mode){const cfg=MODES[mode],stateMap=new Map(),coarseMap=new Map(),buckets=Array.from({length:20},()=>({n:0,h:0})),preds=[],byT=new Map(),signals=[];let singleHits=0;
+ for(let t=0;t<v.length;t++){if(t>0&&v[t-1]>=target)singleHits++;const s=t-H;if(s>=WARMUP&&byT.has(s)){const old=byT.get(s),y=outcome(v,s,target);add(stateMap,old.sig,y);add(coarseMap,old.coarse,y);const bz=buckets[old.bucket];bz.n++;bz.h+=y}
+   if(t<WARMUP||t>v.length-H)continue;const baseSingle=singleHits/Math.max(1,t),base3=horizonBase(baseSingle),f=featuresAt(v,t,target),m=modelProb(f,stateMap,coarseMap,base3),cal=calProb(m.raw,buckets,base3),y=outcome(v,t,target),edge=cal.p-base3,se=Math.sqrt(Math.max(.000001,cal.p*(1-cal.p))/Math.max(1,m.stateN+12)),lower=edge-cfg.z*se;const rec={t,p:cal.p,raw:m.raw,base:base3,edge,y,stateN:m.stateN,lower};preds.push(rec);byT.set(t,{sig:sig(f),coarse:coarse(f),bucket:cal.b});if(t>=cfg.minTrain&&m.stateN>=cfg.minState&&edge>=cfg.minEdge&&lower>-.01)signals.push(rec)}
+ const fullT=v.length;for(let s=Math.max(WARMUP,fullT-H);s<=fullT-H;s++){if(s>=0&&s+H<=v.length){const f=featuresAt(v,s,target),y=outcome(v,s,target);add(stateMap,sig(f),y);add(coarseMap,coarse(f),y)}}
+ const baseSingle=mean(v.map(x=>x>=target?1:0)),base3=horizonBase(baseSingle),f=featuresAt(v,v.length,target),m=modelProb(f,stateMap,coarseMap,base3),cal=calProb(m.raw,buckets,base3),allECE=ece(preds),wr=signals.length?mean(signals.map(x=>x.y)):NaN,signalBase=signals.length?mean(signals.map(x=>x.base)):NaN;return{target,p:cal.p,base:base3,edge:cal.p-base3,stateN:m.stateN,coarseN:m.coarseN,brier:brier(preds),ece:allECE,oos:preds.length,signals:signals.length,wr,signalBase,shift:f.shift,features:f,eligible:v.length>=cfg.minHistory&&preds.length>=cfg.minTrain&&m.stateN>=cfg.minState&&Number.isFinite(allECE)&&allECE<=cfg.maxECE&&(cal.p-base3)>=cfg.minEdge&&signals.length>=cfg.minSignals}}
+function acf(v,target,lag){const x=v.map(a=>a>=target?1:0),m=mean(x);let num=0,den=0;for(let i=0;i<x.length;i++)den+=(x[i]-m)**2;for(let i=lag;i<x.length;i++)num+=(x[i]-m)*(x[i-lag]-m);return den?num/den:0}
+function analyze(){if(rows.length<40)throw Error('Слишком мало раундов для анализа');setProgress(48);const v=rows.map(r=>r.coef),mode=$('modeSelect').value,res=TARGETS.map(t=>runTarget(v,t,mode));setProgress(88);const eligible=res.filter(x=>x.eligible).sort((a,b)=>(b.edge-a.edge)||(b.p-a.p));const best=eligible[0]||null;const acfs=TARGETS.flatMap(t=>[1,2,3,4,5].map(l=>Math.abs(acf(v,t,l))));analysis={mode,res,best,maxAcf:Math.max(...acfs),shift:Math.max(...res.map(x=>x.shift||0))};render();setProgress(100);setTimeout(()=>setProgress(0),900)}
+function render(){const a=analysis,b=a.best;$('roundsKpi').textContent=rows.length;$('dupesKpi').textContent=dupes;$('acfKpi').textContent=num(a.maxAcf,3);$('acfKpi').className='v '+(a.maxAcf<.05?'good':a.maxAcf<.10?'warn':'bad');$('shiftKpi').textContent=num(a.shift,2);$('shiftKpi').className='v '+(a.shift<1.2?'good':a.shift<2?'warn':'bad');$('lastKpi').textContent=rows.length?num(rows.at(-1).coef,2)+'X':'—';$('sourcePill').textContent=sourceName||'JSON';$('dataState').textContent=rows.length+' уникальных раундов • режим '+a.mode;
+ const c=$('coefs');c.innerHTML='';rows.slice(-14).reverse().forEach(r=>{const x=document.createElement('span');x.className='coef '+(r.coef>=10?'high':r.coef>=2?'mid':'');x.textContent=num(r.coef,2)+'X';c.appendChild(x)});
+ if(b){$('signalText').textContent='СИГНАЛ';$('signalText').className='signal ok';$('targetChip').textContent='TARGET '+b.target.toFixed(2)+'X';$('signalExplain').textContent='Модель прошла текущие пороги '+a.mode+'. Фиксация нужна для честной проверки следующих 3 раундов.';$('probKpi').textContent=pct(b.p);$('baseKpi').textContent=pct(b.base);$('edgeKpi').textContent=(b.edge>=0?'+':'')+pct(b.edge);$('edgeKpi').className=b.edge>=0?'good':'bad';$('sampleKpi').textContent=b.oos+' / '+b.signals;$('fixBtn').disabled=false}else{$('signalText').textContent='НЕТ СИГНАЛА';$('signalText').className='signal no';$('targetChip').textContent=a.mode;$('signalExplain').textContent=rows.length<MODES[a.mode].minHistory?'Недостаточно истории для этого режима. Нужно минимум '+MODES[a.mode].minHistory+' раундов.':'Ни один target не подтвердил требуемый edge/calibration на текущих данных.';$('probKpi').textContent='—';$('baseKpi').textContent='—';$('edgeKpi').textContent='—';$('edgeKpi').className='';$('sampleKpi').textContent=rows.length;$('fixBtn').disabled=true}
+ const tb=$('btBody');tb.innerHTML='';a.res.forEach(x=>{const tr=document.createElement('tr');if(b&&x.target===b.target)tr.className='row-best';const edge=(x.edge>=0?'+':'')+pct(x.edge);tr.innerHTML=`<td><span class="badge">${x.target.toFixed(2)}X</span></td><td>${pct(x.p)}</td><td>${pct(x.base)}</td><td class="${x.edge>=MODES[a.mode].minEdge?'good':x.edge>=0?'warn':'bad'}">${edge}</td><td>${x.oos}</td><td>${x.signals}</td><td>${pct(x.wr)}</td><td>${pct(x.signalBase)}</td><td>${num(x.brier,4)}</td><td>${num(x.ece,4)}</td><td>${x.stateN}</td>`;tb.appendChild(tr)});reconcileLog();renderLog()}
+function loadLog(){try{return JSON.parse(localStorage.getItem(LOG_KEY)||'[]')}catch{return[]}}function saveLog(x){localStorage.setItem(LOG_KEY,JSON.stringify(x.slice(0,100)))}
+function fixSignal(){if(!analysis?.best||!rows.length)return;const b=analysis.best,log=loadLog();log.unshift({id:Date.now(),createdAt:new Date().toISOString(),anchorId:rows.at(-1).id,anchorCoef:rows.at(-1).coef,target:b.target,p:b.p,base:b.base,edge:b.edge,mode:analysis.mode,status:'pending',result:[]});saveLog(log);toast('Сигнал зафиксирован. Проверим только следующие 3 завершённых раунда.');renderLog()}
+function reconcileLog(){if(!rows.length)return;const log=loadLog();let changed=false;for(const z of log){if(z.status!=='pending')continue;const i=rows.findIndex(r=>r.id===z.anchorId);if(i<0||rows.length<i+4)continue;const next=rows.slice(i+1,i+4).map(r=>r.coef);z.result=next;z.status=next.some(x=>x>=z.target)?'win':'lose';z.checkedAt=new Date().toISOString();changed=true}if(changed)saveLog(log)}
+function renderLog(){const el=$('signalLog'),log=loadLog();el.innerHTML='';if(!log.length){el.innerHTML='<div class="empty">Зафиксированных сигналов пока нет.</div>';return}log.slice(0,30).forEach(z=>{const d=document.createElement('div');d.className='log-item';const s=z.status==='win'?'✅ WIN':z.status==='lose'?'❌ LOSE':'⏳ ОЖИДАНИЕ';d.innerHTML=`<span><b>${z.mode}</b> • ${new Date(z.createdAt).toLocaleString('ru-RU')}</span><span>Target <b>${Number(z.target).toFixed(2)}X</b></span><span>P ${pct(z.p)}</span><span>Edge ${(z.edge>=0?'+':'')+pct(z.edge)}</span><span class="${z.status==='win'?'good':z.status==='lose'?'bad':'warn'}">${s}${z.result?.length?' • '+z.result.map(x=>Number(x).toFixed(2)+'X').join(' / '):''}</span>`;el.appendChild(d)})}
+function exportCSV(){if(!analysis)return;const lines=['target,probability,baseline,edge,oos,signals,signal_winrate,signal_baseline,brier,ece,state_n'];analysis.res.forEach(x=>lines.push([x.target,x.p,x.base,x.edge,x.oos,x.signals,x.wr,x.signalBase,x.brier,x.ece,x.stateN].join(',')));const b=new Blob([lines.join('\n')],{type:'text/csv'}),u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download='luckyjet-v2-backtest.csv';a.click();setTimeout(()=>URL.revokeObjectURL(u),1000)}
+async function refresh(){try{$('refreshBtn').disabled=true;$('signalText').textContent='АНАЛИЗ…';$('signalText').className='signal wait';$('signalExplain').textContent='Получаем историю и запускаем причинный backtest.';rows=await loadLive();if(!rows.length)throw Error('История пустая');analyze()}catch(e){console.error(e);$('signalText').textContent='ОШИБКА ДАННЫХ';$('signalText').className='signal bad';$('signalExplain').textContent=e.message||'Не удалось получить данные';setProgress(0);toast(e.message||'Ошибка')}finally{$('refreshBtn').disabled=false}}
+async function loadFile(file){const text=await file.text();let raw=[];try{raw=arrFrom(JSON.parse(text))}catch{raw=text.split(/\r?\n/).map(s=>{try{return JSON.parse(s)}catch{return null}}).filter(Boolean)}rows=normalize(raw);sourceName='Локальный JSON';analyze()}
+$('refreshBtn').onclick=refresh;$('modeSelect').onchange=()=>{if(rows.length)analyze()};$('fixBtn').onclick=fixSignal;$('exportBtn').onclick=exportCSV;$('uploadBtn').onclick=()=>$('fileInput').click();$('fileInput').onchange=e=>e.target.files[0]&&loadFile(e.target.files[0]).catch(err=>toast(err.message));
+try{window.Telegram?.WebApp?.ready();window.Telegram?.WebApp?.expand()}catch{}
+renderLog();refresh();setInterval(()=>{if(document.visibilityState==='visible')refresh()},30000);
+})();
+</script>
+</body>
+</html>
