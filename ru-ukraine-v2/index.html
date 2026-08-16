@@ -4,90 +4,16 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
 <meta name="theme-color" content="#061A40"/>
-<title>LuckyJet RU V2 • 8 раундов</title>
+<title>LuckyJet RU V2 • 8 раундов + похожие паттерны</title>
 <style>
 html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#061A40}
 #oldApp{display:block;width:100%;height:100%;border:0;background:#061A40}
-#bridgeState{position:fixed;left:50%;bottom:8px;transform:translateX(-50%);z-index:9999;padding:6px 10px;border-radius:999px;background:rgba(0,0,0,.72);border:1px solid rgba(255,255,255,.15);color:#dbeafe;font:700 10px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;pointer-events:none;opacity:.85;white-space:nowrap}
+#bridgeState{position:fixed;left:50%;bottom:8px;transform:translateX(-50%);z-index:9999;padding:6px 10px;border-radius:999px;background:rgba(0,0,0,.72);border:1px solid rgba(255,255,255,.15);color:#dbeafe;font:700 10px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;pointer-events:none;opacity:.85;white-space:nowrap;max-width:92vw;overflow:hidden;text-overflow:ellipsis}
 </style>
 </head>
 <body>
-<iframe id="oldApp" src="../ru-ukraine/index.html?v2-shell=1" allow="screen-wake-lock"></iframe>
+<iframe id="oldApp" src="../ru-ukraine/index.html?v2-shell=pattern-8" allow="screen-wake-lock"></iframe>
 <div id="bridgeState">V2 • подключение…</div>
-<script>
-(()=>{
-'use strict';
-const FRAME=document.getElementById('oldApp');
-const BRIDGE=document.getElementById('bridgeState');
-const TARGETS=[1.5,2,3,5,10];
-const ANALYZE_N=8;
-const HORIZON=3;
-const POLL_MS=5000;
-const V2_COUNTS='luckyjet_clone_v2_counts';
-const V2_HISTORY='luckyjet_clone_v2_history';
-let doc=null,win=null,cfg=null,lastRows=[],lastState=null;
-let active=null,pollTimer=null,auto=false,busy=false;
-
-const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-const mean=a=>a.length?a.reduce((s,v)=>s+v,0)/a.length:0;
-const pct=v=>Number.isFinite(v)?(v*100).toFixed(1)+'%':'—';
-const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
-function kyiv(ts,sec=false){try{return new Intl.DateTimeFormat('ru-RU',{timeZone:'Europe/Kyiv',hour:'2-digit',minute:'2-digit',second:sec?'2-digit':undefined,hour12:false}).format(new Date(ts))}catch{return new Date(ts).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})}}
-function setBridge(t){BRIDGE.textContent=t}
-function el(id){return doc&&doc.getElementById(id)}
-function setStatus(t,kind=''){const x=el('verifyStatus');if(!x)return;x.className='status '+kind;x.textContent=t}
-function getRange(){try{const x=JSON.parse(localStorage.getItem('kk_pred_range_v1')||'{}');const min=Number(x.min),max=Number(x.max);return{min:Number.isFinite(min)?min:2,max:Number.isFinite(max)?max:8}}catch{return{min:2,max:8}}}
-function counts(){try{const x=JSON.parse(localStorage.getItem(V2_COUNTS)||'{}');return{ok:Number(x.ok)||0,ko:Number(x.ko)||0}}catch{return{ok:0,ko:0}}}
-function saveCounts(c){localStorage.setItem(V2_COUNTS,JSON.stringify(c));renderCounts()}
-function hist(){try{const x=JSON.parse(localStorage.getItem(V2_HISTORY)||'[]');return Array.isArray(x)?x:[]}catch{return[]}}
-function saveHist(x){localStorage.setItem(V2_HISTORY,JSON.stringify(x.slice(0,200)))}
-function renderCounts(){const c=counts();if(el('countOk'))el('countOk').textContent=c.ok;if(el('countKo'))el('countKo').textContent=c.ko;if(el('countTotal'))el('countTotal').textContent=c.ok+c.ko}
-function renderHistory(){const box=el('chipsContainer');if(!box)return;const h=hist();box.innerHTML='';if(!h.length){const d=doc.createElement('div');d.textContent='Прогнозов V2 пока нет.';d.style.opacity='.85';box.appendChild(d);return}h.forEach(z=>{const d=doc.createElement('div');d.className='chip '+(z.status==='ok'?'ok':'ko');d.innerHTML='<div>'+Number(z.target).toFixed(2)+'x</div><small>'+(z.status==='ok'?'Зашло':'Не зашло')+' • '+kyiv(z.time)+'</small>';box.appendChild(d)})}
-function openPanel(id){const p=el(id);if(p)p.classList.add('open')}
-
-function arrFrom(data){if(Array.isArray(data))return data;if(!data||typeof data!=='object')return[];for(const k of ['data','history','results','items','rounds']){if(Array.isArray(data[k]))return data[k];if(data[k]&&Array.isArray(data[k].data))return data[k].data}return[]}
-function coefOf(x){if(!x||typeof x!=='object')return null;let v=x.topCoefficient??x.coef??x.crash??x.value??x.multiplier;if(v==null&&Array.isArray(x.finalValues)&&x.finalValues.length)v=x.finalValues[0];v=Number(v);return Number.isFinite(v)&&v>=1?v:null}
-function timeOf(x){for(const k of ['endedAt','ended_at','createdAt','created_at','timestamp','time','date','updated_at']){let v=x?.[k];if(v==null)continue;if(typeof v==='number'){if(v<1e12)v*=1000;if(Number.isFinite(v))return v}const t=Date.parse(v);if(Number.isFinite(t))return t}return null}
-function idOf(x,i){return String(x?.id??x?.round_id??x?.roundId??x?.roundConfig?.id??x?.hash??x?.provablyFair?.hash??('row-'+i+'-'+coefOf(x)))}
-function normalize(raw){const out=[],seen=new Set();raw.forEach((x,i)=>{const coef=coefOf(x);if(coef==null)return;const id=idOf(x,i);if(seen.has(id))return;seen.add(id);out.push({id,coef,ts:timeOf(x)})});const timed=out.filter(x=>Number.isFinite(x.ts)).length;if(out.length&&timed/out.length>.65)out.sort((a,b)=>(a.ts||0)-(b.ts||0));else out.reverse();return out}
-async function fetchJSON(url,opt={}){const ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),14000);try{const r=await fetch(url,{...opt,cache:'no-store',signal:ctl.signal});if(!r.ok)throw Error('HTTP '+r.status);return await r.json()}finally{clearTimeout(timer)}}
-async function config(){if(cfg)return cfg;const html=await fetch('../ru-ukraine/index.html?cfg='+Date.now(),{cache:'no-store'}).then(r=>r.text());const m=re=>html.match(re)?.[1]||'';cfg={base:m(/const\s+BASE\s*=\s*['\"]([^'\"]+)/),apiKey:m(/const\s+API_KEY\s*=\s*['\"]([^'\"]+)/),direct:m(/const\s+DIRECT_HISTORY_URL\s*=\s*['\"]([^'\"]+)/),customer:m(/['\"]customer-id['\"]\s*:\s*['\"]([^'\"]+)/),session:m(/['\"]session-id['\"]\s*:\s*['\"]([^'\"]+)/)};return cfg}
-function domRows(){if(!doc)return[];const xs=[...doc.querySelectorAll('#recentCoefficients .recent-coef')].map(x=>Number(String(x.textContent).replace(/[^0-9.]/g,''))).filter(Number.isFinite);return xs.reverse().map((coef,i)=>({id:'dom-'+i+'-'+coef.toFixed(2),coef,ts:null}))}
-function domSignature(){if(!doc)return'';return[...doc.querySelectorAll('#recentCoefficients .recent-coef')].map(x=>x.textContent.trim()).join('|')}
-async function loadRows(){const c=await config(),jobs=[];
- if(c.direct&&c.customer&&c.session){for(const s of ['?limit=2000',''])jobs.push((async()=>({source:'DIRECT LIVE',rows:normalize(arrFrom(await fetchJSON(c.direct+s,{headers:{'customer-id':c.customer,'session-id':c.session,'accept':'application/json'}})))}))())}
- if(c.base&&c.apiKey){for(const n of [2000,500,100,20])jobs.push((async()=>({source:'AllPredictor API',rows:normalize(arrFrom(await fetchJSON(c.base+'/luckyjet/coefficients?limit='+n,{headers:{'X-API-Key':c.apiKey}})))}))())}
- const settled=await Promise.allSettled(jobs);const ok=settled.filter(x=>x.status==='fulfilled'&&x.value.rows.length>=ANALYZE_N).map(x=>x.value);if(ok.length){ok.sort((a,b)=>b.rows.length-a.rows.length);return{...ok[0],signature:ok[0].rows.slice(-10).map(x=>x.id).join('|')}}
- const dr=domRows();if(dr.length>=ANALYZE_N)return{source:'LIVE интерфейс старой версии',rows:dr,signature:domSignature()};throw Error('Нет 8 завершённых коэффициентов')}
-function renderRecent(rows){const box=el('recentCoefficients');if(!box)return;box.innerHTML='';rows.slice(-10).reverse().forEach(r=>{const s=doc.createElement('span');s.className='recent-coef'+(r.coef>=10?' high':r.coef>=2?' mid':'');s.textContent=r.coef.toFixed(2)+'X';box.appendChild(s)})}
-function lowStreak(v){let n=0;for(let i=v.length-1;i>=0&&v[i]<=1.3;i--)n++;return n}
-function since(v,t){for(let i=v.length-1;i>=0;i--)if(v[i]>=t)return v.length-1-i;return 99}
-function state(v,t,target){const a=v.slice(t-ANALYZE_N,t),hits=a.filter(x=>x>=target).length,low=lowStreak(a),s5=since(a,5),med=a.slice().sort((x,y)=>x-y)[Math.floor(a.length/2)];return [hits>=4?'H4':hits>=2?'H2':'H0',low>=3?'L3':low>=1?'L1':'L0',s5<=3?'F3':s5<=7?'F7':'F8',med>=2?'M2':med>=1.5?'M15':'M1'].join('|')}
-function modelFor(v,target){const trainEnd=Math.max(0,v.length-ANALYZE_N),train=v.slice(0,trainEnd);const pSingle=train.length?mean(train.map(x=>x>=target?1:0)):mean(v.map(x=>x>=target?1:0));const baseline=1-Math.pow(1-pSingle,HORIZON);const curState=state(v,v.length,target);let n=0,h=0;for(let t=ANALYZE_N;t+HORIZON<=trainEnd;t++){if(state(v,t,target)!==curState)continue;n++;let y=0;for(let j=0;j<HORIZON;j++)if(v[t+j]>=target){y=1;break}h+=y}
- const recent=v.slice(-ANALYZE_N),recentHits=recent.filter(x=>x>=target).length;const recentSingle=(recentHits+12*pSingle)/(ANALYZE_N+12);const recentP=1-Math.pow(1-recentSingle,HORIZON);const matched=(h+18*baseline)/(n+18);const prob=n>=6?.72*matched+.28*recentP:.35*matched+.65*recentP;const edge=prob-baseline;return{target,prob,baseline,edge,n,recentHits,state:curState}}
-function choose(rows){const v=rows.map(r=>r.coef),range=getRange(),targets=TARGETS.filter(t=>t>=range.min-1e-9&&t<=range.max+1e-9);const ts=targets.length?targets:[clamp(range.min,1.01,10)];const res=ts.map(t=>modelFor(v,t));res.sort((a,b)=>{const qa=(a.edge*1.2)+(a.prob*.15)+(Math.log10(a.target)*.01),qb=(b.edge*1.2)+(b.prob*.15)+(Math.log10(b.target)*.01);return qb-qa});const best=res[0];const enough=rows.length>=ANALYZE_N;const pass=enough&&best&&best.prob>=.55&&(best.edge>=-.015||rows.length<40);return{best,pass,res}}
-function renderCollect(rows,source){renderRecent(rows);const n=Math.min(ANALYZE_N,rows.length);setBridge('V2 • '+source+' • '+n+'/'+ANALYZE_N);const mb=el('mbText'),dot=el('mbDot');if(mb)mb.textContent='V2 LIVE • получено '+rows.length+' раундов';if(dot)dot.className='mb-dot '+(n>=ANALYZE_N?'safe':'warn');if(el('roundStatus')&&!active)el('roundStatus').textContent=n<ANALYZE_N?String(n):'0';if(n<ANALYZE_N){if(el('multiplier'))el('multiplier').textContent='СБОР '+n+'/'+ANALYZE_N;setStatus('Собираем '+ANALYZE_N+' завершённых коэффициентов для V2','')}}
-function setMainButton(){const b=el('generateButton');if(!b)return;b.disabled=busy;b.classList.toggle('cancel',!!active);b.textContent=busy?'АНАЛИЗ...':active?'ОТМЕНИТЬ СИГНАЛ':'РУЧНОЙ СИГНАЛ'}
-function countdown(){if(!active)return;const c=el('countdown');if(!c)return;const d=active.when-Date.now();if(d>0){const s=Math.ceil(d/1000);c.textContent='До времени сигнала: '+Math.floor(s/60)+':'+String(s%60).padStart(2,'0')}else c.textContent='Проверяем следующие '+HORIZON+' завершённых раунда'}
-function showNoSignal(best,rows){if(el('multiplier')){el('multiplier').textContent='ПРОПУСК';el('multiplier').style.color='#f4a51c'}if(el('betTime'))el('betTime').textContent='--:--';if(el('confCell'))el('confCell').textContent=pct(best?.prob);if(el('roundStatus'))el('roundStatus').textContent='0';setStatus('V2: после анализа '+ANALYZE_N+' раундов подтверждённого сигнала нет. Baseline '+pct(best?.baseline)+', edge '+(best?.edge>=0?'+':'')+pct(best?.edge),'ko');setBridge('V2 • '+rows.length+' раундов • ПРОПУСК')}
-async function generate(){if(busy)return;if(active){cancel();return}busy=true;setMainButton();try{const state=await loadRows();lastRows=state.rows;lastState=state;renderCollect(state.rows,state.source);if(state.rows.length<ANALYZE_N)throw Error('Нужно '+ANALYZE_N+' завершённых коэффициентов');const out=choose(state.rows),b=out.best;if(!b)throw Error('Не удалось рассчитать цель');if(!out.pass){showNoSignal(b,state.rows);if(auto)setTimeout(()=>generate(),15000);return}
- const when=Date.now()+2*60*1000;active={target:b.target,prob:b.prob,baseline:b.baseline,edge:b.edge,when,round:0,anchorId:state.rows.at(-1)?.id||'',signature:state.signature,source:state.source};if(el('multiplier')){el('multiplier').textContent=b.target.toFixed(2)+'X';el('multiplier').style.color='#00ff66'}if(el('betTime')){el('betTime').textContent=kyiv(when);el('betTime').title='Время ставки по Украине'}if(el('confCell'))el('confCell').textContent=pct(b.prob);if(el('roundStatus'))el('roundStatus').textContent='0';const title=doc.querySelector('.meta .cell:nth-child(3) .title');if(title)title.textContent='Вероятность V2';setStatus('V2 • анализ '+ANALYZE_N+' раундов. СТАВЬ В '+kyiv(when)+' • цель '+b.target.toFixed(2)+'X • P '+pct(b.prob)+' • baseline '+pct(b.baseline)+' • edge '+(b.edge>=0?'+':'')+pct(b.edge),'ok');const circle=el('circle');if(circle)circle.classList.add('verifying');setBridge('V2 • СИГНАЛ '+b.target.toFixed(2)+'X • '+kyiv(when));startPolling();countdown()}catch(e){console.error(e);if(el('multiplier'))el('multiplier').textContent='ОШИБКА';setStatus('V2: '+(e.message||'ошибка получения данных'),'ko');setBridge('V2 • ошибка подключения')}finally{busy=false;setMainButton()}}
-function cancel(){active=null;stopPolling();if(el('multiplier')){el('multiplier').textContent='0.00X';el('multiplier').style.color='#00ff66'}if(el('betTime'))el('betTime').textContent='--:--';if(el('confCell'))el('confCell').textContent='—';if(el('roundStatus'))el('roundStatus').textContent='0';if(el('countdown'))el('countdown').textContent='';const circle=el('circle');if(circle)circle.classList.remove('verifying','ok','ko');setStatus('Сигнал V2 отменён. Можно получить новый','');setMainButton();setBridge('V2 • готово')}
-function finish(ok,vals){const c=counts();ok?c.ok++:c.ko++;saveCounts(c);const h=hist();h.unshift({target:active.target,status:ok?'ok':'ko',time:Date.now(),round:active.round,values:vals,prob:active.prob,baseline:active.baseline,edge:active.edge});saveHist(h);if(el('multiplier')){el('multiplier').textContent=ok?'ЗАШЛО':'НЕ ЗАШЛО';el('multiplier').style.color=ok?'#10b981':'#ef4444'}const circle=el('circle'),spin=el('spin');if(circle){circle.classList.remove('verifying','ok','ko');circle.classList.add(ok?'ok':'ko')}if(spin){spin.classList.remove('ok','ko');spin.classList.add(ok?'ok':'ko')}setStatus(ok?'V2: зашло на раунде '+active.round:'V2: не зашло после '+HORIZON+' раундов',ok?'ok':'ko');const wasAuto=auto;active=null;stopPolling();setMainButton();renderHistory();if(wasAuto)setTimeout(()=>generate(),3500)}
-async function poll(){if(!active)return;countdown();try{const st=await loadRows();lastRows=st.rows;renderCollect(st.rows,st.source);const latest=st.rows.at(-1);if(Date.now()<active.when){active.anchorId=latest?.id||active.anchorId;active.signature=st.signature;return}
- let fresh=[];const idx=st.rows.findIndex(r=>r.id===active.anchorId);if(idx>=0)fresh=st.rows.slice(idx+1);else if(st.signature!==active.signature&&latest)fresh=[latest];if(!fresh.length)return;const vals=[];for(const r of fresh){active.anchorId=r.id;active.signature=st.signature;active.round++;vals.push(r.coef);if(el('roundStatus'))el('roundStatus').textContent=String(active.round);if(r.coef>=active.target){finish(true,vals);return}if(active.round>=HORIZON){finish(false,vals);return}}}catch(e){setBridge('V2 • переподключение…')}}
-function startPolling(){stopPolling();pollTimer=setInterval(poll,POLL_MS);poll()}
-function stopPolling(){if(pollTimer)clearInterval(pollTimer);pollTimer=null}
-async function idleRefresh(){if(active||busy)return;try{const st=await loadRows();lastRows=st.rows;lastState=st;renderCollect(st.rows,st.source)}catch{setBridge('V2 • ждём источник…')}}
-function bind(){doc=FRAME.contentDocument;win=FRAME.contentWindow;if(!doc)return;const h1=doc.querySelector('h1');if(h1)h1.innerHTML='<span class="lucky">LUCKYJET </span><span class="jet">АНАЛИЗАТОР V2</span>';renderCounts();renderHistory();
- const gb=el('generateButton');if(gb)gb.addEventListener('click',e=>{e.preventDefault();e.stopImmediatePropagation();generate()},true);
- const ab=el('autoButton');if(ab)ab.addEventListener('click',e=>{e.preventDefault();e.stopImmediatePropagation();auto=!auto;ab.classList.toggle('active',auto);ab.textContent=auto?'АВТО V2: ВКЛ':'АВТОМАТ';setStatus(auto?'Автоматический режим V2 включён':'Автоматический режим V2 выключен','');if(auto&&!active)generate()},true);
- const hb=el('openHistory');if(hb)hb.addEventListener('click',e=>{e.preventDefault();e.stopImmediatePropagation();renderHistory();openPanel('historyPanel')},true);
- const rs=el('resetStats');if(rs)rs.addEventListener('click',e=>{e.preventDefault();e.stopImmediatePropagation();saveCounts({ok:0,ko:0});const m=el('settingsMsg');if(m)m.textContent='Статистика V2 сброшена.'},true);
- const rh=el('resetHistory');if(rh)rh.addEventListener('click',e=>{e.preventDefault();e.stopImmediatePropagation();saveHist([]);renderHistory();const m=el('settingsMsg');if(m)m.textContent='История V2 сброшена.'},true);
- setMainButton();idleRefresh();setInterval(idleRefresh,10000);setInterval(countdown,1000);setBridge('V2 • точный интерфейс старой версии • анализ 8')}
-FRAME.addEventListener('load',()=>{setTimeout(bind,250)});
-})();
-</script>
+<script src="./app.js?v=20260816-pattern8"></script>
 </body>
 </html>
