@@ -14,32 +14,59 @@ jobs:
           set -euo pipefail
           curl -fsSL 'https://raw.githubusercontent.com/MiuiProKing/luckyjet-telegram-mini-app/7a56b434e07c99623c9e784cf49af4ff85812157/.tmp-sign/shortcut.gz.b64' -o /tmp/shortcut.gz.b64
           python3 - <<'PY'
-          import base64, gzip, hashlib, json, pathlib, plistlib, urllib.request
+          import base64, gzip, hashlib, html as htmlmod, http.cookiejar, json, pathlib, plistlib, re
+          import urllib.parse, urllib.request, urllib.error
 
           text = pathlib.Path('/tmp/shortcut.gz.b64').read_text().replace('\n', '').strip()
           raw = gzip.decompress(base64.b64decode(text))
           expected = '64f1540c287a03510de1fb9da30f5d7dd119678e3ac30ca8e968c997f2e8056c'
           assert hashlib.sha256(raw).hexdigest() == expected
-
           workflow = plistlib.loads(raw)
           xml = plistlib.dumps(workflow, fmt=plistlib.FMT_XML).decode('utf-8')
+
+          jar = http.cookiejar.CookieJar()
+          opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(jar))
+          base = 'https://playground.cherrilang.org'
+          get_req = urllib.request.Request(base + '/', headers={
+              'User-Agent': 'Mozilla/5.0',
+              'Accept': 'text/html,application/xhtml+xml'
+          })
+          with opener.open(get_req, timeout=60) as r:
+              page = r.read().decode('utf-8', 'replace')
+              print('GET root:', r.status, 'cookies:', [(c.name, len(c.value)) for c in jar])
+
+          m = re.search(r'<meta[^>]+name=["\']csrf-token["\'][^>]+content=["\']([^"\']+)', page, re.I)
+          if not m:
+              m = re.search(r'<meta[^>]+content=["\']([^"\']+)["\'][^>]+name=["\']csrf-token["\']', page, re.I)
+          csrf = htmlmod.unescape(m.group(1)) if m else None
+          xsrf = None
+          for c in jar:
+              if c.name == 'XSRF-TOKEN':
+                  xsrf = urllib.parse.unquote(c.value)
+          print('csrf meta:', bool(csrf), 'xsrf cookie:', bool(xsrf))
+
           payload = json.dumps({'name': 'menu-zaryadki-pro', 'data': xml}).encode('utf-8')
-          req = urllib.request.Request(
-              'https://playground.cherrilang.org/sign',
-              data=payload,
-              headers={
-                  'Content-Type': 'application/json',
-                  'Accept': 'application/json, text/plain, */*',
-                  'X-Requested-With': 'XMLHttpRequest',
-                  'Origin': 'https://playground.cherrilang.org',
-                  'Referer': 'https://playground.cherrilang.org/'
-              },
-              method='POST'
-          )
-          with urllib.request.urlopen(req, timeout=90) as r:
-              body = r.read()
-              ctype = r.headers.get('content-type', '')
-              print('sign status:', r.status, 'content-type:', ctype, 'bytes:', len(body))
+          headers = {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json, text/plain, */*',
+              'X-Requested-With': 'XMLHttpRequest',
+              'Origin': base,
+              'Referer': base + '/',
+              'User-Agent': 'Mozilla/5.0'
+          }
+          if csrf:
+              headers['X-CSRF-TOKEN'] = csrf
+          if xsrf:
+              headers['X-XSRF-TOKEN'] = xsrf
+          req = urllib.request.Request(base + '/sign', data=payload, headers=headers, method='POST')
+          try:
+              with opener.open(req, timeout=120) as r:
+                  body = r.read()
+                  print('POST sign:', r.status, r.headers.get('content-type',''), 'bytes:', len(body))
+          except urllib.error.HTTPError as e:
+              err = e.read()
+              print('POST ERROR:', e.code, e.headers.get('content-type',''), err[:1000].decode('utf-8','replace'))
+              raise
 
           signed = None
           if body.startswith(b'AEA1'):
@@ -53,26 +80,21 @@ jobs:
               if isinstance(value, dict):
                   value = value.get('url') or value.get('file') or value.get('data')
               if not isinstance(value, str):
-                  raise RuntimeError('Unexpected sign response type')
+                  raise RuntimeError('Unexpected sign response: ' + txt[:500])
               value = value.strip('"')
               if value.startswith('data:'):
                   header, encoded = value.split(',', 1)
-                  if ';base64' in header:
-                      signed = base64.b64decode(encoded)
-                  else:
-                      from urllib.parse import unquote_to_bytes
-                      signed = unquote_to_bytes(encoded)
-              elif value.startswith('/'):
-                  value = 'https://playground.cherrilang.org' + value
-              if signed is None and value.startswith(('http://', 'https://')):
-                  with urllib.request.urlopen(value, timeout=90) as r:
-                      signed = r.read()
-                      print('download status:', r.status, 'bytes:', len(signed))
+                  signed = base64.b64decode(encoded) if ';base64' in header else urllib.parse.unquote_to_bytes(encoded)
+              else:
+                  if value.startswith('/'):
+                      value = base + value
+                  if value.startswith(('http://', 'https://')):
+                      with opener.open(value, timeout=120) as r:
+                          signed = r.read()
+                          print('download:', r.status, 'bytes:', len(signed))
 
           if not signed or not signed.startswith(b'AEA1'):
-              preview = body[:500].decode('utf-8', 'replace')
-              raise RuntimeError('Signing did not return an AEA1 Shortcut. Response: ' + preview)
-
+              raise RuntimeError('Signing result is not AEA1: ' + body[:500].decode('utf-8','replace'))
           out = pathlib.Path('menu-zaryadki-pro-signed.shortcut')
           out.write_bytes(signed)
           print('SIGNED_OK', len(signed), hashlib.sha256(signed).hexdigest(), signed[:4])
