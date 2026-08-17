@@ -6,41 +6,35 @@ on:
 
 jobs:
   sign:
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Sign shortcut
+      - name: Rebuild unsigned shortcut
         shell: bash
         run: |
-          python - <<'PY'
-          import base64, gzip, plistlib, json, urllib.request, pathlib, hashlib
+          python3 - <<'PY'
+          import base64, gzip, pathlib, hashlib
           text = pathlib.Path('.tmp-sign/shortcut.gz.b64').read_text().replace('\n','').strip()
           z = base64.b64decode(text)
           assert hashlib.sha256(z).hexdigest() == '14daa3c9d349e9e20ca6d6648f2fd55c10963c056ac2500529ef98fa43a26453'
           raw = gzip.decompress(z)
           assert hashlib.sha256(raw).hexdigest() == '64f1540c287a03510de1fb9da30f5d7dd119678e3ac30ca8e968c997f2e8056c'
-          obj = plistlib.loads(raw)
-          xml = plistlib.dumps(obj, fmt=plistlib.FMT_XML).decode('utf-8')
-          payload = json.dumps({'shortcutName':'Меню зарядки PRO','shortcut':xml}).encode('utf-8')
-          req = urllib.request.Request(
-              'https://hubsign.routinehub.services/sign',
-              data=payload,
-              headers={
-                  'Content-Type':'application/json',
-                  'User-Agent':'shortcut-sign-gha',
-                  'Origin':'https://routinehub.co',
-                  'Referer':'https://routinehub.co/'
-              })
-          with urllib.request.urlopen(req, timeout=45) as r:
-              data = r.read()
-          if not data.startswith(b'AEA1'):
-              raise SystemExit('Signing service returned non-AEA1 data: ' + repr(data[:200]))
-          pathlib.Path('Меню зарядки PRO signed.shortcut').write_bytes(data)
-          print('signed bytes:', len(data))
+          pathlib.Path('menu-pro-unsigned.shortcut').write_bytes(raw)
+          print('unsigned bytes:', len(raw))
+          PY
+      - name: Sign with Apple
+        shell: bash
+        run: |
+          shortcuts sign --mode anyone --input "menu-pro-unsigned.shortcut" --output "menu-pro-signed.shortcut"
+          python3 - <<'PY'
+          import pathlib
+          data = pathlib.Path('menu-pro-signed.shortcut').read_bytes()
+          print('signed bytes:', len(data), 'magic:', data[:4])
+          assert data[:4] == b'AEA1'
           PY
       - name: Upload signed shortcut
         uses: actions/upload-artifact@v4
         with:
           name: menu-zaryadki-pro-signed
-          path: 'Меню зарядки PRO signed.shortcut'
+          path: menu-pro-signed.shortcut
           if-no-files-found: error
