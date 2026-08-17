@@ -1,31 +1,85 @@
-name: Temporary Inspect Cherri
+name: Temporary Shortcut Sign
 on:
   push:
     paths:
       - '.github/workflows/tmp-inspect-cherri.yml'
+
 jobs:
-  inspect:
+  sign:
     runs-on: ubuntu-latest
     steps:
-      - name: Inspect playground client
+      - name: Rebuild and sign Shortcut
         shell: bash
         run: |
-          curl -fsSL https://playground.cherrilang.org/build/assets/app-DEZQz9qq.js -o /tmp/app.js
+          set -euo pipefail
+          curl -fsSL 'https://raw.githubusercontent.com/MiuiProKing/luckyjet-telegram-mini-app/7a56b434e07c99623c9e784cf49af4ff85812157/.tmp-sign/shortcut.gz.b64' -o /tmp/shortcut.gz.b64
           python3 - <<'PY'
-          from pathlib import Path
-          s=Path('/tmp/app.js').read_text(errors='ignore')
-          print('length',len(s))
-          terms=['hubsign','signing','sign','compile','shortcut','fetch(','XMLHttpRequest','cherrilang.org']
-          seen=set()
-          for term in terms:
-              start=0
-              count=0
-              while count < 30:
-                  i=s.lower().find(term.lower(),start)
-                  if i<0: break
-                  ctx=s[max(0,i-400):min(len(s),i+700)].replace('\n',' ')
-                  key=ctx[:200]
-                  if key not in seen:
-                      seen.add(key); print('\nTERM',term,'AT',i,'\n',ctx)
-                  start=i+len(term); count+=1
+          import base64, gzip, hashlib, json, pathlib, plistlib, urllib.request
+
+          text = pathlib.Path('/tmp/shortcut.gz.b64').read_text().replace('\n', '').strip()
+          raw = gzip.decompress(base64.b64decode(text))
+          expected = '64f1540c287a03510de1fb9da30f5d7dd119678e3ac30ca8e968c997f2e8056c'
+          assert hashlib.sha256(raw).hexdigest() == expected
+
+          workflow = plistlib.loads(raw)
+          xml = plistlib.dumps(workflow, fmt=plistlib.FMT_XML).decode('utf-8')
+          payload = json.dumps({'name': 'menu-zaryadki-pro', 'data': xml}).encode('utf-8')
+          req = urllib.request.Request(
+              'https://playground.cherrilang.org/sign',
+              data=payload,
+              headers={
+                  'Content-Type': 'application/json',
+                  'Accept': 'application/json, text/plain, */*',
+                  'X-Requested-With': 'XMLHttpRequest',
+                  'Origin': 'https://playground.cherrilang.org',
+                  'Referer': 'https://playground.cherrilang.org/'
+              },
+              method='POST'
+          )
+          with urllib.request.urlopen(req, timeout=90) as r:
+              body = r.read()
+              ctype = r.headers.get('content-type', '')
+              print('sign status:', r.status, 'content-type:', ctype, 'bytes:', len(body))
+
+          signed = None
+          if body.startswith(b'AEA1'):
+              signed = body
+          else:
+              txt = body.decode('utf-8', 'replace').strip()
+              try:
+                  value = json.loads(txt)
+              except Exception:
+                  value = txt
+              if isinstance(value, dict):
+                  value = value.get('url') or value.get('file') or value.get('data')
+              if not isinstance(value, str):
+                  raise RuntimeError('Unexpected sign response type')
+              value = value.strip('"')
+              if value.startswith('data:'):
+                  header, encoded = value.split(',', 1)
+                  if ';base64' in header:
+                      signed = base64.b64decode(encoded)
+                  else:
+                      from urllib.parse import unquote_to_bytes
+                      signed = unquote_to_bytes(encoded)
+              elif value.startswith('/'):
+                  value = 'https://playground.cherrilang.org' + value
+              if signed is None and value.startswith(('http://', 'https://')):
+                  with urllib.request.urlopen(value, timeout=90) as r:
+                      signed = r.read()
+                      print('download status:', r.status, 'bytes:', len(signed))
+
+          if not signed or not signed.startswith(b'AEA1'):
+              preview = body[:500].decode('utf-8', 'replace')
+              raise RuntimeError('Signing did not return an AEA1 Shortcut. Response: ' + preview)
+
+          out = pathlib.Path('menu-zaryadki-pro-signed.shortcut')
+          out.write_bytes(signed)
+          print('SIGNED_OK', len(signed), hashlib.sha256(signed).hexdigest(), signed[:4])
           PY
+      - name: Upload signed Shortcut
+        uses: actions/upload-artifact@v4
+        with:
+          name: menu-zaryadki-pro-signed
+          path: menu-zaryadki-pro-signed.shortcut
+          if-no-files-found: error
