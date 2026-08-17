@@ -1,0 +1,38 @@
+name: Temporary Inspect Cherri
+on:
+  push:
+    paths:
+      - '.github/workflows/tmp-inspect-cherri.yml'
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Inspect playground client
+        shell: bash
+        run: |
+          set -e
+          curl -fsSL https://playground.cherrilang.org/ -o /tmp/index.html
+          echo '--- scripts ---'
+          grep -oE '<script[^>]+src="[^"]+"' /tmp/index.html || true
+          echo '--- endpoint-like strings in html ---'
+          grep -Eoi 'https?://[^"'"' <>]+' /tmp/index.html | head -100 || true
+          echo '--- download script assets and search ---'
+          python3 - <<'PY'
+          import re, urllib.parse, urllib.request, pathlib
+          html=pathlib.Path('/tmp/index.html').read_text(errors='ignore')
+          srcs=re.findall(r'<script[^>]+src=["\']([^"\']+)', html, re.I)
+          print('srcs',srcs)
+          for i,s in enumerate(srcs):
+              u=urllib.parse.urljoin('https://playground.cherrilang.org/',s)
+              try:
+                  data=urllib.request.urlopen(u,timeout=20).read().decode('utf-8','ignore')
+              except Exception as e:
+                  print('ERR',u,e); continue
+              pathlib.Path(f'/tmp/s{i}.js').write_text(data)
+              print('\nASSET',u,'len',len(data))
+              for pat in [r'https?://[^"\'\s]+', r'/[A-Za-z0-9_./-]*(?:sign|compile|share|shortcut)[A-Za-z0-9_./?-]*']:
+                  vals=[]
+                  for x in re.findall(pat,data,re.I):
+                      if x not in vals: vals.append(x)
+                  for x in vals[:100]: print(x[:500])
+          PY
