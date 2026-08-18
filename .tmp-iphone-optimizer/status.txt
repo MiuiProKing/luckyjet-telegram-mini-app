@@ -1,15 +1,1 @@
-ERROR
-COMPILE: True | 
-Error: Action 'setClipboard()' requires include:
-
-#include 'actions/sharing'
-
-
-Traceback (most recent call last):
-  File "<stdin>", line 16, in <module>
-RuntimeError: COMPILE: True | 
-Error: Action 'setClipboard()' requires include:
-
-#include 'actions/sharing'
-
-
+OK 24409
