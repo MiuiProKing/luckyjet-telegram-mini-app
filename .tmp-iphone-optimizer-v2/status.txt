@@ -1,9 +1,1 @@
-ERROR
-COMPILE: True | Error: Invalid type '' for conditional '>'
-Allowed types: [number float qty date] (18:32)
-
-Traceback (most recent call last):
-  File "<stdin>", line 31, in <module>
-RuntimeError: COMPILE: True | Error: Invalid type '' for conditional '>'
-Allowed types: [number float qty date] (18:32)
-
+OK 30261
