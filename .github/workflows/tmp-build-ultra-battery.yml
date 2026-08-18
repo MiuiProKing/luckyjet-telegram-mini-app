@@ -1,59 +1,28 @@
-name: Temporary Build Ultra Battery Shortcuts
+name: Temporary Sign Ultra Battery Shortcuts
 
 on:
   push:
     paths:
       - '.github/workflows/tmp-build-ultra-battery.yml'
+      - '.tmp-ultra-sign/input/**'
 
 permissions:
   contents: write
 
 jobs:
-  build:
+  sign:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
 
-      - name: Compile and sign shortcuts
+      - name: Sign prepared shortcuts
         shell: bash
         run: |
           set -euo pipefail
           python3 - <<'PY'
-          import base64, html as htmlmod, http.cookiejar, json, pathlib, re
+          import base64, html as htmlmod, http.cookiejar, json, pathlib, plistlib, re
           import urllib.parse, urllib.request
-
-          sources = {
-              'ULTRA-Economy': r'''#include 'actions/device'
-#include 'actions/settings'
-#include 'actions/basic'
-
-setAirplaneMode(true)
-setWifi(false)
-setBluetooth(false)
-setCellularData(false)
-setHotspot(false)
-setLowPowerMode(true)
-darkMode()
-setBrightness(0.02)
-DNDOn()
-showNotification("УЛЬТРА-экономия включена 🪫", "Максимальная экономия", false)
-''',
-              'ULTRA-Economy-OFF': r'''#include 'actions/device'
-#include 'actions/settings'
-#include 'actions/basic'
-
-setAirplaneMode(false)
-setWifi(true)
-setBluetooth(true)
-setCellularData(true)
-setHotspot(false)
-setLowPowerMode(false)
-setBrightness(0.50)
-DNDOff()
-showNotification("УЛЬТРА-экономия отключена 🔋", "Обычный режим", true)
-'''
-          }
 
           base = 'https://playground.cherrilang.org'
           jar = http.cookiejar.CookieJar()
@@ -82,46 +51,35 @@ showNotification("УЛЬТРА-экономия отключена 🔋", "Об�
           if csrf: headers['X-CSRF-TOKEN'] = csrf
           if xsrf: headers['X-XSRF-TOKEN'] = xsrf
 
-          def compile_and_sign(name, source):
-              active_file = {
-                  'id':'file-1','name':name+'.cherri','content':source,'compiled':False,
-                  'error':None,'output':None,'decompOutput':None,'shareLink':None,'file':None,
-              }
-              payload = json.dumps({'active_file':active_file,'files':[]}).encode()
-              creq = urllib.request.Request(base+'/compile', data=payload, headers=headers, method='POST')
-              with opener.open(creq, timeout=120) as r:
-                  cbody = r.read()
-              data = json.loads(cbody.decode('utf-8','replace'))
-              print(name, 'compile output:', data.get('output'))
-              print(name, 'compile error:', data.get('error'))
-              if data.get('error'):
-                  raise RuntimeError(name + ' compile error: ' + str(data.get('error')))
-              file_url = data.get('file')
-              if not file_url:
-                  raise RuntimeError(name + ' compile missing file URL')
-              if file_url.startswith('/'):
-                  file_url = base + file_url
-              with opener.open(file_url, timeout=120) as r:
-                  plist_text = r.read().decode('utf-8','replace')
-              file_base = urllib.parse.urlparse(file_url).path.rsplit('/',1)[-1].split('.')[0]
-              spayload = json.dumps({'name':file_base,'data':plist_text}).encode()
-              sreq = urllib.request.Request(base+'/sign', data=spayload, headers=headers, method='POST')
+          jobs = [
+              ('ULTRA_Economy_unsigned.b64', 'ULTRA-Economy', 'ULTRA_Economy_signed.b64'),
+              ('ULTRA_Economy_OFF_unsigned.b64', 'ULTRA-Economy-OFF', 'ULTRA_Economy_OFF_signed.b64'),
+          ]
+          outdir = pathlib.Path('.tmp-ultra-sign/output')
+          outdir.mkdir(parents=True, exist_ok=True)
+
+          for infile, name, outfile in jobs:
+              raw = base64.b64decode(pathlib.Path('.tmp-ultra-sign/input', infile).read_text().strip())
+              workflow = plistlib.loads(raw)
+              xml = plistlib.dumps(workflow, fmt=plistlib.FMT_XML).decode('utf-8')
+              payload = json.dumps({'name': name, 'data': xml}).encode('utf-8')
+              sreq = urllib.request.Request(base + '/sign', data=payload, headers=headers, method='POST')
               with opener.open(sreq, timeout=180) as r:
-                  sbody = r.read()
+                  body = r.read()
               signed = None
-              if sbody.startswith(b'AEA1'):
-                  signed = sbody
+              if body.startswith(b'AEA1'):
+                  signed = body
               else:
-                  txt = sbody.decode('utf-8','replace').strip()
+                  txt = body.decode('utf-8','replace').strip()
                   try: value = json.loads(txt)
                   except Exception: value = txt
                   if isinstance(value, dict):
                       value = value.get('url') or value.get('file') or value.get('data')
                   if not isinstance(value, str):
-                      raise RuntimeError(name + ' unexpected sign response')
+                      raise RuntimeError('Unexpected sign response: ' + txt[:500])
                   value = value.strip('"')
                   if value.startswith('data:'):
-                      header, encoded = value.split(',',1)
+                      header, encoded = value.split(',', 1)
                       signed = base64.b64decode(encoded) if ';base64' in header else urllib.parse.unquote_to_bytes(encoded)
                   else:
                       if value.startswith('/'):
@@ -129,32 +87,17 @@ showNotification("УЛЬТРА-экономия отключена 🔋", "Об�
                       with opener.open(value, timeout=180) as r:
                           signed = r.read()
               if not signed or not signed.startswith(b'AEA1'):
-                  raise RuntimeError(name + ' signing result is not AEA1')
-              pathlib.Path(name + '.shortcut').write_bytes(signed)
+                  raise RuntimeError(name + ' did not return AEA1 signed Shortcut')
+              (outdir / outfile).write_text(base64.b64encode(signed).decode('ascii'))
               print(name, 'SIGNED_OK', len(signed))
-
-          for n, src in sources.items():
-              compile_and_sign(n, src)
           PY
 
-      - name: Store signed files temporarily
+      - name: Commit signed outputs temporarily
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p .tmp-ultra
-          base64 -w 0 ULTRA-Economy.shortcut > .tmp-ultra/ULTRA-Economy.shortcut.b64
-          base64 -w 0 ULTRA-Economy-OFF.shortcut > .tmp-ultra/ULTRA-Economy-OFF.shortcut.b64
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add .tmp-ultra
-          git commit -m "Temporary signed ultra battery shortcuts"
+          git add .tmp-ultra-sign/output
+          git commit -m "Temporary signed ultra battery outputs"
           git push
-
-      - name: Upload shortcuts
-        uses: actions/upload-artifact@v4
-        with:
-          name: ultra-battery-shortcuts
-          path: |
-            ULTRA-Economy.shortcut
-            ULTRA-Economy-OFF.shortcut
-          if-no-files-found: error
