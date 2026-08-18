@@ -1,8 +1,3 @@
-#include 'actions/basic'
-#include 'actions/device'
-#include 'actions/documents'
-#include 'actions/sharing'
-
 menu "🧹 Оптимизация iPhone PRO" {
     item "⚡ Быстрая уборка":
         @empty = ""
