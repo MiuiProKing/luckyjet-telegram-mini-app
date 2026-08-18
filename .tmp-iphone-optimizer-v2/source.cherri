@@ -1,0 +1,107 @@
+#include 'actions/sharing'
+#include 'actions/documents'
+#include 'actions/device'
+#include 'actions/calendar'
+
+menu "🚀 Оптимизация iPhone ULTRA PRO" {
+    item "⚡ Быстрая оптимизация":
+        @empty = ""
+        setClipboard(@empty, true)
+        setHotspot(false)
+        showNotification("Буфер обмена очищен, точка доступа выключена.", "✅ Быстрая оптимизация", true)
+
+    item "📦 Найти большие файлы >500 МБ":
+        @bigFolder = selectFolder(false)
+        @bigItems = getFolderContents(@bigFolder, true)
+        @bigFiles = []
+        for item in @bigItems {
+            @fileSizeValue = getFileDetail(@item, "File Size")
+            if @fileSizeValue > 524288000 {
+                @bigFiles += @item
+            }
+        }
+        @bigCount = count(@bigFiles)
+        if @bigCount == 0 {
+            alert("В выбранной папке файлов больше 500 МБ не найдено.", "📦 Большие файлы")
+        } else {
+            @bigSelected = chooseFromList(@bigFiles, "Найдено {@bigCount}. Выбери файлы для удаления", true, false)
+            @bigSelectedCount = count(@bigSelected)
+            if @bigSelectedCount > 0 {
+                confirm("Удалить выбранные файлы: {@bigSelectedCount}?", "⚠️ Подтверждение")
+                deleteFiles(@bigSelected, false)
+            }
+        }
+
+    item "🕐 Очистить файлы старше 7 дней":
+        @old7Folder = selectFolder(false)
+        @old7Items = getFolderContents(@old7Folder, true)
+        @now7 = currentDate()
+        @cutoff7 = adjustDate(@now7, "Subtract", qty(7, "days"))
+        @old7 = []
+        for item7 in @old7Items {
+            @modified7 = getFileDetail(@item7, "Last Modified Date")
+            if @modified7 < @cutoff7 {
+                @old7 += @item7
+            }
+        }
+        @old7Count = count(@old7)
+        if @old7Count == 0 {
+            alert("Файлов старше 7 дней в выбранной папке не найдено.", "🕐 Старые файлы")
+        } else {
+            @old7Selected = chooseFromList(@old7, "Найдено {@old7Count}. Выбери, что удалить", true, false)
+            @old7SelectedCount = count(@old7Selected)
+            if @old7SelectedCount > 0 {
+                confirm("Удалить выбранные старые файлы: {@old7SelectedCount}?", "⚠️ Подтверждение")
+                deleteFiles(@old7Selected, false)
+            }
+        }
+
+    item "🗓 Очистить файлы старше 30 дней":
+        @old30Folder = selectFolder(false)
+        @old30Items = getFolderContents(@old30Folder, true)
+        @now30 = currentDate()
+        @cutoff30 = adjustDate(@now30, "Subtract", qty(30, "days"))
+        @old30 = []
+        for item30 in @old30Items {
+            @modified30 = getFileDetail(@item30, "Last Modified Date")
+            if @modified30 < @cutoff30 {
+                @old30 += @item30
+            }
+        }
+        @old30Count = count(@old30)
+        if @old30Count == 0 {
+            alert("Файлов старше 30 дней в выбранной папке не найдено.", "🗓 Старые файлы")
+        } else {
+            @old30Selected = chooseFromList(@old30, "Найдено {@old30Count}. Выбери, что удалить", true, false)
+            @old30SelectedCount = count(@old30Selected)
+            if @old30SelectedCount > 0 {
+                confirm("Удалить выбранные старые файлы: {@old30SelectedCount}?", "⚠️ Подтверждение")
+                deleteFiles(@old30Selected, false)
+            }
+        }
+
+    item "🗑 Удалить выбранные файлы":
+        @selectedFiles = selectFile(true)
+        @selectedCount = count(@selectedFiles)
+        confirm("Удалить выбранные файлы: {@selectedCount}?", "⚠️ Подтверждение")
+        deleteFiles(@selectedFiles, false)
+
+    item "📁 Глубокая очистка папки":
+        @deepFolder = selectFolder(false)
+        @deepItems = getFolderContents(@deepFolder, true)
+        @deepCount = count(@deepItems)
+        confirm("В папке найдено {@deepCount} объектов. Удалить всё содержимое?", "⚠️ Глубокая очистка")
+        deleteFiles(@deepItems, false)
+        showNotification("Содержимое выбранной папки отправлено на удаление.", "🧹 Очистка завершена", true)
+
+    item "⚙️ Хранилище iPhone":
+        alert("Сейчас откроются Настройки. Перейди: Основные → Хранилище iPhone. Там iOS показывает рекомендации и самые тяжёлые приложения.", "⚙️ Хранилище iPhone")
+        openApp("com.apple.Preferences")
+
+    item "🔄 Перезагрузить iPhone":
+        confirm("Перезагрузить iPhone сейчас?", "🔄 Перезагрузка")
+        reboot()
+
+    item "💡 Ещё способы освободить место":
+        alert("1) Фото → Дубликаты: объединить копии.\n2) Настройки → Основные → Хранилище iPhone: сгрузить неиспользуемые приложения.\n3) В Файлах для iCloud можно использовать «Удалить загрузку», чтобы оставить файл в iCloud, но убрать локальную копию.\n4) Проверь загрузки Telegram/Instagram/браузеров вручную — их кэш Shortcut удалить не может.", "💡 Оптимизация")
+}
