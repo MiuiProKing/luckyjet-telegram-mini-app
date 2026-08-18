@@ -2,33 +2,50 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+<meta name="theme-color" content="#0b0610">
 <title>LuckyJet PRO — Firebase LIVE</title>
 <style>
-html,body{margin:0;min-height:100%;background:#0b0610;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;text-align:center}.box{max-width:420px}.spin{width:40px;height:40px;border:4px solid #3b2350;border-top-color:#9b4dff;border-radius:50%;margin:0 auto 18px;animation:s .8s linear infinite}@keyframes s{to{transform:rotate(360deg)}}#msg{color:#ddd;font-size:16px}
+html,body{margin:0;min-height:100%;background:#0b0610;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;text-align:center}.box{max-width:460px}.spin{width:40px;height:40px;border:4px solid #3b2350;border-top-color:#9b4dff;border-radius:50%;margin:0 auto 18px;animation:s .8s linear infinite}@keyframes s{to{transform:rotate(360deg)}}#msg{color:#ddd;font-size:16px;line-height:1.45}small{color:#aaa;word-break:break-word}
 </style>
 </head>
 <body>
-<div class="wrap"><div class="box"><div class="spin"></div><div id="msg">Загрузка LuckyJet PRO…</div></div></div>
+<div class="wrap"><div class="box"><div class="spin" id="spin"></div><div id="msg">Загрузка LuckyJet PRO…</div></div></div>
 <script>
 (async()=>{
  const msg=document.getElementById('msg');
+ const spin=document.getElementById('spin');
  try{
-  const urls=['gamehub-firebase-live-safe-v2/part0.b64','gamehub-firebase-live-safe-v2/part1.b64','gamehub-firebase-live-safe-v2/part2.b64'];
+  const urls=[
+   'gamehub-firebase-live-safe-v2/part0.b64',
+   'gamehub-firebase-live-safe-v2/part1.b64',
+   'gamehub-firebase-live-safe-v2/part2.b64'
+  ];
   const parts=[];
   for(const u of urls){
-   const r=await fetch(u+'?v=20260818-2152',{cache:'no-store'});
-   if(!r.ok) throw new Error('HTTP '+r.status+' '+u);
-   parts.push((await r.text()).trim());
+   const r=await fetch(u+'?v=20260818-2201',{cache:'no-store'});
+   if(!r.ok) throw new Error('HTTP '+r.status+' · '+u);
+   let t=await r.text();
+   t=t.replace(/[^A-Za-z0-9+/]/g,'');
+   if(!t.length) throw new Error('Пустая часть · '+u);
+   parts.push(t);
   }
-  const b64=parts.join('');
-  const bin=atob(b64);
+  let b64=parts.join('');
+  while(b64.length%4!==0) b64+='=';
+  let bin;
+  try{bin=atob(b64)}catch(e){throw new Error('Ошибка Base64: '+e.message+' · длина '+b64.length)}
   const bytes=new Uint8Array(bin.length);
   for(let i=0;i<bin.length;i++) bytes[i]=bin.charCodeAt(i);
-  if(typeof DecompressionStream==='undefined') throw new Error('Браузер не поддерживает распаковку страницы');
-  const html=await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
+  if(typeof DecompressionStream==='undefined') throw new Error('Этот браузер не поддерживает DecompressionStream');
+  const stream=new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
+  const html=await new Response(stream).text();
+  if(!html.includes('<html') && !html.includes('<!DOCTYPE')) throw new Error('Распакован неверный HTML');
   document.open();document.write(html);document.close();
- }catch(e){console.error(e);msg.innerHTML='Не удалось загрузить страницу.<br><small>'+String(e.message||e)+'</small>'}
+ }catch(e){
+  console.error(e);
+  if(spin) spin.style.display='none';
+  msg.innerHTML='Не удалось загрузить страницу.<br><small>'+String(e.message||e)+'</small>';
+ }
 })();
 </script>
 </body>
