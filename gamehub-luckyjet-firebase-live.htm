@@ -17,7 +17,7 @@ html,body{margin:0;min-height:100%;background:#0b0610;color:#fff;font-family:-ap
   const urls=['gamehub-firebase-live-safe/part0.b64','gamehub-firebase-live-safe/part1.b64','gamehub-firebase-live-safe/part2.b64'];
   const parts=[];
   for(const u of urls){
-   const r=await fetch(u+'?v=20260818-2134',{cache:'no-store'});
+   const r=await fetch(u+'?v=20260818-2146',{cache:'no-store'});
    if(!r.ok) throw new Error('HTTP '+r.status+' '+u);
    parts.push((await r.text()).trim());
   }
