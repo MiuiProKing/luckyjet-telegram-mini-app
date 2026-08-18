@@ -16,7 +16,8 @@ menu "🚀 Оптимизация iPhone ULTRA PRO" {
         @bigFiles = []
         for item in @bigItems {
             @fileSizeValue = fileSize(@item, "Bytes")
-            if @fileSizeValue > 524288000 {
+            @fileSizeNumber = number(@fileSizeValue)
+            if @fileSizeNumber > 524288000 {
                 @bigFiles += @item
             }
         }
@@ -39,7 +40,8 @@ menu "🚀 Оптимизация iPhone ULTRA PRO" {
         @cutoff7 = adjustDate(@now7, "Subtract", qty(7, "days"))
         @old7 = []
         for item7 in @old7Items {
-            @modified7 = getFileDetail(@item7, "Last Modified Date")
+            @modified7Raw = getFileDetail(@item7, "Last Modified Date")
+            @modified7 = date("{@modified7Raw}")
             if @modified7 < @cutoff7 {
                 @old7 += @item7
             }
@@ -63,7 +65,8 @@ menu "🚀 Оптимизация iPhone ULTRA PRO" {
         @cutoff30 = adjustDate(@now30, "Subtract", qty(30, "days"))
         @old30 = []
         for item30 in @old30Items {
-            @modified30 = getFileDetail(@item30, "Last Modified Date")
+            @modified30Raw = getFileDetail(@item30, "Last Modified Date")
+            @modified30 = date("{@modified30Raw}")
             if @modified30 < @cutoff30 {
                 @old30 += @item30
             }
