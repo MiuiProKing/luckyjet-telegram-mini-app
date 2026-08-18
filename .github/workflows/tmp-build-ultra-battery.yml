@@ -19,85 +19,84 @@ jobs:
       - name: Sign prepared shortcuts
         shell: bash
         run: |
-          set -euo pipefail
+          mkdir -p .tmp-ultra-sign/output
           python3 - <<'PY'
-          import base64, html as htmlmod, http.cookiejar, json, pathlib, plistlib, re
+          import base64, html as htmlmod, http.cookiejar, json, pathlib, plistlib, re, traceback
           import urllib.parse, urllib.request
 
-          base = 'https://playground.cherrilang.org'
-          jar = http.cookiejar.CookieJar()
-          opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(jar))
-          req = urllib.request.Request(base + '/', headers={'User-Agent':'Mozilla/5.0','Accept':'text/html,application/xhtml+xml'})
-          with opener.open(req, timeout=60) as r:
-              page = r.read().decode('utf-8','replace')
-
-          m = re.search(r'<meta[^>]+name=["\']csrf-token["\'][^>]+content=["\']([^"\']+)', page, re.I)
-          if not m:
-              m = re.search(r'<meta[^>]+content=["\']([^"\']+)["\'][^>]+name=["\']csrf-token["\']', page, re.I)
-          csrf = htmlmod.unescape(m.group(1)) if m else None
-          xsrf = None
-          for c in jar:
-              if c.name == 'XSRF-TOKEN':
-                  xsrf = urllib.parse.unquote(c.value)
-
-          headers = {
-              'Content-Type':'application/json',
-              'Accept':'application/json, text/plain, */*',
-              'X-Requested-With':'XMLHttpRequest',
-              'Origin':base,
-              'Referer':base+'/',
-              'User-Agent':'Mozilla/5.0'
-          }
-          if csrf: headers['X-CSRF-TOKEN'] = csrf
-          if xsrf: headers['X-XSRF-TOKEN'] = xsrf
-
-          jobs = [
-              ('ULTRA_Economy_unsigned.b64', 'ULTRA-Economy', 'ULTRA_Economy_signed.b64'),
-              ('ULTRA_Economy_OFF_unsigned.b64', 'ULTRA-Economy-OFF', 'ULTRA_Economy_OFF_signed.b64'),
-          ]
           outdir = pathlib.Path('.tmp-ultra-sign/output')
-          outdir.mkdir(parents=True, exist_ok=True)
+          status = []
+          try:
+              base = 'https://playground.cherrilang.org'
+              jar = http.cookiejar.CookieJar()
+              opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(jar))
+              req = urllib.request.Request(base + '/', headers={'User-Agent':'Mozilla/5.0','Accept':'text/html,application/xhtml+xml'})
+              with opener.open(req, timeout=60) as r:
+                  page = r.read().decode('utf-8','replace')
+              m = re.search(r'<meta[^>]+name=["\']csrf-token["\'][^>]+content=["\']([^"\']+)', page, re.I)
+              if not m:
+                  m = re.search(r'<meta[^>]+content=["\']([^"\']+)["\'][^>]+name=["\']csrf-token["\']', page, re.I)
+              csrf = htmlmod.unescape(m.group(1)) if m else None
+              xsrf = None
+              for c in jar:
+                  if c.name == 'XSRF-TOKEN': xsrf = urllib.parse.unquote(c.value)
+              headers = {'Content-Type':'application/json','Accept':'application/json, text/plain, */*','X-Requested-With':'XMLHttpRequest','Origin':base,'Referer':base+'/','User-Agent':'Mozilla/5.0'}
+              if csrf: headers['X-CSRF-TOKEN'] = csrf
+              if xsrf: headers['X-XSRF-TOKEN'] = xsrf
 
-          for infile, name, outfile in jobs:
-              raw = base64.b64decode(pathlib.Path('.tmp-ultra-sign/input', infile).read_text().strip())
-              workflow = plistlib.loads(raw)
-              xml = plistlib.dumps(workflow, fmt=plistlib.FMT_XML).decode('utf-8')
-              payload = json.dumps({'name': name, 'data': xml}).encode('utf-8')
-              sreq = urllib.request.Request(base + '/sign', data=payload, headers=headers, method='POST')
-              with opener.open(sreq, timeout=180) as r:
-                  body = r.read()
-              signed = None
-              if body.startswith(b'AEA1'):
-                  signed = body
-              else:
-                  txt = body.decode('utf-8','replace').strip()
-                  try: value = json.loads(txt)
-                  except Exception: value = txt
-                  if isinstance(value, dict):
-                      value = value.get('url') or value.get('file') or value.get('data')
-                  if not isinstance(value, str):
-                      raise RuntimeError('Unexpected sign response: ' + txt[:500])
-                  value = value.strip('"')
-                  if value.startswith('data:'):
-                      header, encoded = value.split(',', 1)
-                      signed = base64.b64decode(encoded) if ';base64' in header else urllib.parse.unquote_to_bytes(encoded)
-                  else:
-                      if value.startswith('/'):
-                          value = base + value
-                      with opener.open(value, timeout=180) as r:
-                          signed = r.read()
-              if not signed or not signed.startswith(b'AEA1'):
-                  raise RuntimeError(name + ' did not return AEA1 signed Shortcut')
-              (outdir / outfile).write_text(base64.b64encode(signed).decode('ascii'))
-              print(name, 'SIGNED_OK', len(signed))
+              jobs = [
+                  ('ULTRA_Economy_unsigned.b64','ULTRA-Economy','ULTRA_Economy_signed.b64'),
+                  ('ULTRA_Economy_OFF_unsigned.b64','ULTRA-Economy-OFF','ULTRA_Economy_OFF_signed.b64'),
+              ]
+              for infile, name, outfile in jobs:
+                  try:
+                      raw = base64.b64decode(pathlib.Path('.tmp-ultra-sign/input', infile).read_text().strip())
+                      workflow = plistlib.loads(raw)
+                      xml = plistlib.dumps(workflow, fmt=plistlib.FMT_XML).decode('utf-8')
+                      payload = json.dumps({'name':name,'data':xml}).encode('utf-8')
+                      sreq = urllib.request.Request(base+'/sign', data=payload, headers=headers, method='POST')
+                      with opener.open(sreq, timeout=180) as r:
+                          body = r.read()
+                      signed = None
+                      if body.startswith(b'AEA1'):
+                          signed = body
+                      else:
+                          txt = body.decode('utf-8','replace').strip()
+                          try: value = json.loads(txt)
+                          except Exception: value = txt
+                          if isinstance(value, dict): value = value.get('url') or value.get('file') or value.get('data')
+                          if isinstance(value, str):
+                              value = value.strip('"')
+                              if value.startswith('data:'):
+                                  h,e=value.split(',',1); signed=base64.b64decode(e) if ';base64' in h else urllib.parse.unquote_to_bytes(e)
+                              else:
+                                  if value.startswith('/'): value=base+value
+                                  if value.startswith(('http://','https://')):
+                                      with opener.open(value, timeout=180) as r: signed=r.read()
+                          if signed is None:
+                              raise RuntimeError('Unexpected response: '+txt[:500])
+                      if not signed.startswith(b'AEA1'):
+                          raise RuntimeError('Result is not AEA1')
+                      (outdir/outfile).write_text(base64.b64encode(signed).decode('ascii'))
+                      status.append(name+': OK '+str(len(signed)))
+                  except Exception as e:
+                      status.append(name+': ERROR '+repr(e))
+                      status.append(traceback.format_exc())
+          except Exception as e:
+              status.append('GLOBAL ERROR '+repr(e))
+              status.append(traceback.format_exc())
+          (outdir/'status.txt').write_text('\n'.join(status))
+          print('\n'.join(status))
           PY
 
-      - name: Commit signed outputs temporarily
+      - name: Commit outputs and diagnostics
+        if: always()
         shell: bash
         run: |
-          set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add .tmp-ultra-sign/output
-          git commit -m "Temporary signed ultra battery outputs"
-          git push
+          git add .tmp-ultra-sign/output || true
+          if ! git diff --cached --quiet; then
+            git commit -m "Temporary ultra battery signing result"
+            git push
+          fi
