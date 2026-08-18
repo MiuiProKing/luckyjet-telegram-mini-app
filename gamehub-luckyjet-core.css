@@ -1,0 +1,12 @@
+*{box-sizing:border-box}body{margin:0;background:#07040b;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}
+.wrap{max-width:760px;margin:auto;padding:16px}.card{background:#130b1b;border:1px solid #2d1c3a;border-radius:24px;overflow:hidden;box-shadow:0 20px 60px #0009}
+.head{padding:20px;background:linear-gradient(135deg,#40155b,#171650)}h1{margin:3px 0 6px;font-size:26px}.sub,.small{color:#aaa;font-size:13px}
+.body{padding:17px}.status,.panel,.signal{border:1px solid #30213f;background:#0d0912;border-radius:16px;padding:14px;margin-bottom:13px}
+.ok{border-color:#225b3e}.bad{border-color:#752b3a}.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:7px;background:#e7b82e}.ok .dot{background:#36d27f}.bad .dot{background:#ff5269}
+.signal{text-align:center;min-height:145px}.sigmain{font-size:30px;font-weight:900;margin:8px 0}.meta{color:#bbb;font-size:14px;line-height:1.5}
+.row{display:flex;gap:12px;justify-content:space-between;align-items:center}.big{font-size:29px;font-weight:900}
+.chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}.chip{padding:7px 10px;border-radius:11px;background:#25152f;font-weight:800}.x2{background:#2f1b4c}.x5{background:#46311c}.x10{background:#4d1824;color:#ffd3dc}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.stat{background:#0d0912;border:1px solid #30213f;border-radius:14px;padding:11px;text-align:center}.stat b{display:block;font-size:20px;margin-top:4px}
+.btn{width:100%;border:0;border-radius:14px;padding:13px;font-weight:800;color:#fff;background:#251632;margin-top:10px}.note{color:#777;font-size:11px;text-align:center;margin-top:12px}
+.nav{display:grid;gap:10px}.nav a{display:block;text-decoration:none;color:#fff;background:#150c1e;border:1px solid #342143;border-radius:17px;padding:16px}.nav b{font-size:18px}.nav p{color:#aaa;margin:6px 0 0;font-size:13px}
+@media(max-width:520px){.row.mobile{align-items:flex-start;flex-direction:column}.stats{grid-template-columns:1fr 1fr 1fr}}
