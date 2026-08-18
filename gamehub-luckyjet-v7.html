@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>GameHub LuckyJet V7 — загрузка</title>
+  <meta name="theme-color" content="#141414">
+  <style>
+    html,body{margin:0;min-height:100%;background:#141414;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+    body{min-height:100vh;display:grid;place-items:center;padding:24px;box-sizing:border-box;background:radial-gradient(circle at 50% 40%,#251039 0,#141414 55%,#090909 100%)}
+    .box{width:min(92vw,430px);padding:24px;border:1px solid rgba(168,85,247,.35);border-radius:22px;background:rgba(17,17,17,.86);box-shadow:0 0 36px rgba(138,0,225,.15);text-align:center}
+    .dot{width:14px;height:14px;margin:0 auto 14px;border-radius:50%;background:#a855f7;box-shadow:0 0 18px #a855f7;animation:p 1s ease-in-out infinite alternate}
+    @keyframes p{to{opacity:.35;transform:scale(.72)}}
+    h1{font-size:20px;margin:0 0 9px}.status{font-size:14px;color:#c4b5fd;line-height:1.45}.err{color:#fca5a5}.small{font-size:11px;color:#737373;margin-top:12px}
+  </style>
+</head>
+<body>
+  <main class="box">
+    <div class="dot"></div>
+    <h1>GameHub · LuckyJet V7</h1>
+    <div id="status" class="status">Загружаю рабочую версию…</div>
+    <div class="small">LIVE /history · резерв /state</div>
+  </main>
+  <script>
+  (async()=>{
+    const status=document.getElementById('status');
+    const parts=[
+      '.gamehub-live-v7/part0.b64',
+      '.gamehub-live-v7/part1.b64',
+      '.gamehub-live-v7/part2.b64',
+      '.gamehub-live-v7/part3.b64',
+      '.gamehub-live-v7/part4a.b64',
+      '.gamehub-live-v7/part4b.b64',
+      '.gamehub-live-v7/part5.b64'
+    ];
+    try{
+      status.textContent='Получаю файлы V7…';
+      const texts=await Promise.all(parts.map(async p=>{
+        const r=await fetch(p,{cache:'no-store'});
+        if(!r.ok) throw new Error(`${p}: HTTP ${r.status}`);
+        return r.text();
+      }));
+      const b64=texts.join('').replace(/\s+/g,'');
+      if(b64.length!==21824) throw new Error(`неверный размер пакета: ${b64.length}`);
+      status.textContent='Распаковываю интерфейс…';
+      const binary=atob(b64);
+      const bytes=Uint8Array.from(binary,c=>c.charCodeAt(0));
+      let html='';
+      if('DecompressionStream' in window){
+        const stream=new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
+        html=await new Response(stream).text();
+      }else{
+        status.textContent='Подключаю совместимый распаковщик…';
+        await new Promise((resolve,reject)=>{
+          const s=document.createElement('script');
+          s.src='https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js';
+          s.onload=resolve;s.onerror=()=>reject(new Error('не удалось загрузить распаковщик'));
+          document.head.appendChild(s);
+        });
+        html=window.pako.ungzip(bytes,{to:'string'});
+      }
+      if(!html || !html.includes('<html')) throw new Error('HTML не распакован');
+      document.open();
+      document.write(html);
+      document.close();
+    }catch(e){
+      console.error(e);
+      status.className='status err';
+      status.innerHTML='Ошибка загрузки V7.<br>Обнови страницу через несколько секунд.<br><small>'+String(e.message||e)+'</small>';
+    }
+  })();
+  </script>
+</body>
+</html>
