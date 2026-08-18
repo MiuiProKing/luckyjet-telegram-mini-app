@@ -1,18 +1,109 @@
-name: Temporary Actions Trigger Test
+name: Temporary Build iPhone Optimizer
 on: [push]
 permissions:
   contents: write
 jobs:
-  test:
+  build:
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - run: |
-          mkdir -p .tmp-actions-trigger
-          echo "OK $(date -u +%s)" > .tmp-actions-trigger/status.txt
+      - name: Compile and sign
+        shell: bash
+        continue-on-error: true
+        run: |
+          python3 - <<'PY'
+          import base64, html as htmlmod, http.cookiejar, json, pathlib, re, traceback
+          import urllib.parse, urllib.request
+          outdir=pathlib.Path('.tmp-iphone-optimizer'); outdir.mkdir(exist_ok=True)
+          try:
+              source=r'''#include 'actions/basic'
+#include 'actions/device'
+#include 'actions/documents'
+#include 'actions/sharing'
+
+menu "🧹 Оптимизация iPhone PRO" {
+    item "⚡ Быстрая уборка":
+        @empty = ""
+        setClipboard(@empty, true)
+        setHotspot(false)
+        showNotification("Буфер обмена очищен, точка доступа выключена.", "✅ Быстрая уборка", true)
+
+    item "🕘 Удалить выбранные из Недавних":
+        @recentFiles = selectFile(true)
+        confirm("Будут удалены сами выбранные файлы, а не только записи в Недавних. Продолжить?", "⚠️ Внимание")
+        deleteFiles(@recentFiles, false)
+        showNotification("Выбранные файлы отправлены на удаление.", "🗑 Очистка файлов", true)
+
+    item "📁 Очистить выбранную папку":
+        @folder = selectFolder(false)
+        @folderItems = getFolderContents(@folder, true)
+        @itemCount = count(@folderItems)
+        confirm("В выбранной папке найдено {@itemCount} объектов. Удалить их?", "⚠️ Очистить папку")
+        deleteFiles(@folderItems, false)
+        showNotification("Содержимое выбранной папки отправлено на удаление.", "🧹 Папка очищена", true)
+
+    item "⚙️ Открыть Настройки":
+        openApp("com.apple.Preferences")
+
+    item "🔄 Перезагрузить iPhone":
+        confirm("Перезагрузить iPhone сейчас?", "🔄 Перезагрузка")
+        reboot()
+
+    item "ℹ️ Что реально очищается":
+        alert("Команда может удалить выбранные файлы и содержимое выбранной папки, очистить буфер обмена и открыть Настройки. Системную RAM и кэш всех приложений iOS очищает сама — отдельной системной кнопки для этого нет.", "Оптимизация iPhone")
+}
+'''
+              base='https://playground.cherrilang.org'
+              jar=http.cookiejar.CookieJar(); opener=urllib.request.build_opener(urllib.request.HTTPCookieProcessor(jar))
+              req=urllib.request.Request(base+'/',headers={'User-Agent':'Mozilla/5.0','Accept':'text/html,application/xhtml+xml'})
+              with opener.open(req,timeout=60) as r: page=r.read().decode('utf-8','replace')
+              m=re.search(r'<meta[^>]+name=["\']csrf-token["\'][^>]+content=["\']([^"\']+)',page,re.I)
+              if not m: m=re.search(r'<meta[^>]+content=["\']([^"\']+)["\'][^>]+name=["\']csrf-token["\']',page,re.I)
+              csrf=htmlmod.unescape(m.group(1)) if m else None; xsrf=None
+              for c in jar:
+                  if c.name=='XSRF-TOKEN': xsrf=urllib.parse.unquote(c.value)
+              headers={'Content-Type':'application/json','Accept':'application/json, text/plain, */*','X-Requested-With':'XMLHttpRequest','Origin':base,'Referer':base+'/','User-Agent':'Mozilla/5.0'}
+              if csrf: headers['X-CSRF-TOKEN']=csrf
+              if xsrf: headers['X-XSRF-TOKEN']=xsrf
+              af={'id':'file-1','name':'iPhone-Optimizer-PRO.cherri','content':source,'compiled':False,'error':None,'output':None,'decompOutput':None,'shareLink':None,'file':None}
+              req=urllib.request.Request(base+'/compile',data=json.dumps({'active_file':af,'files':[]}).encode(),headers=headers,method='POST')
+              with opener.open(req,timeout=120) as r: data=json.loads(r.read().decode('utf-8','replace'))
+              if data.get('error'): raise RuntimeError('COMPILE: '+str(data.get('error'))+' | '+str(data.get('output')))
+              u=data.get('file')
+              if not u: raise RuntimeError('No compile file URL')
+              if u.startswith('/'): u=base+u
+              with opener.open(u,timeout=120) as r: plist=r.read().decode('utf-8','replace')
+              name=urllib.parse.urlparse(u).path.rsplit('/',1)[-1].split('.')[0]
+              req=urllib.request.Request(base+'/sign',data=json.dumps({'name':name,'data':plist}).encode(),headers=headers,method='POST')
+              with opener.open(req,timeout=180) as r: body=r.read()
+              if body.startswith(b'AEA1'): signed=body
+              else:
+                  txt=body.decode('utf-8','replace').strip()
+                  try: value=json.loads(txt)
+                  except Exception: value=txt
+                  if isinstance(value,dict): value=value.get('url') or value.get('file') or value.get('data')
+                  if not isinstance(value,str): raise RuntimeError('Bad sign response: '+txt[:500])
+                  value=value.strip('"')
+                  if value.startswith('data:'):
+                      head,enc=value.split(',',1); signed=base64.b64decode(enc) if ';base64' in head else urllib.parse.unquote_to_bytes(enc)
+                  else:
+                      if value.startswith('/'): value=base+value
+                      with opener.open(value,timeout=180) as r: signed=r.read()
+              if not signed.startswith(b'AEA1'): raise RuntimeError('Signing result is not AEA1')
+              (outdir/'signed.b64').write_text(base64.b64encode(signed).decode())
+              (outdir/'status.txt').write_text('OK '+str(len(signed)))
+          except Exception as e:
+              (outdir/'status.txt').write_text('ERROR\n'+str(e)+'\n'+traceback.format_exc())
+              raise
+          PY
+      - name: Persist result
+        if: always()
+        shell: bash
+        run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add .tmp-actions-trigger/status.txt
-          git commit -m 'Temporary Actions trigger result'
+          git add .tmp-iphone-optimizer/
+          git commit -m 'Temporary iPhone optimizer build result' || exit 0
           git push
