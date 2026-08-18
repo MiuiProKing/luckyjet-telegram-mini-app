@@ -1,1 +1,110 @@
-<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>LuckyJet Premium PRO</title><style>body{margin:0;background:#07101a;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial}.w{max-width:700px;margin:auto;padding:16px}.c,.status,.panel,.signal{background:#0d1724;border:1px solid #213b55;border-radius:18px}.c{overflow:hidden}.h{padding:20px;background:linear-gradient(135deg,#0f4c81,#14213d)}.b{padding:16px}.status,.panel,.signal{padding:14px;margin-bottom:12px}.ok{border-color:#23593f}.bad{border-color:#6f2937}.signal{text-align:center}.main{font-size:30px;font-weight:900;margin:8px}.chips{display:flex;flex-wrap:wrap;gap:7px}.chip{padding:7px 10px;border-radius:10px;background:#15283b;font-weight:800}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.s{padding:10px;text-align:center;background:#0b1520;border-radius:12px}.s b{display:block;font-size:21px}.btn{width:100%;padding:13px;border:1px solid #28435d;border-radius:12px;background:#132538;color:#fff;font-weight:800;margin-top:10px}</style></head><body><div class="w"><div class="c"><div class="h"><small>GameHub · наша версия</small><h1>💎 LuckyJet Premium PRO</h1><div>EMA · среднее · регрессия · confidence · проверка</div></div><div class="b"><div id="apiBox" class="status"><b>API:</b> <span id="apiText">подключение…</span></div><div class="signal"><small>PREMIUM PRO</small><div id="sig" class="main">СБОР ДАННЫХ…</div><div id="meta">Нужно минимум 6 новых коэффициентов.</div></div><div class="stats"><div class="s">Confidence<b id="conf">—</b></div><div class="s">Trend<b id="trend">—</b></div><div class="s">Score<b id="score">—</b></div></div><div class="panel"><div id="chips" class="chips"></div></div><div class="panel"><small>Последняя проверка</small><div id="verify">Ещё нет прогноза.</div></div><button class="btn" onclick="LJ.reset()">Сбросить session-id</button></div></div></div><script src="gamehub-luckyjet-core.js"></script><script>let hist=[],last=null,pending=null;function reg(a){let n=a.length,sx=0,sy=0,sxy=0,sxx=0;if(n<2)return 0;for(let i=0;i<n;i++){let x=i+1,y=a[i];sx+=x;sy+=y;sxy+=x*y;sxx+=x*x}let d=n*sxx-sx*sx;return d?(n*sxy-sx*sy)/d:0}function analyze(){let a=[...hist.slice(0,8)].reverse();chips.innerHTML=hist.slice(0,12).map(x=>`<span class=chip>${x.toFixed(2)}X</span>`).join('');if(a.length<6){sig.textContent='СБОР ДАННЫХ…';meta.textContent=`${a.length}/6`;return}let s=[...a].sort((x,y)=>x-y),p=s.slice(1,-1),m=p.reduce((x,y)=>x+y,0)/p.length,e=p[0];for(let i=1;i<p.length;i++)e=p[i]*.2+e*.8;let v=Math.sqrt(p.reduce((z,x)=>z+(x-m)**2,0)/p.length),sl=reg(a.slice(-5)),raw=e*.6+m*.3+a[a.length-1]*.1;if(sl>.12)raw*=1.04;if(sl<-.12)raw*=.97;let c=Math.max(20,Math.min(94,Math.round((1-Math.min(1,v/3))*100))),g=Math.max(0,Math.min(100,Math.round(c*.55+Math.min(1,Math.abs(sl)/.25)*25+(sl>0?12:6)))),margin=raw<2?.15:raw<3?.25:.35,target=Math.max(1.2,Math.min(12,Math.round(raw*(1-margin)*100)/100));conf.textContent=c+'%';trend.textContent=sl>.12?'↑':sl<-.12?'↓':'→';score.textContent=g+'/100';if(g<55){sig.textContent='⏸ ПРОПУСК';meta.textContent=`Premium score ${g}/100`;pending=null;return}sig.textContent=`💎 ${target.toFixed(2)}X`;meta.textContent=`Premium score ${g}/100 · проверка 3 раунда`;pending={target,left:3}}function check(c){if(!pending)return;if(c>=pending.target){verify.textContent=`✅ ЗАШЛО: цель ${pending.target.toFixed(2)}X, выпало ${c.toFixed(2)}X`;pending=null;return}if(--pending.left<=0){verify.textContent=`❌ НЕ ЗАШЛО: цель ${pending.target.toFixed(2)}X за 3 раунда`;pending=null}}async function tick(){try{let c=await LJ.latest();if(c&&c!==last){last=c;check(c);hist.unshift(c);hist=hist.slice(0,40);analyze()}LJ.setStatus('подключено · /state',true)}catch(e){LJ.setStatus(e.message,false)}setTimeout(tick,1500)}tick()</script></body></html>
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LuckyJet Premium PRO</title>
+<style>
+body{margin:0;background:#07101a;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial}.w{max-width:700px;margin:auto;padding:16px}.c,.status,.panel,.signal{background:#0d1724;border:1px solid #213b55;border-radius:18px}.c{overflow:hidden}.h{padding:20px;background:linear-gradient(135deg,#0f4c81,#14213d)}.b{padding:16px}.status,.panel,.signal{padding:14px;margin-bottom:12px}.ok{border-color:#23593f}.bad{border-color:#6f2937}.signal{text-align:center}.main{font-size:30px;font-weight:900;margin:8px}.chips{display:flex;flex-wrap:wrap;gap:7px}.chip{padding:7px 10px;border-radius:10px;background:#15283b;font-weight:800}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.s{padding:10px;text-align:center;background:#0b1520;border-radius:12px}.s b{display:block;font-size:21px}.btn{width:100%;padding:13px;border:1px solid #28435d;border-radius:12px;background:#132538;color:#fff;font-weight:800;margin-top:10px}.small{opacity:.75;font-size:13px}
+</style>
+</head>
+<body>
+<div class="w"><div class="c"><div class="h"><small>GameHub · наша версия</small><h1>💎 LuckyJet Premium PRO</h1><div>EMA · среднее · регрессия · confidence · проверка</div></div><div class="b">
+<div id="apiBox" class="status"><b>API:</b> <span id="apiText">подключение…</span></div>
+<div class="signal"><small>PREMIUM PRO</small><div id="sig" class="main">СБОР ДАННЫХ…</div><div id="meta">Загружаю завершённые раунды…</div></div>
+<div class="stats"><div class="s">Confidence<b id="conf">—</b></div><div class="s">Trend<b id="trend">—</b></div><div class="s">Score<b id="score">—</b></div></div>
+<div class="panel"><small>Последние коэффициенты</small><div id="chips" class="chips" style="margin-top:10px"></div></div>
+<div class="panel"><small>Последняя проверка</small><div id="verify">Ещё нет прогноза.</div></div>
+<div class="panel small" id="roundInfo">Раунд: —</div>
+<button id="resetBtn" class="btn">Сбросить session-id</button>
+</div></div></div>
+<script>
+const API="https://crash-gateway-grm-cr.100hp.app/history";
+const CUSTOMER_ID="077dee8d-c923-4c02-9bee-757573662e69";
+const $=id=>document.getElementById(id);
+let hist=[],lastId=null,pending=null,seen=new Set();
+
+function sid(){
+  let s=localStorage.getItem("LJ_SESSION_ID")||"";
+  if(!s){
+    s=(prompt("Введите LuckyJet session-id для LIVE подключения:")||"").trim();
+    if(s)localStorage.setItem("LJ_SESSION_ID",s);
+  }
+  return s;
+}
+function resetSid(){localStorage.removeItem("LJ_SESSION_ID");location.reload()}
+function setStatus(t,ok){$("apiBox").className="status "+(ok?"ok":"bad");$("apiText").textContent=t}
+function norm(x){
+  if(!x||typeof x!=="object")return null;
+  let c=Number(x.topCoefficient);
+  if(!Number.isFinite(c)||c<=0){
+    const a=Array.isArray(x.finalValues)?x.finalValues.map(Number).filter(v=>Number.isFinite(v)&&v>0):[];
+    if(a.length)c=a[a.length-1];
+  }
+  if(!Number.isFinite(c)||c<=0)return null;
+  if(c===1)c=1.01;
+  c=Math.round(c*100)/100;
+  const id=String(x.id||x.roundId||x.round_id||x.hash||("round:"+c+":"+(x.createdAt||x.time||"")));
+  return{id,c};
+}
+function reg(a){
+  let n=a.length,sx=0,sy=0,sxy=0,sxx=0;if(n<2)return 0;
+  for(let i=0;i<n;i++){let x=i+1,y=a[i];sx+=x;sy+=y;sxy+=x*y;sxx+=x*x}
+  let d=n*sxx-sx*sx;return d?(n*sxy-sx*sy)/d:0;
+}
+function renderChips(){
+  $("chips").innerHTML=hist.slice(0,12).map(x=>`<span class="chip">${x.toFixed(2)}X</span>`).join('')||'<span class="small">Ожидание…</span>';
+}
+function analyze(){
+  renderChips();
+  let a=[...hist.slice(0,8)].reverse();
+  if(a.length<6){$("sig").textContent='СБОР ДАННЫХ…';$("meta").textContent=`${a.length}/6`;return}
+  let s=[...a].sort((x,y)=>x-y),p=s.length>2?s.slice(1,-1):s,m=p.reduce((x,y)=>x+y,0)/p.length,e=p[0];
+  for(let i=1;i<p.length;i++)e=p[i]*.2+e*.8;
+  let v=Math.sqrt(p.reduce((z,x)=>z+(x-m)**2,0)/p.length),sl=reg(a.slice(-5)),raw=e*.6+m*.3+a[a.length-1]*.1;
+  if(sl>.12)raw*=1.04;if(sl<-.12)raw*=.97;
+  let c=Math.max(20,Math.min(94,Math.round((1-Math.min(1,v/3))*100)));
+  let g=Math.max(0,Math.min(100,Math.round(c*.55+Math.min(1,Math.abs(sl)/.25)*25+(sl>0?12:6))));
+  let margin=raw<2?.15:raw<3?.25:.35,target=Math.max(1.2,Math.min(12,Math.round(raw*(1-margin)*100)/100));
+  $("conf").textContent=c+'%';$("trend").textContent=sl>.12?'↑':sl<-.12?'↓':'→';$("score").textContent=g+'/100';
+  if(g<55){$("sig").textContent='⏸ ПРОПУСК';$("meta").textContent=`Premium score ${g}/100`;pending=null;return}
+  $("sig").textContent=`💎 ${target.toFixed(2)}X`;$("meta").textContent=`Premium score ${g}/100 · проверка 3 новых раунда`;
+  if(!pending)pending={target,left:3};
+}
+function check(c){
+  if(!pending)return;
+  if(c>=pending.target){$("verify").textContent=`✅ ЗАШЛО: цель ${pending.target.toFixed(2)}X, выпало ${c.toFixed(2)}X`;pending=null;return}
+  if(--pending.left<=0){$("verify").textContent=`❌ НЕ ЗАШЛО: цель ${pending.target.toFixed(2)}X за 3 раунда`;pending=null}
+}
+async function getHistory(){
+  const s=sid();if(!s)throw Error("session-id не указан");
+  const r=await fetch(API,{headers:{"customer-id":CUSTOMER_ID,"session-id":s,"accept":"application/json"},cache:"no-store"});
+  if(!r.ok)throw Error("HTTP "+r.status);
+  const data=await r.json();if(!Array.isArray(data))throw Error("неверный формат API");
+  return data.map(norm).filter(Boolean);
+}
+async function tick(){
+  try{
+    const list=await getHistory();
+    if(!list.length)throw Error("API вернул 0 раундов");
+    if(!lastId){
+      const init=[];
+      for(const x of list){if(!seen.has(x.id)){seen.add(x.id);init.push(x.c)}if(init.length>=40)break}
+      hist=init;lastId=list[0].id;$("roundInfo").textContent=`Последний ID: ${lastId}`;analyze();
+    }else{
+      const fresh=[];
+      for(const x of list){if(x.id===lastId)break;if(!seen.has(x.id))fresh.push(x)}
+      if(fresh.length){
+        fresh.reverse().forEach(x=>{check(x.c);hist.unshift(x.c);seen.add(x.id)});
+        hist=hist.slice(0,40);lastId=list[0].id;$("roundInfo").textContent=`Последний ID: ${lastId}`;pending||analyze();renderChips();
+      }
+    }
+    setStatus(`подключено · LIVE /history · ${list.length} раундов`,true);
+  }catch(e){setStatus(String(e.message||e),false)}
+  setTimeout(tick,1200);
+}
+$("resetBtn").addEventListener("click",resetSid);
+renderChips();tick();
+</script>
+</body>
+</html>
