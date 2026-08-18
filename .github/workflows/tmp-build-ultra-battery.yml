@@ -1,0 +1,142 @@
+name: Temporary Build Ultra Battery Shortcuts
+
+on:
+  push:
+    paths:
+      - '.github/workflows/tmp-build-ultra-battery.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Compile and sign shortcuts
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import base64, html as htmlmod, http.cookiejar, json, pathlib, re
+          import urllib.parse, urllib.request, urllib.error
+
+          sources = {
+              'ULTRA-Economy': r'''#include 'actions/device'
+#include 'actions/settings'
+#include 'actions/basic'
+
+setAirplaneMode(true)
+setWifi(false)
+setBluetooth(false)
+setCellularData(false)
+setHotspot(false)
+setLowPowerMode(true)
+darkMode()
+setBrightness(0.02)
+DNDOn()
+showNotification("УЛЬТРА-экономия включена 🪫", "Максимальная экономия", false)
+''',
+              'ULTRA-Economy-OFF': r'''#include 'actions/device'
+#include 'actions/settings'
+#include 'actions/basic'
+
+setAirplaneMode(false)
+setWifi(true)
+setBluetooth(true)
+setCellularData(true)
+setHotspot(false)
+setLowPowerMode(false)
+setBrightness(0.50)
+DNDOff()
+showNotification("УЛЬТРА-экономия отключена 🔋", "Обычный режим", true)
+'''
+          }
+
+          base = 'https://playground.cherrilang.org'
+          jar = http.cookiejar.CookieJar()
+          opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(jar))
+          req = urllib.request.Request(base + '/', headers={'User-Agent':'Mozilla/5.0','Accept':'text/html,application/xhtml+xml'})
+          with opener.open(req, timeout=60) as r:
+              page = r.read().decode('utf-8','replace')
+
+          m = re.search(r'<meta[^>]+name=["\']csrf-token["\'][^>]+content=["\']([^"\']+)', page, re.I)
+          if not m:
+              m = re.search(r'<meta[^>]+content=["\']([^"\']+)["\'][^>]+name=["\']csrf-token["\']', page, re.I)
+          csrf = htmlmod.unescape(m.group(1)) if m else None
+          xsrf = None
+          for c in jar:
+              if c.name == 'XSRF-TOKEN':
+                  xsrf = urllib.parse.unquote(c.value)
+
+          headers = {
+              'Content-Type':'application/json',
+              'Accept':'application/json, text/plain, */*',
+              'X-Requested-With':'XMLHttpRequest',
+              'Origin':base,
+              'Referer':base+'/',
+              'User-Agent':'Mozilla/5.0'
+          }
+          if csrf: headers['X-CSRF-TOKEN'] = csrf
+          if xsrf: headers['X-XSRF-TOKEN'] = xsrf
+
+          def compile_and_sign(name, source):
+              active_file = {
+                  'id':'file-1','name':name+'.cherri','content':source,'compiled':False,
+                  'error':None,'output':None,'decompOutput':None,'shareLink':None,'file':None,
+              }
+              payload = json.dumps({'active_file':active_file,'files':[]}).encode()
+              creq = urllib.request.Request(base+'/compile', data=payload, headers=headers, method='POST')
+              with opener.open(creq, timeout=120) as r:
+                  cbody = r.read()
+              data = json.loads(cbody.decode('utf-8','replace'))
+              print(name, 'compile output:', data.get('output'))
+              print(name, 'compile error:', data.get('error'))
+              if data.get('error'):
+                  raise RuntimeError(name + ' compile error: ' + str(data.get('error')))
+              file_url = data.get('file')
+              if not file_url:
+                  raise RuntimeError(name + ' compile missing file URL')
+              if file_url.startswith('/'):
+                  file_url = base + file_url
+              with opener.open(file_url, timeout=120) as r:
+                  plist_text = r.read().decode('utf-8','replace')
+              file_base = urllib.parse.urlparse(file_url).path.rsplit('/',1)[-1].split('.')[0]
+              spayload = json.dumps({'name':file_base,'data':plist_text}).encode()
+              sreq = urllib.request.Request(base+'/sign', data=spayload, headers=headers, method='POST')
+              with opener.open(sreq, timeout=180) as r:
+                  sbody = r.read()
+              signed = None
+              if sbody.startswith(b'AEA1'):
+                  signed = sbody
+              else:
+                  txt = sbody.decode('utf-8','replace').strip()
+                  try: value = json.loads(txt)
+                  except Exception: value = txt
+                  if isinstance(value, dict):
+                      value = value.get('url') or value.get('file') or value.get('data')
+                  if not isinstance(value, str):
+                      raise RuntimeError(name + ' unexpected sign response')
+                  value = value.strip('"')
+                  if value.startswith('data:'):
+                      header, encoded = value.split(',',1)
+                      signed = base64.b64decode(encoded) if ';base64' in header else urllib.parse.unquote_to_bytes(encoded)
+                  else:
+                      if value.startswith('/'):
+                          value = base + value
+                      with opener.open(value, timeout=180) as r:
+                          signed = r.read()
+              if not signed or not signed.startswith(b'AEA1'):
+                  raise RuntimeError(name + ' signing result is not AEA1')
+              pathlib.Path(name + '.shortcut').write_bytes(signed)
+              print(name, 'SIGNED_OK', len(signed))
+
+          for n, src in sources.items():
+              compile_and_sign(n, src)
+          PY
+
+      - name: Upload shortcuts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ultra-battery-shortcuts
+          path: |
+            ULTRA-Economy.shortcut
+            ULTRA-Economy-OFF.shortcut
+          if-no-files-found: error
