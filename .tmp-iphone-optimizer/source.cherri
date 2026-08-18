@@ -1,0 +1,36 @@
+#include 'actions/basic'
+#include 'actions/device'
+#include 'actions/documents'
+#include 'actions/sharing'
+
+menu "🧹 Оптимизация iPhone PRO" {
+    item "⚡ Быстрая уборка":
+        @empty = ""
+        setClipboard(@empty, true)
+        setHotspot(false)
+        showNotification("Буфер обмена очищен, точка доступа выключена.", "✅ Быстрая уборка", true)
+
+    item "🕘 Удалить выбранные из Недавних":
+        @recentFiles = selectFile(true)
+        confirm("Будут удалены сами выбранные файлы, а не только записи в Недавних. Продолжить?", "⚠️ Внимание")
+        deleteFiles(@recentFiles, false)
+        showNotification("Выбранные файлы отправлены на удаление.", "🗑 Очистка файлов", true)
+
+    item "📁 Очистить выбранную папку":
+        @folder = selectFolder(false)
+        @folderItems = getFolderContents(@folder, true)
+        @itemCount = count(@folderItems)
+        confirm("В выбранной папке найдено {@itemCount} объектов. Удалить их?", "⚠️ Очистить папку")
+        deleteFiles(@folderItems, false)
+        showNotification("Содержимое выбранной папки отправлено на удаление.", "🧹 Папка очищена", true)
+
+    item "⚙️ Открыть Настройки":
+        openApp("com.apple.Preferences")
+
+    item "🔄 Перезагрузить iPhone":
+        confirm("Перезагрузить iPhone сейчас?", "🔄 Перезагрузка")
+        reboot()
+
+    item "ℹ️ Что реально очищается":
+        alert("Команда может удалить выбранные файлы и содержимое выбранной папки, очистить буфер обмена и открыть Настройки. Системную RAM и кэш всех приложений iOS очищает сама — отдельной системной кнопки для этого нет.", "Оптимизация iPhone")
+}
