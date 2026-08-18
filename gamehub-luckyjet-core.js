@@ -1,10 +1,20 @@
-const LJ_API_STATE='https://crash-gateway-grm-cr.100hp.app/state';
-const LJ_CUSTOMER_ID='077dee8d-c923-4c02-9bee-757573662e69';
-window.LJ={
- session(){let s=localStorage.getItem('LJ_SESSION_ID')||'';if(!s){s=(prompt('Введите LuckyJet session-id:')||'').trim();if(s)localStorage.setItem('LJ_SESSION_ID',s)}return s},
- reset(){localStorage.removeItem('LJ_SESSION_ID');location.reload()},
- coef(v){v=Number(v);if(!Number.isFinite(v)||v<=0)return null;if(v===1)v=1.01;return Math.round(v*100)/100},
- async state(){const sid=this.session();if(!sid)throw new Error('session-id не указан');const r=await fetch(LJ_API_STATE,{headers:{'customer-id':LJ_CUSTOMER_ID,'session-id':sid,'accept':'application/json'},cache:'no-store'});if(!r.ok)throw new Error('HTTP '+r.status);return await r.json()},
- setStatus(text,ok){const b=document.getElementById('apiBox'),t=document.getElementById('apiText');if(b)b.className='status '+(ok?'ok':'bad');if(t)t.textContent=text},
- async latest(){const d=await this.state();const a=Array.isArray(d.stopCoefficients)?d.stopCoefficients:[];return a.length?this.coef(a[0]):null}
-};
+const LJ_API="https://crash-gateway-grm-cr.100hp.app/history";
+const LJ_CUSTOMER_ID="077dee8d-c923-4c02-9bee-757573662e69";
+const MODE=(document.body.dataset.mode||"predictor").toLowerCase();
+let rounds=[],seen=new Set(),newestId=null,pending=null,wins=0,losses=0;
+const $=id=>document.getElementById(id);
+function sid(){let s=localStorage.getItem("LJ_SESSION_ID")||"";if(!s){s=(prompt("Введите LuckyJet session-id для LIVE подключения:")||"").trim();if(s)localStorage.setItem("LJ_SESSION_ID",s)}return s}
+function resetSid(){localStorage.removeItem("LJ_SESSION_ID");location.reload()}
+function norm(x){if(!x||typeof x!=="object")return null;let c=Number(x.topCoefficient);if(!Number.isFinite(c)||c<=0){const a=Array.isArray(x.finalValues)?x.finalValues.map(Number).filter(v=>Number.isFinite(v)&&v>0):[];if(a.length)c=a[a.length-1]}if(!Number.isFinite(c)||c<=0)return null;if(c===1)c=1.01;c=Math.round(c*100)/100;return{id:String(x.id||x.roundId||x.round_id||((x.hash||"round")+":"+c)),c}}
+function status(t,ok){$("apiBox").className="status "+(ok?"ok":"bad");$("apiText").textContent=t}
+function render(){const a=rounds.slice(0,14);$("last").textContent=a.length?a[0].c.toFixed(2)+"X":"—";$("count").textContent=rounds.length;$("chips").innerHTML=a.length?a.map(x=>`<span class="chip ${x.c>=10?"x10":x.c>=5?"x5":x.c>=2?"x2":""}">${x.c.toFixed(2)}X</span>`).join(""):'<span class="small">Ожидание…</span>';$("w").textContent=wins;$("l").textContent=losses;$("t").textContent=wins+losses}
+function values(n=12){return rounds.slice(0,n).map(x=>x.c)}
+function mean(a){return a.reduce((s,x)=>s+x,0)/a.length}
+function vol(a){const m=mean(a);return Math.sqrt(a.reduce((s,x)=>s+(x-m)**2,0)/a.length)}
+function ema(a,k=.22){let e=a[a.length-1];for(let i=a.length-2;i>=0;i--)e=a[i]*k+e*(1-k);return e}
+function slope(a){if(a.length<2)return 0;const y=[...a].reverse(),n=y.length;let sx=0,sy=0,sxy=0,sxx=0;for(let i=0;i<n;i++){let x=i+1;sx+=x;sy+=y[i];sxy+=x*y[i];sxx+=x*x}const d=n*sxx-sx*sx;return d?(n*sxy-sx*sy)/d:0}
+function prediction(){const a=values(12);if(a.length<8)return{kind:"wait",text:"СБОР ДАННЫХ…",meta:`${a.length}/8 завершённых раундов`};const r=a.slice(0,8),v=vol(r),m=mean(r),sl=slope(r.slice(0,5)),e=ema(r);if(MODE==="montante"){let sc=45+r.filter(x=>x<1.5).length*6+(m<2?8:0)-r.filter(x=>x>=5).length*8;sc=Math.max(20,Math.min(90,Math.round(sc)));if(sc<58)return{kind:"skip",text:"⏸ ПРОПУСК",meta:`Оценка ${sc}/100`};let target=sc>=75?1.50:1.30;return{kind:"go",target,text:`⚡ ЦЕЛЬ ${target.toFixed(2)}X`,meta:`Оценка ${sc}/100 · следующий раунд`,window:1}}if(MODE==="analyzer"){let sc=50+r.filter(x=>x<1.5).length*4-r.filter(x=>x>=10).length*7+(v<1.5?8:0);sc=Math.max(15,Math.min(90,Math.round(sc)));const tr=sl>.12?"↑ рост":sl<-.12?"↓ спад":"→ стабильно";return{kind:"info",text:sc>=70?"🎯 ЗОНА 1.50–2.00X":sc>=55?"👀 НАБЛЮДАТЬ":"⏸ ПАУЗА",meta:`${tr} · волатильность ${v.toFixed(2)} · ${sc}/100`}}let raw=e*.6+m*.3+r[0]*.1;if(sl>.12)raw*=1.04;if(sl<-.12)raw*=.97;const margin=raw<2?.15:raw<3?.25:.35,target=Math.max(1.2,Math.min(MODE==="premium"?12:8,Math.round(raw*(1-margin)*100)/100));const conf=Math.max(20,Math.min(94,Math.round((1-Math.min(1,v/3))*100)));let score=Math.max(0,Math.min(100,Math.round(conf*.6+Math.min(1,Math.abs(sl)/.25)*20+(sl>0?12:5))));if(MODE==="premium"&&score<55)return{kind:"skip",text:"⏸ ПРОПУСК",meta:`Premium score ${score}/100 · confidence ${conf}%`};return{kind:"go",target,text:`${MODE==="premium"?"💎":"🎯"} ${target.toFixed(2)}X`,meta:`${MODE==="premium"?"Premium score "+score+"/100 · ":""}confidence ${conf}% · проверка 3 раунда`,window:3}}
+function applyPrediction(){if(pending)return;const p=prediction();$("sig").textContent=p.text;$("meta").textContent=p.meta;if(p.kind==="go")pending={target:p.target,left:p.window}}
+function check(c){if(!pending)return;if(c>=pending.target){wins++;$("check").textContent=`✅ ЗАШЛО · цель ${pending.target.toFixed(2)}X · выпало ${c.toFixed(2)}X`;pending=null;return}pending.left--;if(pending.left<=0){losses++;$("check").textContent=`❌ НЕ ЗАШЛО · цель ${pending.target.toFixed(2)}X`;pending=null}}
+async function tick(){try{const s=sid();if(!s)throw Error("session-id не указан");const r=await fetch(LJ_API,{headers:{"customer-id":LJ_CUSTOMER_ID,"session-id":s,"accept":"application/json"},cache:"no-store"});if(!r.ok)throw Error("HTTP "+r.status);const data=await r.json();if(!Array.isArray(data))throw Error("неверный формат API");const list=data.map(norm).filter(Boolean);if(!newestId&&list.length){rounds=list.slice(0,200);seen=new Set(rounds.map(x=>x.id));newestId=rounds[0].id;render();applyPrediction()}else{const fresh=[];for(const x of list){if(x.id===newestId)break;if(!seen.has(x.id))fresh.push(x)}if(fresh.length){fresh.reverse().forEach(x=>{check(x.c);rounds.unshift(x);seen.add(x.id);render();applyPrediction()});newestId=list[0].id;rounds=rounds.slice(0,200)}}status("подключено · LIVE /history",true)}catch(e){status(String(e.message||e),false)}setTimeout(tick,1200)}
+render();tick();
