@@ -1,4 +1,4 @@
-# trigger rebuild 2
+# trigger rebuild 3
 name: Temporary iPhone Optimizer PRO v2
 
 on:
@@ -9,6 +9,7 @@ on:
 
 permissions:
   contents: write
+  actions: read
 
 jobs:
   build:
@@ -25,7 +26,6 @@ jobs:
           python3 - <<'PY'
           import base64, html as htmlmod, http.cookiejar, json, pathlib, re, traceback
           import urllib.parse, urllib.request
-
           root = pathlib.Path('.tmp-iphone-optimizer-v2')
           root.mkdir(exist_ok=True)
           status = root / 'status.txt'
@@ -47,7 +47,6 @@ jobs:
               headers = {'Content-Type':'application/json','Accept':'application/json, text/plain, */*','X-Requested-With':'XMLHttpRequest','Origin':base,'Referer':base+'/','User-Agent':'Mozilla/5.0'}
               if csrf: headers['X-CSRF-TOKEN'] = csrf
               if xsrf: headers['X-XSRF-TOKEN'] = xsrf
-
               af = {'id':'file-1','name':'iPhone-Optimizer-ULTRA-PRO-v2.cherri','content':source,'compiled':False,'error':None,'output':None,'decompOutput':None,'shareLink':None,'file':None}
               creq = urllib.request.Request(base + '/compile', data=json.dumps({'active_file':af,'files':[]}).encode(), headers=headers, method='POST')
               with op.open(creq, timeout=120) as r:
@@ -59,7 +58,6 @@ jobs:
               if u.startswith('/'): u = base + u
               with op.open(u, timeout=120) as r:
                   plist = r.read().decode('utf-8','replace')
-
               name = urllib.parse.urlparse(u).path.rsplit('/',1)[-1].split('.')[0]
               sreq = urllib.request.Request(base + '/sign', data=json.dumps({'name':name,'data':plist}).encode(), headers=headers, method='POST')
               with op.open(sreq, timeout=180) as r:
@@ -81,7 +79,6 @@ jobs:
                       with op.open(value, timeout=180) as r:
                           signed = r.read()
               if not signed.startswith(b'AEA1'): raise RuntimeError('Signing result is not AEA1')
-
               out = root / 'iPhone-Optimizer-ULTRA-PRO-v2.shortcut'
               out.write_bytes(signed)
               (root / 'signed.b64').write_text(base64.b64encode(signed).decode())
@@ -97,6 +94,15 @@ jobs:
         with:
           name: iphone-optimizer-ultra-pro-v2
           path: .tmp-iphone-optimizer-v2/iPhone-Optimizer-ULTRA-PRO-v2.shortcut
+
+      - name: Record artifact id
+        if: hashFiles('.tmp-iphone-optimizer-v2/iPhone-Optimizer-ULTRA-PRO-v2.shortcut') != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          sleep 2
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts" --jq '.artifacts[] | select(.name=="iphone-optimizer-ultra-pro-v2") | .id' > .tmp-iphone-optimizer-v2/artifact-id.txt
 
       - name: Persist result
         if: always()
