@@ -1,83 +1,39 @@
 <!doctype html>
 <html lang="ru">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#09040f">
-<title>LuckyJet PRO — LIVE</title>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#09040f">
+<title>LuckyJet PRO · LIVE</title>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <style>
-*{box-sizing:border-box}body{margin:0;background:#09040f;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}
-.wrap{max-width:680px;margin:auto;padding:18px}.card{background:#140b1d;border:1px solid #2c1b3c;border-radius:24px;overflow:hidden;box-shadow:0 20px 60px #0008}
-.head{padding:20px;background:linear-gradient(135deg,#35134d,#15134b)}h1{margin:3px 0 6px;font-size:25px}.muted{color:#aaa;font-size:13px}
-.row{display:flex;gap:12px;align-items:center;justify-content:space-between}.body{padding:18px}.status{padding:12px;border:1px solid #30213f;background:#0e0914;border-radius:14px;margin-bottom:14px}
-.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:7px;background:#f4c542}.ok .dot{background:#35d07f}.bad .dot{background:#ff5364}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.btn{border:0;border-radius:14px;padding:14px;font-weight:700;font-size:15px;color:#fff;background:#6d28d9}
-.btn.alt{background:#24172f;border:1px solid #3b284a}.btn.red{background:#3c151b;border:1px solid #6f2731}.btn:disabled{opacity:.45}
-.panel{margin-top:15px;padding:15px;border:1px solid #30213f;border-radius:16px;background:#0e0914}.big{font-size:29px;font-weight:900}
-.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}.chip{padding:7px 10px;border-radius:11px;background:#23142f;font-weight:800}.chip.x2{background:#2b1746}.chip.x10{background:#4b1823;color:#ffd2d8}
-.small{font-size:12px;color:#aaa}.result{min-height:110px;margin-top:15px;padding:15px;border:1px solid #30213f;border-radius:16px;background:#0e0914}
-.topbtn{padding:9px 12px;border-radius:12px;border:1px solid #ffffff22;background:#ffffff0d;color:#fff;font-weight:700}
-@media(max-width:480px){.grid{grid-template-columns:1fr}.row.mobile{align-items:flex-start;flex-direction:column}}
+*{box-sizing:border-box}body{margin:0;background:#09040f;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}.wrap{max-width:680px;margin:auto;padding:18px}.card{background:#140b1d;border:1px solid #2c1b3c;border-radius:24px;overflow:hidden;box-shadow:0 20px 60px #0008}.head{padding:20px;background:linear-gradient(135deg,#35134d,#15134b)}h1{margin:3px 0 6px;font-size:25px}.muted,.small{color:#aaa;font-size:13px}.row{display:flex;gap:12px;align-items:center;justify-content:space-between}.body{padding:18px}.status{padding:12px;border:1px solid #30213f;background:#0e0914;border-radius:14px;margin-bottom:14px}.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:7px;background:#f4c542}.ok .dot{background:#35d07f}.bad .dot{background:#ff5364}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.btn{border:0;border-radius:14px;padding:14px;font-weight:700;font-size:15px;color:#fff;background:#6d28d9}.btn.alt{background:#24172f;border:1px solid #3b284a}.btn.red{background:#3c151b;border:1px solid #6f2731}.panel,.result{margin-top:15px;padding:15px;border:1px solid #30213f;border-radius:16px;background:#0e0914}.result{min-height:100px}.big{font-size:29px;font-weight:900}.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}.chip{padding:7px 10px;border-radius:11px;background:#23142f;font-weight:800}.chip.x2{background:#2b1746}.chip.x10{background:#4b1823;color:#ffd2d8}.topbtn{padding:9px 12px;border-radius:12px;border:1px solid #ffffff22;background:#ffffff0d;color:#fff;font-weight:700}@media(max-width:480px){.grid{grid-template-columns:1fr}.row.mobile{align-items:flex-start;flex-direction:column}}
 </style>
 </head>
-<body>
-<div class="wrap">
-<div class="card">
-  <div class="head">
-    <div class="row">
-      <div><div class="muted">GameHub</div><h1>LuckyJet PRO · LIVE</h1><div id="userInfo" class="muted">Проверка пользователя…</div></div>
-      <button class="topbtn" onclick="logoutUser()">Выйти</button>
-    </div>
-  </div>
-  <div class="body">
-    <div id="licenseBox" class="status"><span class="dot"></span><b>Лицензия:</b> <span id="licenseText">проверка…</span></div>
-    <div id="apiBox" class="status"><span class="dot"></span><b>LuckyJet API:</b> <span id="apiText">ожидание запуска</span></div>
-    <div class="grid">
-      <button id="startBtn" class="btn" onclick="startAutoFetch()" disabled>▶ Запустить LIVE</button>
-      <button id="stopBtn" class="btn red" onclick="stopAutoFetch()" disabled>■ Остановить</button>
-      <button id="settingsBtn" class="btn alt" onclick="openAdvancedSettings()" disabled>⚙ Настройки</button>
-      <button id="analysisBtn" class="btn alt" onclick="analyzeHistoricalData()" disabled>📊 Анализ истории</button>
-    </div>
-    <div class="panel">
-      <div class="row mobile">
-        <div><div class="small">Последний коэффициент</div><div id="lastCoefficient" class="big">—</div></div>
-        <div><div class="small">Уникальных раундов</div><div id="roundCount" class="big">0</div></div>
-      </div>
-      <div class="small" style="margin-top:14px">Последние завершённые раунды</div>
-      <div id="liveCoefficients" class="chips"><span class="small">Данных пока нет</span></div>
-    </div>
-    <div id="result" class="result">Ожидаю проверку лицензии.</div>
-  </div>
-</div>
-</div>
+<body><div class="wrap"><div class="card">
+<div class="head"><div class="row"><div><div class="muted">GameHub</div><h1>LuckyJet PRO · LIVE</h1><div id="userInfo" class="muted">Проверка пользователя…</div></div><button id="authBtn" class="topbtn" onclick="authAction()">Войти</button></div></div>
+<div class="body">
+<div id="licenseBox" class="status"><span class="dot"></span><b>Лицензия:</b> <span id="licenseText">проверка…</span></div>
+<div id="apiBox" class="status"><span class="dot"></span><b>LuckyJet API:</b> <span id="apiText">ожидание запуска</span></div>
+<div class="grid"><button class="btn" onclick="startAutoFetch()">▶ Запустить LIVE</button><button class="btn red" onclick="stopAutoFetch()">■ Остановить</button><button class="btn alt" onclick="openAdvancedSettings()">⚙ Настройки</button><button class="btn alt" onclick="analyzeHistoricalData()">📊 Анализ истории</button></div>
+<div class="panel"><div class="row mobile"><div><div class="small">Последний коэффициент</div><div id="lastCoefficient" class="big">—</div></div><div><div class="small">Уникальных раундов</div><div id="roundCount" class="big">0</div></div></div><div class="small" style="margin-top:14px">Последние завершённые раунды</div><div id="liveCoefficients" class="chips"><span class="small">Данных пока нет</span></div></div>
+<div id="result" class="result">Можно открыть настройки. Для LIVE сначала войдите.</div>
+</div></div></div>
 <script>
-const LUCKYJET_API_URL="https://crash-gateway-grm-cr.100hp.app/history";
-const LUCKYJET_CUSTOMER_ID="077dee8d-c923-4c02-9bee-757573662e69";
-window.liveRounds=[]; window.seenRoundIds=new Set(); window.liveFetchRunning=false; window.liveFetchTimer=null;
-window.isLicenseValid=false; window.userLicense=null;
-function setLicense(text,ok=false){const b=document.getElementById("licenseBox");document.getElementById("licenseText").textContent=text;b.className="status "+(ok?"ok":"bad")}
-function setApi(text,ok=false){const b=document.getElementById("apiBox");document.getElementById("apiText").textContent=text;b.className="status "+(ok?"ok":"bad")}
-function setButtons(on){["startBtn","stopBtn","settingsBtn","analysisBtn"].forEach(id=>document.getElementById(id).disabled=!on)}
-function ensureSession(){let sid=localStorage.getItem("LUCKYJET_SESSION_ID")||"";if(!sid){sid=(prompt("Введите LuckyJet session-id для LIVE подключения:")||"").trim();if(sid)localStorage.setItem("LUCKYJET_SESSION_ID",sid)}return sid}
-function norm(item){if(!item||typeof item!=="object")return null;let c=Number(item.topCoefficient);if(!Number.isFinite(c)||c<=0){const a=Array.isArray(item.finalValues)?item.finalValues.map(Number).filter(v=>Number.isFinite(v)&&v>0):[];if(a.length)c=a[a.length-1]}if(!Number.isFinite(c)||c<=0){for(const k of ["coefficient","coef","crash","value","multiplier"]){const v=Number(item[k]);if(Number.isFinite(v)&&v>0){c=v;break}}}if(!Number.isFinite(c)||c<=0)return null;if(c===1)c=1.01;c=Math.round(c*100)/100;return{id:String(item.id||item.roundId||item.round_id||((item.hash||"round")+":"+c)),coefficient:c,raw:item}}
-function render(){document.getElementById("roundCount").textContent=window.liveRounds.length;const r=window.liveRounds.slice(0,14);document.getElementById("lastCoefficient").textContent=r.length?r[0].coefficient.toFixed(2)+"X":"—";document.getElementById("liveCoefficients").innerHTML=r.length?r.map(x=>`<span class="chip ${x.coefficient>=10?"x10":x.coefficient>=2?"x2":""}">${x.coefficient.toFixed(2)}X</span>`).join(""):'<span class="small">Данных пока нет</span>'}
-async function fetchHistory(){const sid=ensureSession();if(!sid){setApi("не указан session-id",false);return false}try{const r=await fetch(LUCKYJET_API_URL,{headers:{"customer-id":LUCKYJET_CUSTOMER_ID,"session-id":sid,"accept":"application/json"},cache:"no-store"});if(!r.ok)throw new Error("HTTP "+r.status);const d=await r.json();if(!Array.isArray(d))throw new Error("неверный формат API");for(const x of d){const n=norm(x);if(n&&!window.seenRoundIds.has(n.id)){window.seenRoundIds.add(n.id);window.liveRounds.push(n)}}window.liveRounds=window.liveRounds.slice(0,200);render();setApi("подключено · LIVE /history",true);return true}catch(e){console.error(e);setApi(String(e.message||e),false);return false}}
-async function loop(){if(!window.liveFetchRunning)return;await fetchHistory();if(window.liveFetchRunning)window.liveFetchTimer=setTimeout(loop,1000)}
-window.startAutoFetch=function(){if(!window.isLicenseValid)return Swal.fire("Лицензия недействительна","Доступ заблокирован","error");if(window.liveFetchRunning)return;window.liveFetchRunning=true;document.getElementById("result").textContent="LIVE запущен. Получаю завершённые раунды каждую секунду.";loop()}
-window.stopAutoFetch=function(){window.liveFetchRunning=false;if(window.liveFetchTimer)clearTimeout(window.liveFetchTimer);setApi("LIVE остановлен",false)}
-window.openAdvancedSettings=function(){if(!window.isLicenseValid)return;Swal.fire({title:"Настройки",html:'<button id="resetSid" style="padding:12px 16px;border:0;border-radius:10px">Сбросить session-id</button>',didOpen:()=>document.getElementById("resetSid").onclick=()=>{localStorage.removeItem("LUCKYJET_SESSION_ID");Swal.close()},confirmButtonText:"Закрыть"})}
-window.analyzeHistoricalData=function(){if(!window.isLicenseValid)return;const a=window.liveRounds.map(x=>x.coefficient);if(!a.length)return Swal.fire("Нет данных","Сначала запустите LIVE","warning");const avg=a.reduce((x,y)=>x+y,0)/a.length;Swal.fire({title:"Анализ истории",html:`Раундов: <b>${a.length}</b><br>Средний: <b>${avg.toFixed(2)}X</b><br>2X+: <b>${a.filter(x=>x>=2).length}</b><br>10X+: <b>${a.filter(x=>x>=10).length}</b><br>Максимум: <b>${Math.max(...a).toFixed(2)}X</b>`})}
+const API="https://crash-gateway-grm-cr.100hp.app/history",CID="077dee8d-c923-4c02-9bee-757573662e69";window.liveRounds=[];window.seenRoundIds=new Set();window.liveFetchRunning=false;window.liveFetchTimer=null;window.isLicenseValid=false;window.isFirebaseLoggedIn=false;window.firebaseAuth=null;
+function box(id,text,ok){const b=document.getElementById(id);b.className="status "+(ok?"ok":"bad");document.getElementById(id==="licenseBox"?"licenseText":"apiText").textContent=text}
+function ensureSession(){let s=localStorage.getItem("LUCKYJET_SESSION_ID")||"";if(!s){s=(prompt("Введите LuckyJet session-id для LIVE подключения:")||"").trim();if(s)localStorage.setItem("LUCKYJET_SESSION_ID",s)}return s}
+function norm(x){if(!x||typeof x!=="object")return null;let c=Number(x.topCoefficient);if(!Number.isFinite(c)||c<=0){const a=Array.isArray(x.finalValues)?x.finalValues.map(Number).filter(v=>Number.isFinite(v)&&v>0):[];if(a.length)c=a[a.length-1]}if(!Number.isFinite(c)||c<=0)return null;if(c===1)c=1.01;c=Math.round(c*100)/100;return{id:String(x.id||x.roundId||x.round_id||((x.hash||"round")+":"+c)),coefficient:c}}
+function render(){const a=window.liveRounds.slice(0,14);document.getElementById("roundCount").textContent=window.liveRounds.length;document.getElementById("lastCoefficient").textContent=a.length?a[0].coefficient.toFixed(2)+"X":"—";document.getElementById("liveCoefficients").innerHTML=a.length?a.map(x=>`<span class="chip ${x.coefficient>=10?"x10":x.coefficient>=2?"x2":""}">${x.coefficient.toFixed(2)}X</span>`).join(""):'<span class="small">Данных пока нет</span>'}
+async function fetchHistory(){const sid=ensureSession();if(!sid){box("apiBox","не указан session-id",false);return}try{const r=await fetch(API,{headers:{"customer-id":CID,"session-id":sid,"accept":"application/json"},cache:"no-store"});if(!r.ok)throw Error("HTTP "+r.status);const d=await r.json();if(!Array.isArray(d))throw Error("неверный формат API");for(const x of d){const n=norm(x);if(n&&!seenRoundIds.has(n.id)){seenRoundIds.add(n.id);liveRounds.push(n)}}liveRounds=liveRounds.slice(0,200);render();box("apiBox","подключено · LIVE /history",true)}catch(e){box("apiBox",String(e.message||e),false)}}
+async function loop(){if(!liveFetchRunning)return;await fetchHistory();if(liveFetchRunning)liveFetchTimer=setTimeout(loop,1000)}
+window.startAutoFetch=async()=>{if(!isFirebaseLoggedIn){const r=await Swal.fire({icon:"info",title:"Сначала войдите",text:"Для запуска LIVE нужно войти в аккаунт.",confirmButtonText:"Войти",showCancelButton:true,cancelButtonText:"Отмена"});if(r.isConfirmed)location.href="login.html";return}if(!isLicenseValid){Swal.fire({icon:"error",title:"Лицензия недействительна",text:"Для запуска LIVE нужна активная лицензия.",confirmButtonText:"OK"});return}if(liveFetchRunning)return;liveFetchRunning=true;document.getElementById("result").textContent="LIVE запущен. Получаю завершённые раунды каждую секунду.";loop()};
+window.stopAutoFetch=()=>{liveFetchRunning=false;if(liveFetchTimer)clearTimeout(liveFetchTimer);box("apiBox","LIVE остановлен",false)};
+window.openAdvancedSettings=()=>Swal.fire({title:"Настройки",html:'<button id="resetSid" style="padding:12px 16px;border:0;border-radius:10px">Сбросить session-id</button>',didOpen:()=>document.getElementById("resetSid").onclick=()=>{localStorage.removeItem("LUCKYJET_SESSION_ID");Swal.close()},confirmButtonText:"Закрыть"});
+window.analyzeHistoricalData=()=>{const a=liveRounds.map(x=>x.coefficient);if(!a.length)return Swal.fire("Нет данных","Сначала запустите LIVE","warning");const avg=a.reduce((x,y)=>x+y,0)/a.length;Swal.fire({title:"Анализ истории",html:`Раундов: <b>${a.length}</b><br>Средний: <b>${avg.toFixed(2)}X</b><br>2X+: <b>${a.filter(x=>x>=2).length}</b><br>10X+: <b>${a.filter(x=>x>=10).length}</b><br>Максимум: <b>${Math.max(...a).toFixed(2)}X</b>`})};
+window.authAction=async()=>{if(!isFirebaseLoggedIn){location.href="login.html";return}try{await window.firebaseSignOut(window.firebaseAuth);location.href="login.html"}catch(e){Swal.fire("Ошибка","Не удалось выйти","error")}};
 </script>
 <script type="module">
-import{initializeApp}from"https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
-import{getAuth,onAuthStateChanged,signOut}from"https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
-import{getFirestore,collection,query,getDocs,where}from"https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
-const firebaseConfig={apiKey:"AIzaSyDhySV3lXOlCQ8fMIYRlzs0YpMg6MZ_Ixo",authDomain:"gamehub-e45ea.firebaseapp.com",projectId:"gamehub-e45ea",storageBucket:"gamehub-e45ea.firebasestorage.app",messagingSenderId:"609288909968",appId:"1:609288909968:web:45f3716ce6b2d4970d1415"};
-const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getFirestore(app);
-async function checkLicense(uid){try{const q=query(collection(db,"users",uid,"purchases"),where("gameId","==","luckyjet")),s=await getDocs(q),now=new Date();let active=null,latest=null;s.forEach(doc=>{const d=doc.data(),exp=new Date(d.expirationDate),buy=new Date(d.purchaseDate),x={id:doc.id,...d,expirationDate:exp,purchaseDate:buy};if(d.status==="active"&&exp>now&&(!active||buy>active.purchaseDate))active=x;if(!latest||buy>latest.purchaseDate)latest=x});if(active){active.remainingTime=active.expirationDate-now;window.userLicense=active;window.isLicenseValid=true;const h=Math.floor(active.remainingTime/3600000),m=Math.floor(active.remainingTime%3600000/60000);setLicense(`активна · осталось ${h}ч ${m}м`,true);setButtons(true);document.getElementById("result").textContent="Лицензия активна. Можно запускать LIVE."}else{window.isLicenseValid=false;setButtons(false);setLicense(latest?"неактивна или истекла":"не найдена",false);document.getElementById("result").textContent="Предиктор заблокирован: нет активной лицензии."}}catch(e){console.error(e);window.isLicenseValid=false;setButtons(false);setLicense("ошибка проверки",false);document.getElementById("result").textContent="Не удалось проверить лицензию."}}
-onAuthStateChanged(auth,async user=>{if(!user){setLicense("нет авторизации",false);document.getElementById("userInfo").textContent="Пользователь не вошёл";setTimeout(()=>location.href="login.html",3000);return}document.getElementById("userInfo").textContent=user.email||"Пользователь";if(!user.emailVerified){setLicense("email не подтверждён",false);setTimeout(()=>location.href="login.html",5000);return}await checkLicense(user.uid);setInterval(()=>{if(auth.currentUser)checkLicense(auth.currentUser.uid)},30000)});
-window.logoutUser=async()=>{try{await signOut(auth);location.href="login.html"}catch(e){Swal.fire("Ошибка","Не удалось выйти","error")}};
-</script>
-</body>
-</html>
+import{initializeApp}from"https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";import{getAuth,onAuthStateChanged,signOut}from"https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";import{getFirestore,collection,query,getDocs,where}from"https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
+const cfg={apiKey:"AIzaSyDhySV3lXOlCQ8fMIYRlzs0YpMg6MZ_Ixo",authDomain:"gamehub-e45ea.firebaseapp.com",projectId:"gamehub-e45ea",storageBucket:"gamehub-e45ea.firebasestorage.app",messagingSenderId:"609288909968",appId:"1:609288909968:web:45f3716ce6b2d4970d1415"};const app=initializeApp(cfg),auth=getAuth(app),db=getFirestore(app);window.firebaseAuth=auth;window.firebaseSignOut=signOut;
+async function checkLicense(uid){try{const s=await getDocs(query(collection(db,"users",uid,"purchases"),where("gameId","==","luckyjet"))),now=new Date();let active=null,latest=null;s.forEach(doc=>{const d=doc.data(),exp=new Date(d.expirationDate),buy=new Date(d.purchaseDate),x={...d,expirationDate:exp,purchaseDate:buy};if(d.status==="active"&&exp>now&&(!active||buy>active.purchaseDate))active=x;if(!latest||buy>latest.purchaseDate)latest=x});if(active){window.isLicenseValid=true;const ms=active.expirationDate-now,h=Math.floor(ms/3600000),m=Math.floor(ms%3600000/60000);box("licenseBox",`активна · осталось ${h}ч ${m}м`,true);document.getElementById("result").textContent="Лицензия активна. Можно запускать LIVE."}else{window.isLicenseValid=false;box("licenseBox",latest?"неактивна или истекла":"не найдена",false);document.getElementById("result").textContent="Нет активной лицензии."}}catch(e){window.isLicenseValid=false;box("licenseBox","ошибка проверки",false);document.getElementById("result").textContent="Не удалось проверить лицензию."}}
+onAuthStateChanged(auth,async u=>{const btn=document.getElementById("authBtn");if(!u){window.isFirebaseLoggedIn=false;window.isLicenseValid=false;btn.textContent="Войти";box("licenseBox","нет авторизации",false);document.getElementById("userInfo").textContent="Пользователь не вошёл";document.getElementById("result").textContent="Кнопки доступны. Для запуска LIVE сначала войдите.";return}window.isFirebaseLoggedIn=true;btn.textContent="Выйти";document.getElementById("userInfo").textContent=u.email||"Пользователь";if(!u.emailVerified){box("licenseBox","email не подтверждён",false);return}await checkLicense(u.uid);setInterval(()=>{if(auth.currentUser)checkLicense(auth.currentUser.uid)},30000)});
+</script></body></html>
