@@ -1,0 +1,14 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Recovered HTML viewer</title><style>body{font-family:system-ui;background:#0a0a0a;color:#eee;padding:20px}code{word-break:break-all}</style></head><body><p id="s">Загрузка восстановленной страницы…</p><script>
+const PARTS=["part00.b64", "part01.b64", "part02.b64", "part03.b64", "part04.b64", "part05.b64", "part06.b64", "part07.b64", "part08.b64", "part09.b64"];
+async function main(){
+ const key=new URLSearchParams(location.search).get('p');
+ if(!key) throw new Error('Не указана страница');
+ const arr=[];
+ for(const n of PARTS){const t=await (await fetch('.bundle/'+n,{cache:'no-store'})).text();arr.push(t.trim())}
+ const b64=arr.join(''); const bin=atob(b64); const bytes=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);
+ const ds=new DecompressionStream('gzip'); const text=await new Response(new Blob([bytes]).stream().pipeThrough(ds)).text(); const pages=JSON.parse(text);
+ if(!(key in pages)) throw new Error('Страница не найдена: '+key);
+ document.open(); document.write(pages[key]); document.close();
+}
+main().catch(e=>{document.getElementById('s').textContent='Ошибка: '+e.message;});
+</script></body></html>
