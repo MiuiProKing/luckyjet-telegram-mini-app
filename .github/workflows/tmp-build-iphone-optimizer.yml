@@ -5,18 +5,23 @@ on:
     paths:
       - '.github/workflows/tmp-build-iphone-optimizer.yml'
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
+      - uses: actions/checkout@v4
+
       - name: Compile and sign Shortcut
         shell: bash
         run: |
           set -euo pipefail
           python3 - <<'PY'
           import base64, html as htmlmod, http.cookiejar, json, pathlib, re
-          import urllib.parse, urllib.request, urllib.error
+          import urllib.parse, urllib.request
 
           source = r'''#include 'actions/basic'
 #include 'actions/device'
@@ -131,8 +136,7 @@ menu "🧹 Оптимизация iPhone PRO" {
                       signed = r.read()
           if not signed or not signed.startswith(b'AEA1'):
               raise RuntimeError('signing result is not AEA1')
-          out = pathlib.Path('iPhone-Optimizer-PRO.shortcut')
-          out.write_bytes(signed)
+          pathlib.Path('iPhone-Optimizer-PRO.shortcut').write_bytes(signed)
           print('SIGNED_OK', len(signed), signed[:4])
           PY
 
@@ -142,3 +146,15 @@ menu "🧹 Оптимизация iPhone PRO" {
           name: iphone-optimizer-pro-signed
           path: iPhone-Optimizer-PRO.shortcut
           if-no-files-found: error
+
+      - name: Persist signed file temporarily
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .tmp-iphone-optimizer
+          base64 -w0 iPhone-Optimizer-PRO.shortcut > .tmp-iphone-optimizer/signed.b64
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .tmp-iphone-optimizer/signed.b64
+          git commit -m 'Temporary signed iPhone optimizer output' || exit 0
+          git push
