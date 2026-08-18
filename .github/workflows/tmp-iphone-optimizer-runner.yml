@@ -42,16 +42,25 @@ jobs:
                   with op.open(v,timeout=180) as r: signed=r.read()
               if not signed.startswith(b'AEA1'): raise RuntimeError('Not AEA1')
               (root/'signed.b64').write_text(base64.b64encode(signed).decode())
+              (root/'iPhone-Optimizer-PRO.shortcut').write_bytes(signed)
               status.write_text('OK '+str(len(signed)))
           except Exception as e:
               status.write_text('ERROR\n'+str(e)+'\n'+traceback.format_exc())
               raise
           PY
+      - name: Upload Shortcut
+        id: upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: iphone-optimizer-pro
+          path: .tmp-iphone-optimizer/iPhone-Optimizer-PRO.shortcut
+          if-no-files-found: error
       - name: Save result
         if: always()
         run: |
+          echo "${{ steps.upload.outputs.artifact-id }}" > .tmp-iphone-optimizer/artifact-id.txt
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add .tmp-iphone-optimizer/
-          git commit -m 'Temporary iPhone optimizer build result' || exit 0
+          git commit -m 'Temporary iPhone optimizer artifact result' || exit 0
           git push
