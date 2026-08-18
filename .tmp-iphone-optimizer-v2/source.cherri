@@ -15,7 +15,7 @@ menu "🚀 Оптимизация iPhone ULTRA PRO" {
         @bigItems = getFolderContents(@bigFolder, true)
         @bigFiles = []
         for item in @bigItems {
-            @fileSizeValue = getFileDetail(@item, "File Size")
+            @fileSizeValue = fileSize(@item, "Bytes")
             if @fileSizeValue > 524288000 {
                 @bigFiles += @item
             }
