@@ -1,0 +1,367 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>Lucky Jet Signal Master · LIVE</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#020308;--panel:#0b0e14;--purple:#a855f7;--indigo:#6366f1;--green:#22c55e;--amber:#f59e0b;--red:#ef4444}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:var(--bg);color:white;font-family:Inter,sans-serif}
+body{background-image:linear-gradient(rgba(18,16,33,.5) 1px,transparent 1px),linear-gradient(90deg,rgba(18,16,33,.5) 1px,transparent 1px);background-size:20px 20px}
+.scan{position:fixed;left:0;right:0;height:2px;background:#a855f733;z-index:50;animation:scan 4s linear infinite;pointer-events:none}@keyframes scan{from{top:0}to{top:100%}}
+.wrap{max-width:1150px;margin:auto;padding:18px}
+.orbitron{font-family:Orbitron,sans-serif}.mono{font-family:"JetBrains Mono",monospace}
+.panel{background:#0b0e1499;border:1px solid #6366f133;border-radius:24px;backdrop-filter:blur(14px);box-shadow:0 20px 55px #0008}
+header{display:flex;justify-content:space-between;align-items:center;padding:16px;margin-bottom:18px;gap:12px}
+.brand{display:flex;align-items:center;gap:13px}.shield{width:50px;height:50px;border-radius:14px;background:#7c3aed;display:grid;place-items:center;font-size:24px;box-shadow:0 0 22px #a855f744}
+.brand h1{margin:0;font-size:22px}.sub{font-size:10px;color:#818cf8;letter-spacing:2px;margin-top:5px;text-transform:uppercase}
+.livebox{display:flex;align-items:center;gap:9px;padding:10px 13px;border-radius:13px;background:#0007;border:1px solid #ffffff12;font:700 11px "JetBrains Mono",monospace;max-width:48vw}.dot{width:8px;height:8px;border-radius:50%;background:#22c55e;box-shadow:0 0 12px #22c55e}
+.grid{display:grid;grid-template-columns:minmax(0,8fr) minmax(280px,4fr);gap:18px}.left,.right{display:flex;flex-direction:column;gap:18px}
+.hero{padding:24px;display:grid;grid-template-columns:260px 1fr;gap:28px;align-items:center;min-height:390px;position:relative;overflow:hidden}
+.hero:after{content:"";position:absolute;width:240px;height:240px;border-radius:50%;right:-100px;top:-100px;background:#7c3aed22;filter:blur(30px)}
+.radar{width:240px;height:240px;margin:auto;border-radius:50%;position:relative;border:1px solid #a855f755;background:radial-gradient(circle,#a855f71e 0 3%,transparent 4% 18%,#a855f722 19% 20%,transparent 21% 38%,#a855f722 39% 40%,transparent 41% 58%,#a855f722 59% 60%,transparent 61% 78%,#a855f722 79% 80%,transparent 81%),linear-gradient(90deg,transparent 49.5%,#a855f733 50%,transparent 50.5%),linear-gradient(transparent 49.5%,#a855f733 50%,transparent 50.5%);box-shadow:0 0 35px #a855f722}
+.sweep{position:absolute;left:50%;top:50%;width:50%;height:2px;background:linear-gradient(90deg,#a855f7,transparent);transform-origin:left center;animation:rot 2.2s linear infinite;box-shadow:0 0 14px #a855f7}@keyframes rot{to{transform:rotate(360deg)}}.blip{position:absolute;width:9px;height:9px;border-radius:50%;background:#c084fc;box-shadow:0 0 18px #c084fc}.b1{left:63%;top:35%}.b2{left:34%;top:62%}.b3{left:72%;top:67%}
+.kicker{display:inline-flex;align-items:center;gap:7px;padding:6px 10px;border-radius:999px;background:#22c55e16;border:1px solid #22c55e44;color:#4ade80;font-size:10px;font-weight:800;letter-spacing:1px}
+.hero h2{font-family:Orbitron,sans-serif;font-size:31px;line-height:1.15;margin:14px 0 10px}.hero p{color:#94a3b8;font-size:13px;line-height:1.5;max-width:470px}
+.signal-value{font-family:Orbitron,sans-serif;font-size:68px;font-weight:900;line-height:1;margin:12px 0}.signal-value b{color:var(--purple);font-size:36px}
+.actions{display:flex;gap:10px;flex-wrap:wrap}.primary,.secondary{border:0;border-radius:15px;padding:14px 18px;font-weight:900;color:white;background:#7c3aed}.secondary{background:#111827;border:1px solid #6366f14d}.primary:disabled{opacity:.5}
+.entry{margin-top:16px;padding:13px 14px;border-radius:14px;border:1px solid #ffffff12;background:#0005}.entry.wait{border-color:#f59e0b55}.entry.enter{border-color:#22c55e88;box-shadow:0 0 22px #22c55e20}.entry.done{border-color:#60a5fa66}.entry.bad{border-color:#ef444477}.entry-title{font-family:Orbitron,sans-serif;font-weight:900;font-size:16px}.entry-sub{font-size:12px;color:#cbd5e1;line-height:1.45;margin-top:6px}
+.console{height:190px;padding:15px;overflow:hidden}.console-title{color:#64748b;font:700 11px "JetBrains Mono",monospace;border-bottom:1px solid #ffffff0d;padding-bottom:9px;margin-bottom:8px}.logs{font:11px "JetBrains Mono",monospace;color:#64748b;line-height:1.7;max-height:135px;overflow:auto}.logs div:first-child{color:#c084fc}
+.feed{padding:17px}.feed-head{display:flex;justify-content:space-between;align-items:center}.feed h3{font:700 13px Orbitron,sans-serif;letter-spacing:1px;margin:0}.feed small{color:#64748b}.rounds{margin-top:14px;display:flex;flex-direction:column;gap:7px;max-height:390px;overflow:auto}.round{display:flex;justify-content:space-between;padding:10px 11px;border-radius:12px;background:#ffffff08;border:1px solid #ffffff0b}.coef{font-family:Orbitron,sans-serif;font-weight:700}.coef.big{color:#c084fc}.rid{font:9px "JetBrains Mono",monospace;color:#475569}
+.analysis{padding:17px}.analysis h4{font:700 12px Orbitron,sans-serif;color:#a5b4fc;letter-spacing:1px}.analysis p{color:#94a3b8;font-size:12px;line-height:1.55}.stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}.stat{padding:10px;border-radius:11px;background:#ffffff08;border:1px solid #ffffff0b}.stat small{font-size:9px;color:#64748b;text-transform:uppercase}.stat b{display:block;margin-top:4px;font-family:Orbitron,sans-serif}
+.sessionbar{margin-top:18px;padding:13px;display:flex;align-items:center;gap:10px}.sessionbar input{min-width:0;flex:1;padding:11px;border:1px solid #ffffff18;border-radius:11px;background:#0007;color:white}.sessionbar button{padding:11px 14px;border-radius:11px;border:1px solid #6366f144;background:#111827;color:white;font-weight:800}
+footer{text-align:center;color:#334155;font:9px "JetBrains Mono",monospace;letter-spacing:1px;padding:25px}
+@media(max-width:800px){.grid{grid-template-columns:1fr}.hero{grid-template-columns:1fr;padding:20px}.radar{width:210px;height:210px}.signal-value{font-size:58px}.livebox{max-width:46vw}.wrap{padding:10px}header{padding:13px}.brand h1{font-size:18px}.right{display:grid;grid-template-columns:1fr}.sessionbar{flex-wrap:wrap}.sessionbar input{flex-basis:100%}}
+</style>
+</head>
+<body>
+<div class="scan"></div>
+<div class="wrap">
+<header class="panel">
+  <div class="brand"><div class="shield">🛡️</div><div><h1 class="orbitron">SIGNAL <span style="color:#a855f7">MASTER</span></h1><div class="sub"><span class="dot" style="display:inline-block;margin-right:6px"></span>LuckyJet LIVE /history</div></div></div>
+  <div id="liveBox" class="livebox"><span class="dot"></span><span id="liveText">CONNECTING…</span></div>
+</header>
+
+<div class="grid">
+  <div class="left">
+    <section class="hero panel">
+      <div class="radar"><div class="sweep"></div><i class="blip b1"></i><i class="blip b2"></i><i class="blip b3"></i></div>
+      <div>
+        <div id="kicker" class="kicker">● LIVE ENGINE READY</div>
+        <h2 id="headline">READY TO ANALYZE<br><span style="color:#a855f7">THE NEXT WINDOW?</span></h2>
+        <p id="desc">История загружается из реального LuckyJet /history. Итоговый сигнал — статистическая оценка, а не гарантированный исход.</p>
+        <div id="signalValue" class="signal-value">?.??<b>x</b></div>
+        <div class="actions">
+          <button id="signalBtn" class="primary">⚡ GENERATE SIGNAL</button>
+          <button id="refreshBtn" class="secondary">↻ REFRESH LIVE</button>
+        </div>
+        <div id="entry" class="entry">
+          <div id="entryTitle" class="entry-title">ОЖИДАНИЕ СИГНАЛА</div>
+          <div id="entrySub" class="entry-sub">После анализа здесь появится точный отсчёт новых ID раундов до входа.</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="console panel">
+      <div class="console-title">⌁ CONSOLE_OUTPUT</div>
+      <div id="logs" class="logs"></div>
+    </section>
+  </div>
+
+  <aside class="right">
+    <section class="feed panel">
+      <div class="feed-head"><h3>▣ FEED_LOG</h3><small id="feedCount">0 ROUNDS</small></div>
+      <div id="rounds" class="rounds"></div>
+    </section>
+
+    <section class="analysis panel">
+      <h4>◉ LIVE_ANALYSIS</h4>
+      <p id="analysisText">Waiting for LIVE history…</p>
+      <div class="stats">
+        <div class="stat"><small>Score</small><b id="score">--</b></div>
+        <div class="stat"><small>Volatility</small><b id="vol">--</b></div>
+        <div class="stat"><small>≥2X</small><b id="freq2">--</b></div>
+        <div class="stat"><small>10X gap</small><b id="gap10">--</b></div>
+      </div>
+    </section>
+  </aside>
+</div>
+
+<div class="sessionbar panel">
+  <input id="sessionInput" placeholder="LuckyJet session-id" autocomplete="off" spellcheck="false">
+  <button id="saveSession">SAVE SESSION</button>
+  <button id="resetPlan">RESET SIGNAL</button>
+</div>
+
+<footer>LUCKY JET SIGNAL MASTER · LIVE BUILD · STATISTICAL ANALYSIS ONLY</footer>
+</div>
+
+<script>
+const API_URL="https://crash-gateway-grm-cr.100hp.app/history";
+const CUSTOMER_ID="077dee8d-c923-4c02-9bee-757573662e69";
+const DEFAULT_SESSION="";
+const GROUP_ID="-1004454619540";
+const SESSION_KEY="SIGNAL_MASTER_LJ_SESSION";
+const PLAN_KEY="SIGNAL_MASTER_PLAN";
+
+let rows=[];
+let lastSeenId=null;
+let plan=loadPlan();
+let busy=false;
+
+const $=id=>document.getElementById(id);
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+const mean=(a,d=0)=>a.length?a.reduce((s,x)=>s+x,0)/a.length:d;
+
+function log(t){
+  const el=$("logs");
+  const d=document.createElement("div");
+  d.textContent=`[${new Date().toLocaleTimeString()}] ${t}`;
+  el.prepend(d);
+  while(el.children.length>12)el.lastChild.remove();
+}
+
+function session(){
+  return (localStorage.getItem(SESSION_KEY)||DEFAULT_SESSION||"").trim();
+}
+function saveSession(v){
+  localStorage.setItem(SESSION_KEY,(v||"").trim());
+}
+function loadPlan(){
+  try{return JSON.parse(localStorage.getItem(PLAN_KEY)||"null")}catch(e){return null}
+}
+function savePlan(){
+  if(plan)localStorage.setItem(PLAN_KEY,JSON.stringify(plan));
+  else localStorage.removeItem(PLAN_KEY);
+}
+
+function normalize(item){
+  if(!item||typeof item!=="object")return null;
+  let c=Number(item.topCoefficient);
+  if(!Number.isFinite(c)||c<=0){
+    const vals=Array.isArray(item.finalValues)?item.finalValues.map(Number).filter(x=>Number.isFinite(x)&&x>0):[];
+    if(vals.length)c=vals[vals.length-1];
+  }
+  if(!Number.isFinite(c)||c<=0){
+    for(const k of ["coefficient","coef","crash","value","multiplier"]){
+      const n=Number(item[k]);if(Number.isFinite(n)&&n>0){c=n;break}
+    }
+  }
+  if(!Number.isFinite(c)||c<=0)return null;
+  if(c===1)c=1.01;
+  return {
+    id:String(item.id||item.roundId||item.round_id||item.hash||`${c}:${item.createdAt||item.time||""}`),
+    c:Math.round(c*100)/100
+  };
+}
+
+async function fetchRounds(limit=500){
+  const sid=session();
+  if(!sid)throw new Error("NO_SESSION");
+  const ctl=new AbortController();
+  const timer=setTimeout(()=>ctl.abort(),10000);
+  try{
+    const r=await fetch(API_URL,{
+      headers:{"customer-id":CUSTOMER_ID,"session-id":sid,"accept":"application/json"},
+      cache:"no-store",signal:ctl.signal
+    });
+    if(!r.ok)throw new Error("HTTP_"+r.status);
+    const data=await r.json();
+    if(!Array.isArray(data))throw new Error("BAD_FORMAT");
+    const out=[],seen=new Set();
+    for(const item of data){
+      const row=normalize(item);
+      if(!row||seen.has(row.id))continue;
+      seen.add(row.id);out.push(row);
+      if(out.length>=limit)break;
+    }
+    if(!out.length)throw new Error("EMPTY");
+    return out;
+  }catch(e){
+    if(e.name==="AbortError")throw new Error("TIMEOUT");
+    if(e instanceof TypeError)throw new Error("CORS_OR_NETWORK");
+    throw e;
+  }finally{clearTimeout(timer)}
+}
+
+function analyze(rs){
+  const a=rs.map(r=>r.c);
+  const last50=a.slice(0,50);
+  const clipped=last50.map(x=>Math.min(x,25));
+  const avg=mean(clipped,1);
+  const variance=mean(clipped.map(x=>(x-avg)**2),0);
+  const vol=Math.sqrt(variance)/Math.max(avg,1);
+  const freq2=last50.filter(x=>x>=2).length/Math.max(last50.length,1)*100;
+  const low10=a.slice(0,10).filter(x=>x<1.5).length;
+  const gap10=Math.max(0,a.findIndex(x=>x>=10));
+  const actualGap10=gap10<0?a.length:gap10;
+  const recent=mean(a.slice(0,5).map(x=>Math.min(x,10)),1);
+  const prev=mean(a.slice(5,10).map(x=>Math.min(x,10)),1);
+  const trend=(recent-prev)/Math.max(prev,1);
+
+  let score=50;
+  if(freq2>=45)score+=10;
+  if(vol<=.9)score+=10; else if(vol>=1.35)score-=10;
+  if(low10>=3&&low10<=7)score+=8;
+  if(actualGap10>=10)score+=5;
+  if(trend>.08)score+=5;
+  score=Math.round(clamp(score,0,100));
+
+  return {a,avg,vol,freq2,low10,gap10:actualGap10,trend,score};
+}
+
+function signalFromAnalysis(a){
+  if(a.score<58)return null;
+  const last20=a.a.slice(0,20).map(x=>Math.min(x,8));
+  let base=mean(last20,1.5);
+  let target=base*(base>=2.2?.66:.78);
+  if(a.vol>1)target*=.92;
+  if(a.low10>=4)target*=1.03;
+  target=clamp(target,1.35,2.60);
+  return {target:+target.toFixed(2),wait:a.score>=72?1:2,score:a.score};
+}
+
+function paint(rs,a){
+  $("feedCount").textContent=`${rs.length} ROUNDS`;
+  $("rounds").innerHTML=rs.slice(0,18).map(r=>`
+    <div class="round">
+      <span class="coef ${r.c>=5?'big':''}">${r.c.toFixed(2)}x</span>
+      <span class="rid">${r.id.slice(0,10)}</span>
+    </div>`).join("");
+  $("score").textContent=a.score+"/100";
+  $("vol").textContent=a.vol.toFixed(2);
+  $("freq2").textContent=a.freq2.toFixed(1)+"%";
+  $("gap10").textContent=a.gap10;
+  $("analysisText").textContent=
+    `Среднее ${a.avg.toFixed(2)}X · low10 ${a.low10} · trend ${a.trend>=0?"+":""}${a.trend.toFixed(2)}. `+
+    `Сигнал формируется из LIVE истории; Gemini/random для финального коэффициента не используются.`;
+}
+
+function errorText(e){
+  const m=e.message||String(e);
+  if(m==="CORS_OR_NETWORK")return "CORS/NETWORK — эту страницу лучше открывать как HTTPS (например GitHub Pages), а не file://";
+  if(m==="NO_SESSION")return "Нет session-id";
+  if(m==="TIMEOUT")return "LIVE API timeout";
+  if(m.startsWith("HTTP_"))return "LIVE API "+m.replace("HTTP_","");
+  return m;
+}
+
+async function refresh(){
+  try{
+    rows=await fetchRounds();
+    const a=analyze(rows);
+    $("liveText").textContent=`LIVE OK · ${rows[0].c.toFixed(2)}X`;
+    paint(rows,a);
+
+    if(!lastSeenId){
+      lastSeenId=rows[0].id;
+      log("LIVE history synchronized");
+    }else if(rows[0].id!==lastSeenId){
+      const fresh=[];
+      for(const r of rows){if(r.id===lastSeenId)break;fresh.push(r)}
+      if(fresh.length>1&&plan&&["waiting","entry"].includes(plan.state)){
+        plan.state="expired";plan.msg=`Пропущено ${fresh.length} новых раундов`;
+        savePlan();updatePlanUI();
+      }else{
+        for(const r of [...fresh].reverse())processRound(r);
+      }
+      lastSeenId=rows[0].id;
+    }
+  }catch(e){
+    $("liveText").textContent="OFFLINE";
+    log("LIVE ERROR: "+errorText(e));
+  }
+}
+
+function generate(){
+  if(busy)return;
+  busy=true;$("signalBtn").disabled=true;
+  refresh().then(()=>{
+    const a=analyze(rows);
+    const s=signalFromAnalysis(a);
+    if(!s){
+      plan=null;savePlan();
+      $("signalValue").innerHTML='PAUSE';
+      $("headline").innerHTML='MARKET <span style="color:#ef4444">SKIPPED</span>';
+      $("desc").textContent=`Score ${a.score}/100 — окно входа не открыто.`;
+      updatePlanUI();
+      log("Signal skipped by score filter");
+      return;
+    }
+    plan={target:s.target,score:s.score,waitLeft:s.wait,waitTotal:s.wait,state:"waiting",created:Date.now()};
+    savePlan();
+    $("signalValue").innerHTML=`${s.target.toFixed(2)}<b>x</b>`;
+    $("headline").innerHTML='SIGNAL <span style="color:#a855f7">DETECTED</span>';
+    $("desc").textContent=`Цель ${s.target.toFixed(2)}X · score ${s.score}/100. Вход откроется только после новых ID раундов.`;
+    updatePlanUI();
+    log(`Signal armed: ${s.target.toFixed(2)}X · wait ${s.wait}`);
+  }).finally(()=>{busy=false;$("signalBtn").disabled=false});
+}
+
+function processRound(r){
+  if(!plan)return;
+  if(plan.state==="waiting"){
+    plan.waitLeft--;
+    if(plan.waitLeft<=0){
+      plan.state="entry";
+      plan.msg=`Контрольный раунд ${r.c.toFixed(2)}X завершён`;
+      log("ENTRY WINDOW OPEN");
+    }else{
+      plan.msg=`Прошёл ${r.c.toFixed(2)}X`;
+    }
+    savePlan();updatePlanUI();return;
+  }
+  if(plan.state==="entry"){
+    plan.state="done";
+    plan.actual=r.c;
+    plan.success=r.c>=plan.target;
+    savePlan();updatePlanUI();
+    log(`Signal result ${r.c.toFixed(2)}X · ${plan.success?"SUCCESS":"FAIL"}`);
+  }
+}
+
+function updatePlanUI(){
+  const box=$("entry"),t=$("entryTitle"),s=$("entrySub");
+  box.className="entry";
+  if(!plan){
+    t.textContent="ОЖИДАНИЕ СИГНАЛА";
+    s.textContent="После анализа здесь появится точный отсчёт новых ID раундов до входа.";
+    return;
+  }
+  if(plan.state==="waiting"){
+    box.classList.add("wait");
+    t.textContent=`🟡 ЖДАТЬ ${plan.waitLeft} РАУНД${plan.waitLeft===1?"":"А"}`;
+    s.textContent=`Цель ${plan.target.toFixed(2)}X. Сейчас НЕ входить. Считаются только новые завершённые ID.`;
+  }else if(plan.state==="entry"){
+    box.classList.add("enter");
+    t.textContent="🟢 ВХОД СЕЙЧАС";
+    s.textContent=`Вход относится к следующему новому раунду. Цель ${plan.target.toFixed(2)}X. Если приём ставок уже закрыт — пропусти.`;
+  }else if(plan.state==="done"){
+    box.classList.add(plan.success?"done":"bad");
+    t.textContent=plan.success?"✅ ЦЕЛЬ ДОСТИГНУТА":"❌ ЦЕЛЬ НЕ ДОСТИГНУТА";
+    s.textContent=`Цель ${plan.target.toFixed(2)}X · результат ${Number(plan.actual).toFixed(2)}X.`;
+  }else if(plan.state==="expired"){
+    box.classList.add("bad");
+    t.textContent="⚠️ ОКНО ПРОПУЩЕНО";
+    s.textContent=plan.msg||"Получи новый сигнал.";
+  }
+}
+
+$("signalBtn").onclick=generate;
+$("refreshBtn").onclick=refresh;
+$("saveSession").onclick=()=>{
+  saveSession($("sessionInput").value);
+  log("Session updated locally");
+  refresh();
+};
+$("resetPlan").onclick=()=>{plan=null;savePlan();updatePlanUI();log("Signal reset")};
+$("sessionInput").value=session();
+
+updatePlanUI();
+refresh();
+setInterval(refresh,1500);
+log(`Telegram group configured: ${GROUP_ID}`);
+</script>
+</body>
+</html>
