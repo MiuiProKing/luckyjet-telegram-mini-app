@@ -1,0 +1,17 @@
+#include 'actions/device'
+#include 'actions/settings'
+#include 'actions/a11y'
+
+showNotification("Возвращаю обычный режим iPhone.", "🔋 ULTRA SURVIVAL v3 — ВЫКЛ", true)
+setAirplaneMode(false)
+setWifi(true)
+setBluetooth(true)
+setCellularData(true)
+setHotspot(false)
+setLowPowerMode(false)
+lightMode()
+setBrightness(0.5)
+setWhitePoint(false)
+setReduceMotion(false)
+setReduceTransparency(false)
+showNotification("Связь, яркость и обычные анимации восстановлены.", "✅ Обычный режим", true)
