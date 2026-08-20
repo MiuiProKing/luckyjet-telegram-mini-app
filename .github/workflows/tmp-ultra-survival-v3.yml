@@ -3,7 +3,8 @@ name: Temporary ULTRA SURVIVAL v3
 on:
   push:
     paths:
-      - '.tmp-ultra-survival-v3/source.cherri'
+      - '.tmp-ultra-survival-v3/on.cherri'
+      - '.tmp-ultra-survival-v3/off.cherri'
       - '.github/workflows/tmp-ultra-survival-v3.yml'
 
 permissions:
@@ -18,7 +19,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Compile and sign Shortcut
+      - name: Compile and sign both shortcuts
         shell: bash
         run: |
           set -euo pipefail
@@ -27,7 +28,6 @@ jobs:
           import urllib.parse, urllib.request
 
           root = pathlib.Path('.tmp-ultra-survival-v3')
-          source = (root / 'source.cherri').read_text()
           base = 'https://playground.cherrilang.org'
           jar = http.cookiejar.CookieJar()
           op = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(jar))
@@ -44,47 +44,54 @@ jobs:
           if csrf: headers['X-CSRF-TOKEN'] = csrf
           if xsrf: headers['X-XSRF-TOKEN'] = xsrf
 
-          af = {'id':'file-1','name':'ULTRA-SURVIVAL-v3.cherri','content':source,'compiled':False,'error':None,'output':None,'decompOutput':None,'shareLink':None,'file':None}
-          req = urllib.request.Request(base+'/compile', data=json.dumps({'active_file':af,'files':[]}).encode(), headers=headers, method='POST')
-          with op.open(req, timeout=120) as r:
-              data = json.loads(r.read().decode('utf-8','replace'))
-          if data.get('error'):
-              raise RuntimeError('COMPILE: '+str(data.get('error'))+' | '+str(data.get('output')))
-          u = data.get('file')
-          if not u: raise RuntimeError('Compile missing file URL')
-          if u.startswith('/'): u = base + u
-          with op.open(u, timeout=120) as r:
-              plist = r.read().decode('utf-8','replace')
-          name = urllib.parse.urlparse(u).path.rsplit('/',1)[-1].split('.')[0]
-          req = urllib.request.Request(base+'/sign', data=json.dumps({'name':name,'data':plist}).encode(), headers=headers, method='POST')
-          with op.open(req, timeout=180) as r:
-              body = r.read()
-          if body.startswith(b'AEA1'):
-              signed = body
-          else:
-              txt = body.decode('utf-8','replace').strip()
-              try: value = json.loads(txt)
-              except Exception: value = txt
-              if isinstance(value, dict): value = value.get('url') or value.get('file') or value.get('data')
-              if not isinstance(value, str): raise RuntimeError('Unexpected sign response: '+txt[:500])
-              value = value.strip('"')
-              if value.startswith('data:'):
-                  head, enc = value.split(',',1)
-                  signed = base64.b64decode(enc) if ';base64' in head else urllib.parse.unquote_to_bytes(enc)
+          def compile_sign(src_name, out_name, logical_name):
+              source = (root/src_name).read_text()
+              af = {'id':'file-1','name':logical_name+'.cherri','content':source,'compiled':False,'error':None,'output':None,'decompOutput':None,'shareLink':None,'file':None}
+              req = urllib.request.Request(base+'/compile', data=json.dumps({'active_file':af,'files':[]}).encode(), headers=headers, method='POST')
+              with op.open(req, timeout=120) as r:
+                  data = json.loads(r.read().decode('utf-8','replace'))
+              if data.get('error'):
+                  raise RuntimeError(f'{src_name} COMPILE: {data.get("error")} | {data.get("output")}')
+              u = data.get('file')
+              if not u: raise RuntimeError(src_name+' compile missing file URL')
+              if u.startswith('/'): u = base + u
+              with op.open(u, timeout=120) as r:
+                  plist = r.read().decode('utf-8','replace')
+              name = urllib.parse.urlparse(u).path.rsplit('/',1)[-1].split('.')[0]
+              req = urllib.request.Request(base+'/sign', data=json.dumps({'name':name,'data':plist}).encode(), headers=headers, method='POST')
+              with op.open(req, timeout=180) as r:
+                  body = r.read()
+              if body.startswith(b'AEA1'):
+                  signed = body
               else:
-                  if value.startswith('/'): value = base + value
-                  with op.open(value, timeout=180) as r: signed = r.read()
-          if not signed.startswith(b'AEA1'): raise RuntimeError('Signing result is not AEA1')
-          out = root / 'ULTRA-SURVIVAL-v3.shortcut'
-          out.write_bytes(signed)
-          (root/'status.txt').write_text('OK '+str(len(signed)))
+                  txt = body.decode('utf-8','replace').strip()
+                  try: value = json.loads(txt)
+                  except Exception: value = txt
+                  if isinstance(value, dict): value = value.get('url') or value.get('file') or value.get('data')
+                  if not isinstance(value, str): raise RuntimeError('Unexpected sign response: '+txt[:500])
+                  value = value.strip('"')
+                  if value.startswith('data:'):
+                      head, enc = value.split(',',1)
+                      signed = base64.b64decode(enc) if ';base64' in head else urllib.parse.unquote_to_bytes(enc)
+                  else:
+                      if value.startswith('/'): value = base + value
+                      with op.open(value, timeout=180) as r: signed = r.read()
+              if not signed.startswith(b'AEA1'): raise RuntimeError(out_name+' signing result is not AEA1')
+              (root/out_name).write_bytes(signed)
+              return len(signed)
+
+          size_on = compile_sign('on.cherri','ULTRA-SURVIVAL-v3-ON.shortcut','ULTRA-SURVIVAL-v3-ON')
+          size_off = compile_sign('off.cherri','ULTRA-SURVIVAL-v3-OFF.shortcut','ULTRA-SURVIVAL-v3-OFF')
+          (root/'status.txt').write_text(f'OK ON={size_on} OFF={size_off}')
           PY
 
-      - name: Upload signed Shortcut
+      - name: Upload signed shortcuts
         uses: actions/upload-artifact@v4
         with:
-          name: ultra-survival-v3-signed
-          path: .tmp-ultra-survival-v3/ULTRA-SURVIVAL-v3.shortcut
+          name: ultra-survival-v3-pair
+          path: |
+            .tmp-ultra-survival-v3/ULTRA-SURVIVAL-v3-ON.shortcut
+            .tmp-ultra-survival-v3/ULTRA-SURVIVAL-v3-OFF.shortcut
           if-no-files-found: error
 
       - name: Save artifact id and status
@@ -99,5 +106,5 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add .tmp-ultra-survival-v3/status.txt .tmp-ultra-survival-v3/artifact-id.txt
-          git commit -m 'Temporary ULTRA SURVIVAL v3 build result' || exit 0
+          git commit -m 'Temporary ULTRA SURVIVAL v3 pair result' || exit 0
           git push
