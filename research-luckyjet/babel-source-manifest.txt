@@ -1,0 +1,49 @@
+BABEL / ALLPREDICTOR — PUBLIC SOURCE MANIFEST
+CHECKED: 2026-08-20
+
+BABELSE PUBLIC REPOSITORIES
+1. https://github.com/babelse/babelse.github.com
+   Game.html
+   crash-1win.html
+   index.html
+   indisponible.html
+   lucky-jet.html
+   profil.html
+   First upload: 78f33d3318a5ae46aa660c435499a7d00c47d577
+
+2. https://github.com/babelse/allpredictor-wa-manager
+   Dockerfile
+   package.json
+   server.js
+   Recovered early nested upload: f4158aae0c3a38fc5161eab4263c71f2b2596819
+   Nested-folder deletion: 91ac1d34d8f6313bf68b6b12c5583931500e2134
+
+3. https://github.com/babelse/babellog
+   Current: icon.jpg, read.text
+   Deleted db.json: 43dda78e86157d5749cb605a8905a2c13254afcf
+   Deleted package.json: fce1c2a33f3a7627cb32c794952f377c076a45e1
+   Deleted README.md: 2cb25417ab6613006d303c0e6aaa3ca9adec7b92
+
+AKIMIJAMIL-ENG PUBLIC REPOSITORIES
+1. https://github.com/akimijamil-eng/luckyjet-api
+2. https://github.com/akimijamil-eng/allpredictor-wa-manager
+3. https://github.com/akimijamil-eng/AllPredictor-sites-manager
+4. https://github.com/akimijamil-eng/babellog
+5. https://github.com/akimijamil-eng/fomesoutrababel (empty)
+
+ALLPREDICTOR SITES MANAGER HISTORY
+19dacc0a4132c03812ab0af4e89ea317fef4d641 — initial server.js
+cb8a0b86ce90807d2dba77e62e9bbebaebbd1e5f — encryption version
+5eb446c85885f57bc66cd510581aba2fdf858f54 — ShieldWall integration
+93b45b763e4a5b9490cc9190840977c0de427caf — SPA fallback/security
+8e135214062e4d65fa88f350646214ab40a1f36c — cleanup
+
+OLD UNAVAILABLE TRACE
+akimijamil-eng/allpredictor-nouveau
+Historical references mentioned:
+sdk/allpredictor_monetize.py
+sdk/allpredictor-monetize.js
+Current GitHub Search does not return a public repository, so the source is NOT claimed as recovered.
+
+SAFETY
+No bot tokens, API secret keys, passwords, session-id or leaked credentials are included here.
