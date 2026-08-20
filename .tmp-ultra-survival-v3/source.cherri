@@ -19,7 +19,6 @@ setReduceMotion(true)
 setReduceTransparency(true)
 setBackgroundSounds(false)
 setMediaBackgroundSounds(false)
-setSoundRecognition("pause")
 
 showNotification("Максимальная экономия включена. Блокирую экран.", "🪫 SURVIVAL активирован", true)
 wait(1)
