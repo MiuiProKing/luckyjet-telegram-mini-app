@@ -14,3 +14,9 @@ verify_jwt = false
 
 [functions.notify-expiring]
 verify_jwt = false
+
+[functions.allpredictor-api]
+verify_jwt = false
+
+[functions.beta-ai-worker]
+verify_jwt = false

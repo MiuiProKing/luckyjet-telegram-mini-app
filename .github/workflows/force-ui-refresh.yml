@@ -20,10 +20,10 @@ jobs:
           import base64
           import gzip
 
-          version = "20260724-32"
+          version = "20260823-1"
           lucky_api = "https://crash-gateway-grm-cr.100hp.app/state"
           lucky_customer = "077dee8d-c923-4c02-9bee-757573662e69"
-          lucky_session = "933841e0-8e4f-4513-9ef1-852096c0e566"
+          lucky_session = "783ee79a-dafc-479e-bf22-834336380cdf"
 
           global_modules = [
               "app-config.js",
@@ -67,7 +67,9 @@ jobs:
                 </button>'''
 
           for p in Path('.').glob('*.html'):
-              if p.name == 'setup-server.html':
+              # Do not rewrite pages with independent game credentials.
+              independent_games = {'aviator.html', 'rocketqueen.html', 'pro-rocketqueen.html'}
+              if p.name == 'setup-server.html' or p.name in independent_games:
                   continue
 
               s = p.read_text(encoding='utf-8')
@@ -82,12 +84,12 @@ jobs:
                       s, count = re.subn(pattern, lambda m: m.group(1) + beta_card, s, count=1)
                       if count == 0:
                           raise RuntimeError('PRO Rocket Queen card marker was not found')
-                  handler = '  document.querySelector(\'[data-open-pro="luckyjet-beta"]\').addEventListener("click", () => { window.location.href = "beta-luckyjet.html"; });'
-                  if 'window.location.href = "beta-luckyjet.html"' not in s:
-                      marker = '  document.querySelector(\'[data-open-pro="rocketqueen"]\').addEventListener("click", () => { window.location.href = "pro-rocketqueen.html"; });'
-                      if marker not in s:
-                          raise RuntimeError('PRO handler marker was not found')
-                      s = s.replace(marker, marker + '\n' + handler, 1)
+                  handler = '  document.querySelector(\'[data-open-pro="luckyjet-beta"]\').addEventListener("click", () => { window.location.href = "https://miuiproking.github.io/luckyjet-telegram-mini-app/ru-ukraine/?v=20260823-1"; });'
+                  s = '\n'.join(line for line in s.splitlines() if not ('data-open-pro="luckyjet-beta"' in line and '.addEventListener' in line))
+                  marker = '  document.querySelector(\'[data-open-pro="rocketqueen"]\').addEventListener("click", () => { window.location.href = "pro-rocketqueen.html"; });'
+                  if marker not in s:
+                      raise RuntimeError('PRO handler marker was not found')
+                  s = s.replace(marker, marker + '\n' + handler, 1)
 
               for name in all_known_modules + obsolete_names:
                   s = remove_module(s, name)

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'luckyjet-ru-v2';
+const CACHE_NAME = 'luckyjet-ru-v3-20260823';
 const APP_SHELL = [
   './',
   './index.html',

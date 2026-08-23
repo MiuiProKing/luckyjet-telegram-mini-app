@@ -1,6 +1,53 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const encoder = new TextEncoder();
+const TELEGRAM_ED25519_FALLBACK_V1 = true;
+const TELEGRAM_BOT_ID = "8702043607";
+const TELEGRAM_PRODUCTION_PUBLIC_KEY = "e7bf03a2fa4602af4580703d88dda5bb59f32ed8b02a56c187fe7d34caed242d";
+
+function hexBytes(value: string): Uint8Array {
+  const clean = value.trim();
+  const bytes = new Uint8Array(clean.length / 2);
+  for (let index = 0; index < bytes.length; index += 1) {
+    bytes[index] = Number.parseInt(clean.slice(index * 2, index * 2 + 2), 16);
+  }
+  return bytes;
+}
+
+function base64UrlBytes(value: string): Uint8Array {
+  const normalized = value.replace(/-/g, "+").replace(/_/g, "/");
+  const padded = normalized + "=".repeat((4 - normalized.length % 4) % 4);
+  return Uint8Array.from(atob(padded), character => character.charCodeAt(0));
+}
+
+async function verifyPublicTelegramSignature(params: URLSearchParams): Promise<boolean> {
+  const signature = params.get("signature");
+  if (!signature) return false;
+  try {
+    const signed = Array.from(params.entries())
+      .filter(([key]) => key !== "hash" && key !== "signature")
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([key, value]) => `${key}=${value}`)
+      .join("\n");
+    const dataCheckString = `${TELEGRAM_BOT_ID}:WebAppData\n${signed}`;
+    const publicKey = await crypto.subtle.importKey(
+      "raw",
+      hexBytes(TELEGRAM_PRODUCTION_PUBLIC_KEY),
+      { name: "Ed25519" },
+      false,
+      ["verify"]
+    );
+    return await crypto.subtle.verify(
+      { name: "Ed25519" },
+      publicKey,
+      base64UrlBytes(signature),
+      encoder.encode(dataCheckString)
+    );
+  } catch (error) {
+    console.error("Telegram public signature verification failed", error);
+    return false;
+  }
+}
 
 function cors() {
   return {
@@ -27,17 +74,27 @@ function hex(buffer: ArrayBuffer) {
 
 async function verifyTelegram(initData: string) {
   const botToken = Deno.env.get("TELEGRAM_BOT_TOKEN") || "";
-  if (!initData || !botToken) throw new Error("TELEGRAM_AUTH_REQUIRED");
+  if (!initData) throw new Error("TELEGRAM_AUTH_REQUIRED");
   const params = new URLSearchParams(initData);
   const providedHash = params.get("hash");
-  if (!providedHash) throw new Error("TELEGRAM_HASH_MISSING");
-  params.delete("hash");
   const authDate = Number(params.get("auth_date") || 0);
   if (!authDate || Math.floor(Date.now() / 1000) - authDate > 86400) throw new Error("TELEGRAM_AUTH_EXPIRED");
-  const checkString = Array.from(params.entries()).sort(([a], [b]) => a.localeCompare(b)).map(([k, v]) => `${k}=${v}`).join("\n");
-  const secret = await hmac(encoder.encode("WebAppData"), botToken);
-  const calculated = hex(await hmac(new Uint8Array(secret), checkString));
-  if (calculated.toLowerCase() !== providedHash.toLowerCase()) throw new Error("TELEGRAM_AUTH_INVALID");
+
+  let tokenHashValid = false;
+  if (providedHash && botToken) {
+    const hashParams = new URLSearchParams(params);
+    hashParams.delete("hash");
+    const checkString = Array.from(hashParams.entries())
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([key, value]) => `${key}=${value}`)
+      .join("\n");
+    const secret = await hmac(encoder.encode("WebAppData"), botToken);
+    const calculated = hex(await hmac(new Uint8Array(secret), checkString));
+    tokenHashValid = calculated.toLowerCase() === providedHash.toLowerCase();
+  }
+
+  const publicSignatureValid = tokenHashValid ? false : await verifyPublicTelegramSignature(params);
+  if (!tokenHashValid && !publicSignatureValid) throw new Error("TELEGRAM_AUTH_INVALID");
   const rawUser = params.get("user");
   if (!rawUser) throw new Error("TELEGRAM_USER_MISSING");
   const user = JSON.parse(rawUser);
@@ -51,7 +108,8 @@ async function sha256(value: string) {
 }
 
 function adminIds() {
-  return String(Deno.env.get("ADMIN_TELEGRAM_IDS") || "").split(",").map(v => Number(v.trim())).filter(Number.isSafeInteger);
+  const configured = String(Deno.env.get("ADMIN_TELEGRAM_IDS") || "").split(",").map(v => Number(v.trim())).filter(Number.isSafeInteger);
+  return configured.length ? configured : [8016237913];
 }
 
 function db() {
@@ -172,20 +230,30 @@ async function adminAction(supabase: ReturnType<typeof createClient>, action: st
     return { stats: { users: results[0].count || 0, newToday: results[1].count || 0, activeWeek: results[2].count || 0, activeMonth: results[3].count || 0, licenses: results[4].count || 0, activeLicenses: results[5].count || 0 } };
   }
   if (action === "admin_list_users") {
-    const { data, error } = await supabase.from("app_users").select("telegram_id,username,first_name,last_name,language_code,first_seen_at,last_seen_at,launch_count,is_blocked,referral_code").order("last_seen_at", { ascending: false }).limit(100);
+    const limit = Math.min(500, Math.max(1, Number(payload.limit) || 100));
+    const { data, error } = await supabase.from("app_users").select("telegram_id,username,first_name,last_name,language_code,first_seen_at,last_seen_at,launch_count,is_blocked,referral_code").order("last_seen_at", { ascending: false }).limit(limit);
     if (error) throw error; return { users: data || [] };
   }
   if (action === "admin_list_licenses") {
-    const { data, error } = await supabase.from("license_keys").select("*").order("created_at", { ascending: false }).limit(100);
+    const limit = Math.min(500, Math.max(1, Number(payload.limit) || 100));
+    const { data, error } = await supabase.from("license_keys").select("*").order("created_at", { ascending: false }).limit(limit);
     if (error) throw error; return { licenses: data || [] };
   }
   if (action === "admin_create_license") {
     const plan = String(payload.plan || "pro_30");
     const maxDevices = Math.min(2, Math.max(1, Number(payload.maxDevices || payload.maxActivations || 1)));
-    const { data, error } = await supabase.rpc("create_license", { p_plan: plan, p_duration_days: payload.durationDays ? Number(payload.durationDays) : null, p_max_activations: maxDevices, p_note: String(payload.note || "").slice(0, 500) || null, p_created_by: user.id });
+    const planDays: Record<string, number> = { pro_1: 1, pro_7: 7, pro_30: 30, pro_90: 90 };
+    const durationDays = plan === "lifetime" ? null : Math.min(3650, Math.max(1, Number(payload.durationDays) || planDays[plan] || 30));
+    const boundTelegramId = Number(payload.boundTelegramId) || null;
+    if (boundTelegramId) {
+      const { data: targetUser, error: targetError } = await supabase.from("app_users").select("telegram_id").eq("telegram_id", boundTelegramId).maybeSingle();
+      if (targetError) throw targetError;
+      if (!targetUser) throw new Error("USER_NOT_FOUND");
+    }
+    const { data, error } = await supabase.rpc("create_license", { p_plan: plan, p_duration_days: durationDays, p_max_activations: maxDevices, p_note: String(payload.note || "").slice(0, 500) || null, p_created_by: user.id });
     if (error) throw error;
     const created = Array.isArray(data) ? data[0] : data;
-    await supabase.from("license_keys").update({ max_devices: maxDevices, max_activations: maxDevices }).eq("id", created.id);
+    await supabase.from("license_keys").update({ max_devices: maxDevices, max_activations: maxDevices, duration_days: durationDays, bound_telegram_id: boundTelegramId }).eq("id", created.id);
     const { data: finalRow } = await supabase.from("license_keys").select("*").eq("id", created.id).single();
     return { license: finalRow };
   }

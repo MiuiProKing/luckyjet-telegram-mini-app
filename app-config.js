@@ -1,6 +1,6 @@
 window.ALLPREDICTOR_CONFIG = Object.freeze({
   appName: "AllPredictor 1Win",
-  version: "3.1.3",
+  version: "3.2.0",
   botUsername: "AllPredictorVrs2_bot",
   creatorUsername: "V0xFF3",
   creatorUrl: "https://t.me/V0xFF3",
@@ -11,7 +11,7 @@ window.ALLPREDICTOR_CONFIG = Object.freeze({
   supabaseUrl: "https://lcgewatmbpfxzoiqneoa.supabase.co",
   supabaseAnonKey: "sb_publishable_UkPgmNkmrIYds4psoUW7-g_7I8k_Q25",
 
-  adminTelegramIds: [],
+  adminTelegramIds: [8016237913],
 
   plans: [
     {

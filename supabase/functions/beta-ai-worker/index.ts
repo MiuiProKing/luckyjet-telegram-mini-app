@@ -2,7 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const API_URL = "https://crash-gateway-grm-cr.100hp.app/state";
 const CUSTOMER_ID = "077dee8d-c923-4c02-9bee-757573662e69";
-const SESSION_ID = "933841e0-8e4f-4513-9ef1-852096c0e566";
+const SESSION_ID = "783ee79a-dafc-479e-bf22-834336380cdf";
 const LAST_COEF_MIN = 1.5;
 
 Deno.serve(async (req) => {

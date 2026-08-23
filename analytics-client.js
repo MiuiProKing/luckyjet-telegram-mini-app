@@ -4,9 +4,24 @@
   const config = window.ALLPREDICTOR_CONFIG || {};
   const webApp = window.Telegram && window.Telegram.WebApp;
   const TRACKED_KEY = "allpredictor_tracked_session_v1";
+  const CONTEXT_KEY = "allpredictor_telegram_context_v1";
+  const MAX_INIT_RETRIES = 20;
+  let initRetries = 0;
+  let retryTimer = null;
 
   function configured() {
     return Boolean(config.supabaseUrl && config.supabaseAnonKey && webApp?.initData);
+  }
+
+  function preserveTelegramContext() {
+    if (!webApp?.initData) return;
+    const value = JSON.stringify({
+      initData: webApp.initData,
+      user: webApp.initDataUnsafe?.user || null,
+      savedAt: Date.now()
+    });
+    try { sessionStorage.setItem(CONTEXT_KEY, value); } catch (_error) {}
+    try { localStorage.setItem(CONTEXT_KEY, value); } catch (_error) {}
   }
 
   async function send(eventName, data = {}) {
@@ -41,11 +56,30 @@
   }
 
   async function trackOpenOnce() {
+    preserveTelegramContext();
     try {
       if (sessionStorage.getItem(TRACKED_KEY) === "1") return;
-      sessionStorage.setItem(TRACKED_KEY, "1");
     } catch (_error) {}
-    await send("app_open").catch(() => {});
+    if (!configured()) {
+      if (initRetries < MAX_INIT_RETRIES) {
+        initRetries += 1;
+        clearTimeout(retryTimer);
+        retryTimer = setTimeout(trackOpenOnce, 500);
+      }
+      return;
+    }
+    try {
+      const result = await send("app_open");
+      if (result?.ok) {
+        try { sessionStorage.setItem(TRACKED_KEY, "1"); } catch (_error) {}
+      }
+    } catch (_error) {
+      if (initRetries < MAX_INIT_RETRIES) {
+        initRetries += 1;
+        clearTimeout(retryTimer);
+        retryTimer = setTimeout(trackOpenOnce, 1500);
+      }
+    }
   }
 
   document.addEventListener("click", event => {
@@ -66,7 +100,8 @@
     send(eventName, data).catch(() => {});
   }, true);
 
-  window.AllPredictorAnalytics = Object.freeze({ send, configured: configured() });
+  window.AllPredictorAnalytics = Object.freeze({ send, configured, trackOpen: trackOpenOnce, preserveTelegramContext });
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", trackOpenOnce, { once: true });
   else trackOpenOnce();
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) trackOpenOnce(); });
 })();
