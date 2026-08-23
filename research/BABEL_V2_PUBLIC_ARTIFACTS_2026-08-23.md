@@ -34,6 +34,38 @@ Sources:
 
 These are published signal outputs, not recovered source formulas.
 
+### Published favorable-hour / minute buckets
+A public archive for the same `@babelseypro235` lineage contains a graphic/text post titled in effect `HEURES FAVORABLES AU JEU SUR 1WIN`. It publishes broad hour bands:
+
+- 11:00–13:00
+- 16:00–19:00
+- 21:00–23:00
+- 01:00–02:00
+
+and minute-of-hour buckets described as times where large coefficients appear often:
+
+- 59–02
+- 04–07
+- 07–10
+- 14–17
+- 17–20
+- 27–30
+- 30–33
+- 45–47
+- 50–52
+- 57–59
+
+Source: https://telemetr.io/fa/channels/1824595312-babelseypro235
+
+Interpretation: this is a confirmed published timing heuristic in the BABEL/BBSY lineage. It is not evidence that the game is predictable, and it does not reveal a source-code formula. The overlapping buckets strongly suggest a hand-authored time-window strategy layer existed alongside bot/API outputs.
+
+### Public statement that new bots were API-connected
+The same public archive contains the instruction `COMMENT UTILISER LES NOUVEAUX BOTS` and explicitly describes the new bots as `avec API connectés`.
+
+Source: https://telemetr.io/fa/channels/1824595312-babelseypro235
+
+Interpretation: this confirms that BABEL publicly described at least one generation of the bots as API-connected. It does not identify the API endpoint or prove that prediction values themselves were generated server-side.
+
 ### Current V2 navigation post IDs
 Public Telemetr redirect metadata resolves the current BABEL tutorial/navigation links to exact Telegram post IDs:
 
@@ -50,6 +82,17 @@ Archive surface: https://tlmtr.io/en/channels/1824595312-babelseypro235/posts
 Current public archive states `NOUVEAU ROBOT DE PRÉDICTION 1WIN V2` and says the new V2 exposes more than six bots for free.
 
 Source: https://tlmtr.io/en/channels/1824595312-babelseypro235/posts
+
+### AllPredictor support identity ↔ BABEL admin identity
+The public AllPredictor support page lists Telegram support as `@lastarsey`.
+
+Source: https://allpredictor.com/support
+
+A current public BABEL SEY channel archive independently lists `ADMIN —> @lastarsey` in the channel description.
+
+Source: https://tlmtr.io/en/channels/1805151250-couponfiablexbet
+
+Interpretation: this is direct public lineage evidence connecting the same Telegram identity to both AllPredictor support and administration of the BABEL SEY channel. It strengthens attribution between the public BABEL distribution channel and AllPredictor without relying on naming similarity alone.
 
 ### Website/app feature parity statement
 A public BABEL SEY archive contains the announcement `LA MISE A JOUR DU SITE EST TERMINÉE` followed by the explicit statement that there are more functions/new features and that **what is in the application is also on the website** (`ce qui se trouve dans l’application se trouve sur le site`). It names the public site as `allpredictor.com`.
