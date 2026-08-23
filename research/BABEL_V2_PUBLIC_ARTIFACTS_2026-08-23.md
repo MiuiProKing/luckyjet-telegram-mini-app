@@ -51,6 +51,20 @@ Current public archive states `NOUVEAU ROBOT DE PRÉDICTION 1WIN V2` and says th
 
 Source: https://tlmtr.io/en/channels/1824595312-babelseypro235/posts
 
+### Website/app feature parity statement
+A public BABEL SEY archive contains the announcement `LA MISE A JOUR DU SITE EST TERMINÉE` followed by the explicit statement that there are more functions/new features and that **what is in the application is also on the website** (`ce qui se trouve dans l’application se trouve sur le site`). It names the public site as `allpredictor.com`.
+
+Source: https://telemetr.io/uz/cc/1YaeiK
+
+Why it matters: this is direct public lineage evidence that at least one AllPredictor release intentionally mirrored app functionality onto the public website. It strengthens the case for recovering prediction UI/client logic from public site assets/history rather than assuming it existed only inside the Android/iOS package. It does **not** prove that every server-side algorithm or private service was exposed client-side.
+
+### Automatic-prediction channel announcement
+The same public BABEL SEY archive contains an announcement that regular predictions would be sent three times per week, and that a **new channel** had been created for `prédictions automatique tous les jours` (automatic predictions every day). The indexed archive does not expose a reliable destination handle for that new channel in the text currently retrievable, so no unverified handle is recorded here.
+
+Source: https://telemetr.io/uz/cc/1YaeiK
+
+Interpretation: confirms a separate automatic-prediction distribution branch existed publicly in the BABEL lineage, but its exact channel identity is not yet verified.
+
 ## Related but NOT confirmed BABEL source code
 
 A public myCompiler Python artifact titled `Lucky jet predictor` was found with deterministic history handling plus random target generation. It uses a saved history of up to 50 values, moving average logic, dynamic bounds `max(2.0, avg*0.8)` / `min(25.0, avg*1.5)`, a random uniform target, assurance `target*0.75`, and a trend detector using ±20% around the moving average.
