@@ -26,7 +26,7 @@ Deno.serve(async (req) => {
     if (!api.ok) throw new Error(`LuckyJet API ${api.status}`);
     const raw = await api.json();
     const value = Number(raw?.stopCoefficients?.[0]);
-    if (!Number.isFinite(value)) return new Response(JSON.stringify({ ok: true, skipped: "NO_COEFFICIENT" }), { headers });
+    if (!Number.isFinite(value) || value <= 0) return new Response(JSON.stringify({ ok: true, skipped: "NO_COEFFICIENT" }), { headers });
     const coefficient = Number((value === 1 ? 1.01 : value).toFixed(2));
     const sourceTime = String(raw?.currentTime ?? raw?.roundConfig?.id ?? "");
     const bucket = Math.floor(Date.now() / 45000);
