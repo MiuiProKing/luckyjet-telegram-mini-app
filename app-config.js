@@ -1,6 +1,6 @@
 window.ALLPREDICTOR_CONFIG = Object.freeze({
   appName: "AllPredictor 1Win",
-  version: "3.2.0",
+  version: "3.3.0",
   botUsername: "AllPredictorVrs2_bot",
   creatorUsername: "V0xFF3",
   creatorUrl: "https://t.me/V0xFF3",
@@ -8,8 +8,8 @@ window.ALLPREDICTOR_CONFIG = Object.freeze({
   supportedLanguages: ["ru", "en", "id"],
 
   // Public Supabase project values. These are safe for the browser.
-  supabaseUrl: "https://lcgewatmbpfxzoiqneoa.supabase.co",
-  supabaseAnonKey: "sb_publishable_UkPgmNkmrIYds4psoUW7-g_7I8k_Q25",
+  supabaseUrl: "https://xlidiojdbozxikjloiaj.supabase.co",
+  supabaseAnonKey: "sb_publishable_6F75mqUPl60UtjgJs79oEg_018AqwcS",
 
   adminTelegramIds: [8016237913],
 

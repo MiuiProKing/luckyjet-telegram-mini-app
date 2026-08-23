@@ -50,10 +50,10 @@
   }
 
   function addProCards(){
-    makeCard({key:"luckyjet-beta-classic",cls:"beta-classic-card",badge:"CLASSIC",name:"LUCKY JET BETA",studio:"CLASSIC LOGIC • ORIGINAL API",file:"beta-classic.html?v=20260823-1",aria:"Open Lucky Jet Beta Classic"});
-    makeCard({key:"luckyjet-beta-ai",cls:"beta-ai-card",badge:"AI 🤖",name:"BETA AI",studio:"24/7 SERVER ANALYSIS • HISTORY",file:"beta-ai.html?v=20260823-1",aria:"Open Lucky Jet Beta AI"});
-    makeCard({key:"luckyjet-beta-v2",cls:"beta-v2-card",badge:"BETA V2",name:"LUCKY JET BIG X",studio:"TOPCOEFFICIENT • MAX DAY",file:"beta-v2/?v=20260823-1",aria:"Открыть Lucky Jet BETA V2 BIG X"});
-    makeCard({key:"luckyjet-precision-3",cls:"precision-3-card",badge:"10X RADAR",name:"LUCKY JET 10X+",studio:"СИГНАЛ ДО 3 РАУНДОВ • LIVE",file:"precision-3/?v=20260823-1",aria:"Открыть Lucky Jet PRECISION 3 10X RADAR"});
+    makeCard({key:"luckyjet-beta-classic",cls:"beta-classic-card",badge:"CLASSIC",name:"LUCKY JET BETA",studio:"CLASSIC LOGIC • ORIGINAL API",file:"beta-classic.html?v=20260823-2",aria:"Open Lucky Jet Beta Classic"});
+    makeCard({key:"luckyjet-beta-ai",cls:"beta-ai-card",badge:"AI 🤖",name:"BETA AI",studio:"24/7 SERVER ANALYSIS • HISTORY",file:"beta-ai.html?v=20260823-2",aria:"Open Lucky Jet Beta AI"});
+    makeCard({key:"luckyjet-beta-v2",cls:"beta-v2-card",badge:"BETA V2",name:"LUCKY JET BIG X",studio:"TOPCOEFFICIENT • MAX DAY",file:"beta-v2/?v=20260823-2",aria:"Открыть Lucky Jet BETA V2 BIG X"});
+    makeCard({key:"luckyjet-precision-3",cls:"precision-3-card",badge:"10X RADAR",name:"LUCKY JET 10X+",studio:"СИГНАЛ ДО 3 РАУНДОВ • LIVE",file:"precision-3/?v=20260823-2",aria:"Открыть Lucky Jet PRECISION 3 10X RADAR"});
     makeCard({key:"rocketqueen-ru",cls:"rocketqueen-ru-card",badge:"🇷🇺 RU",name:"ROCKET QUEEN",studio:"РУССКАЯ ВЕРСИЯ",file:"https://miuiproking.github.io/luckyjet-telegram-mini-app/rocket-queen-ru/?v=b0934b3",aria:"Открыть Rocket Queen на русском",art:"pro-rocketqueen.jpg"});
     const subtitle=document.querySelector(".pro-subtitle"); if(subtitle) subtitle.textContent="LIVE-анализаторы и BETA AI 24/7. Выберите нужную версию.";
   }

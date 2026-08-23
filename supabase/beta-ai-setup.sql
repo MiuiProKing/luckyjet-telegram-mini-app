@@ -44,7 +44,7 @@ select cron.schedule(
   '* * * * *',
   $$
   select net.http_post(
-    url := 'https://lcgewatmbpfxzoiqneoa.supabase.co/functions/v1/beta-ai-worker',
+    url := 'https://xlidiojdbozxikjloiaj.supabase.co/functions/v1/beta-ai-worker',
     headers := jsonb_build_object('Content-Type','application/json','x-cron-secret','YOUR_CRON_SECRET'),
     body := '{}'::jsonb
   );

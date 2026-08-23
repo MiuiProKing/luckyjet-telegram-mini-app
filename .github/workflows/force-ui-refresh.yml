@@ -20,7 +20,7 @@ jobs:
           import base64
           import gzip
 
-          version = "20260823-1"
+          version = "20260823-2"
           lucky_api = "https://crash-gateway-grm-cr.100hp.app/state"
           lucky_customer = "077dee8d-c923-4c02-9bee-757573662e69"
           lucky_session = "783ee79a-dafc-479e-bf22-834336380cdf"
@@ -84,7 +84,7 @@ jobs:
                       s, count = re.subn(pattern, lambda m: m.group(1) + beta_card, s, count=1)
                       if count == 0:
                           raise RuntimeError('PRO Rocket Queen card marker was not found')
-                  handler = '  document.querySelector(\'[data-open-pro="luckyjet-beta"]\').addEventListener("click", () => { window.location.href = "https://miuiproking.github.io/luckyjet-telegram-mini-app/ru-ukraine/?v=20260823-1"; });'
+                  handler = f'  document.querySelector(\'[data-open-pro="luckyjet-beta"]\').addEventListener("click", () => {{ window.location.href = "https://miuiproking.github.io/luckyjet-telegram-mini-app/ru-ukraine/?v={version}"; }});'
                   s = '\n'.join(line for line in s.splitlines() if not ('data-open-pro="luckyjet-beta"' in line and '.addEventListener' in line))
                   marker = '  document.querySelector(\'[data-open-pro="rocketqueen"]\').addEventListener("click", () => { window.location.href = "pro-rocketqueen.html"; });'
                   if marker not in s:

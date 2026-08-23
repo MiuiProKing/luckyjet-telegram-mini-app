@@ -327,8 +327,8 @@
 <link rel="stylesheet" href="theme.css">
 <link rel="stylesheet" href="telegram.css">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
-<script src="telegram.js?v=20260823-1"></script>
-<script src="theme.js"></script><script src="owner-tools.js?v=20260823-1"></script><script src="app-config.js?v=20260823-1"></script><script src="i18n-runtime.js?v=20260823-1"></script><script src="language-onboarding.js?v=20260823-1"></script><script src="license-client.js?v=20260823-1"></script><script src="access.js?v=20260823-1"></script><script src="analytics-client.js?v=20260823-1"></script><script src="app-center.js?v=20260823-1"></script></head>
+<script src="telegram.js?v=20260823-2"></script>
+<script src="theme.js"></script><script src="owner-tools.js?v=20260823-2"></script><script src="app-config.js?v=20260823-2"></script><script src="i18n-runtime.js?v=20260823-2"></script><script src="language-onboarding.js?v=20260823-2"></script><script src="license-client.js?v=20260823-2"></script><script src="access.js?v=20260823-2"></script><script src="analytics-client.js?v=20260823-2"></script><script src="app-center.js?v=20260823-2"></script></head>
 <body class="catalog-active">
   <section class="catalog-view" id="selectorView" aria-label="Game selector">
     <div class="catalog-shell">
@@ -576,9 +576,9 @@
   document.querySelector('[data-open-game="luckyjet"]').addEventListener("click", openLuckyJet);
   document.querySelector('[data-open-game="aviator"]').addEventListener("click", () => { window.location.href = "aviator.html"; });
   document.querySelector('[data-open-game="rocketqueen"]').addEventListener("click", () => { window.location.href = "rocketqueen.html"; });
-  document.querySelector('[data-open-pro="luckyjet"]').addEventListener("click", () => { window.location.href = "pro-luckyjet.html?v=20260823-1"; });
+  document.querySelector('[data-open-pro="luckyjet"]').addEventListener("click", () => { window.location.href = "pro-luckyjet.html?v=20260823-2"; });
   document.querySelector('[data-open-pro="rocketqueen"]').addEventListener("click", () => { window.location.href = "pro-rocketqueen.html"; });
-  document.querySelector('[data-open-pro="luckyjet-beta"]').addEventListener("click", () => { window.location.href = "https://miuiproking.github.io/luckyjet-telegram-mini-app/ru-ukraine/?v=20260823-1"; });
+  document.querySelector('[data-open-pro="luckyjet-beta"]').addEventListener("click", () => { window.location.href = "https://miuiproking.github.io/luckyjet-telegram-mini-app/ru-ukraine/?v=20260823-2"; });
   appTabs.forEach(tab => tab.addEventListener("click", () => tab.dataset.appTab === "pro" ? openPro() : openCatalog()));
   document.getElementById("backToCatalog").addEventListener("click", openCatalog);
   document.querySelectorAll("[data-locked-game]").forEach(card => {
