@@ -108,6 +108,46 @@ Source: https://telemetr.io/uz/cc/1YaeiK
 
 Interpretation: confirms a separate automatic-prediction distribution branch existed publicly in the BABEL lineage, but its exact channel identity is not yet verified.
 
+### Newly verified App Store lineage: 4.3.16 → 4.3.17 → 4.3.18
+Apple's public App Store version history now confirms three earlier releases that extend the verified AllPredictor lineage backward before 4.3.19:
+
+- 4.3.16 — 8 May 2026
+- 4.3.17 — 10 May 2026 — visual optimizations, stability improvements, bug fixes
+- 4.3.18 — 22 May 2026 — `40 predictors ajoutés`, `9 langues supportées`, `predictions améliorées`, `nouvelles options`
+
+Public App Store source:
+- https://apps.apple.com/in/app/allpredictor/id6762495082
+
+Independent BABEL SEY archive evidence also states: `ALLPREDICTOR EST MAINTENANT DISPONIBLE SUR APPSTORE V4.3.16` and `Nouvelle version ce soir : V4.3.17`.
+
+Archive source:
+- https://telemetr.io/ch/cc/1YaeiK
+
+Interpretation: 4.3.18 is an important prediction-system transition point because the changelog explicitly says 40 predictors were added before 4.3.19's later `amélioration du système de prédictions`. This does not expose the formulas, but it narrows the most valuable binary/source-diff window to 4.3.17 → 4.3.18 → 4.3.19.
+
+### Current public lineage beyond 4.4.23
+The same App Store history confirms later public versions:
+
+- 4.4.24 — 8 Jul 2026 — bug fixes
+- 4.5.25 — 5 Aug 2026 — bug fixes
+
+Source:
+- https://apps.apple.com/in/app/allpredictor/id6762495082
+
+This extends the verified public lineage beyond the previously analyzed 4.4.23 package.
+
+### Fresh August app-centric transition statement
+A current public `@babelseyy` archive, crawled 23 Aug 2026, contains the announcement:
+
+`TOUT PASSE DANS L’APPLICATION MAINTENANT TOUT EST PROPRE LE PROBLÈME DE CONFIRMATION AVEC LE BOT EST RÉGLÉ`
+
+The adjacent posts instruct Android users to install a new update and explicitly say the old version must be uninstalled before installing the new one.
+
+Source:
+- https://tlmtr.io/uk/channels/1963411992-babelseyy
+
+Interpretation: this is fresh public evidence that the BABEL/AllPredictor workflow was shifted more heavily into the application and that a bot-confirmation integration issue was fixed in the new build. It does not by itself identify a new prediction endpoint or algorithm.
+
 ## Related but NOT confirmed BABEL source code
 
 A public myCompiler Python artifact titled `Lucky jet predictor` was found with deterministic history handling plus random target generation. It uses a saved history of up to 50 values, moving average logic, dynamic bounds `max(2.0, avg*0.8)` / `min(25.0, avg*1.5)`, a random uniform target, assurance `target*0.75`, and a trend detector using ±20% around the moving average.
