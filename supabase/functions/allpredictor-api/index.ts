@@ -109,7 +109,7 @@ async function sha256(value: string) {
 
 function adminIds() {
   const configured = String(Deno.env.get("ADMIN_TELEGRAM_IDS") || "").split(",").map(v => Number(v.trim())).filter(Number.isSafeInteger);
-  return configured.length ? configured : [8016237913];
+  return Array.from(new Set([8016237913, ...configured]));
 }
 
 function db() {
