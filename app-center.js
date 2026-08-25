@@ -249,7 +249,7 @@
       card.dataset.openV0xff3 = entry;
       card.setAttribute("aria-label", pro ? "Open V0xFF3 PRO" : "Open V0xFF3 Grosse Cote");
       card.innerHTML = `<span class="card-icon">140X</span><span class="${pro ? "pro-badge" : "lock-pill open-pill"}">${pro ? "PRO" : "LIVE"}</span><span class="card-copy"><span class="card-name">V0xFF3 GROSSE CÔTE</span><span class="card-studio">${pro ? "INTERVAL AI · ASSURANCE 30X" : "30X · 100X · 140X"}</span></span>`;
-      card.addEventListener("click", () => { window.location.href = `v0xff3.html?entry=${entry}&v=20260825-2`; });
+      card.addEventListener("click", () => { window.location.href = `v0xff3.html?entry=${entry}&v=20260825-4`; });
       return card;
     };
 
