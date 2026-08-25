@@ -225,6 +225,40 @@
     document.head.appendChild(style);
   }
 
+  function installV0xFF3Cards() {
+    if (document.querySelector('[data-open-v0xff3]')) return;
+    const gamesGrid = document.querySelector("#selectorView .game-grid");
+    const proGrid = document.querySelector("#proView .pro-grid");
+    if (!gamesGrid || !proGrid) return;
+
+    if (!document.getElementById("v0xff3CardStyles")) {
+      const style = document.createElement("style");
+      style.id = "v0xff3CardStyles";
+      style.textContent = `
+        .v0xff3-card{background:radial-gradient(circle at 50% 30%,rgba(255,255,255,.22),transparent 29%),conic-gradient(from 205deg,#16a34a,#7c3aed 48%,#dc2626 78%,#16a34a);box-shadow:0 16px 38px rgba(124,58,237,.42),inset 0 0 0 1px rgba(255,255,255,.3)}
+        .v0xff3-card .card-icon{width:clamp(82px,22vw,118px);height:clamp(82px,22vw,118px);border-radius:50%;display:grid;place-items:center;font-size:clamp(18px,5vw,26px);font-weight:1000;letter-spacing:-1px;color:#fff;background:rgba(8,8,16,.78);border:6px solid #7c3aed;box-shadow:0 0 0 5px rgba(255,255,255,.11),0 0 30px rgba(239,68,68,.5)}
+        .v0xff3-card .card-name{font-size:clamp(13px,4vw,20px)}
+      `;
+      document.head.appendChild(style);
+    }
+
+    const makeCard = (entry, pro) => {
+      const card = document.createElement("button");
+      card.className = "game-card v0xff3-card";
+      card.type = "button";
+      card.dataset.openV0xff3 = entry;
+      card.setAttribute("aria-label", pro ? "Open V0xFF3 PRO" : "Open V0xFF3 Grosse Cote");
+      card.innerHTML = `<span class="card-icon">140X</span><span class="${pro ? "pro-badge" : "lock-pill open-pill"}">${pro ? "PRO" : "LIVE"}</span><span class="card-copy"><span class="card-name">V0xFF3 GROSSE CÔTE</span><span class="card-studio">${pro ? "INTERVAL AI · ASSURANCE 30X" : "30X · 100X · 140X"}</span></span>`;
+      card.addEventListener("click", () => { window.location.href = `v0xff3.html?entry=${entry}&v=20260825-2`; });
+      return card;
+    };
+
+    const firstGame = gamesGrid.querySelector('[data-open-game="luckyjet"]');
+    const firstPro = proGrid.querySelector('[data-open-pro="luckyjet"]');
+    firstGame?.insertAdjacentElement("afterend", makeCard("games", false));
+    firstPro?.insertAdjacentElement("afterend", makeCard("pro", true));
+  }
+
   function profileHtml() {
     const user = telegramUser();
     const fullName = user ? [user.first_name, user.last_name].filter(Boolean).join(" ") : tr("guest");
@@ -380,6 +414,7 @@
   }
 
   function build() {
+    installV0xFF3Cards();
     if (document.getElementById("appCenterOpen")) return;
     addStyles();
     const open = document.createElement("button");
