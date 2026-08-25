@@ -1,50 +1,68 @@
 <!doctype html>
 <html lang="ru">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-  <meta name="theme-color" content="#090612">
-  <title>V0xFF3 · NATIVE LIVE + SQLite</title>
-  <style>
-    html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#090612}
-    #v0{display:block;width:100%;height:100dvh;border:0;background:#090612}
-  </style>
-<script src="app-config.js?v=20260823-2"></script><script src="i18n-runtime.js?v=20260823-2"></script><script src="language-onboarding.js?v=20260823-2"></script><script src="license-client.js?v=20260823-2"></script><script src="access.js?v=20260823-2"></script><script src="analytics-client.js?v=20260823-2"></script><script src="app-center.js?v=20260823-2"></script></head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#090612">
+<title>V0xFF3 · NATIVE LIVE + SQLite</title>
+<style>
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#090612}
+#v0{display:block;width:100%;height:100dvh;border:0;background:#090612}
+</style>
+<script src="app-config.js?v=20260823-2"></script><script src="i18n-runtime.js?v=20260823-2"></script><script src="language-onboarding.js?v=20260823-2"></script><script src="license-client.js?v=20260823-2"></script><script src="access.js?v=20260823-2"></script><script src="analytics-client.js?v=20260823-2"></script><script src="app-center.js?v=20260823-2"></script>
+</head>
 <body>
-<iframe id="v0" src="./v0xff3.html?v=20260825-4" allow="autoplay; fullscreen; screen-wake-lock"></iframe>
+<iframe id="v0" src="./v0xff3.html?v=20260825-7" allow="autoplay; fullscreen; screen-wake-lock"></iframe>
 <script>
 (()=>{
   'use strict';
   const STORE='v0xff3_browser_engine_v1';
   const frame=document.getElementById('v0');
-  let lastNativeFingerprint='';
+  let lastChartFingerprint='';
 
-  function nativeState(){
+  function readState(){
     try{
       const s=JSON.parse(localStorage.getItem(STORE)||'null');
-      if(!s||!Array.isArray(s.rounds))return null;
-      s.rounds=s.rounds
+      if(!s||typeof s!=='object')return null;
+      s.rounds=(Array.isArray(s.rounds)?s.rounds:[])
         .filter(r=>r&&Number.isFinite(Number(r.coefficient)))
         .sort((a,b)=>Number(a.ts||0)-Number(b.ts||0));
+      s.signals=Array.isArray(s.signals)?s.signals:[];
       return s;
     }catch(_){return null}
   }
 
-  function fakeNativeFetch(w){
-    if(!w||w.__V0_NATIVE_FETCH__)return;
+  function openSignal(s){
+    if(!s)return null;
+    for(let i=s.signals.length-1;i>=0;i--){
+      const sig=s.signals[i];
+      if(sig&&!sig.result)return sig;
+    }
+    return null;
+  }
+
+  function progress(s){
+    const sig=openSignal(s);
+    if(!sig)return 0;
+    const start=Number(sig.createdAt||sig.primaryStart||Date.now());
+    return Math.min(3,s.rounds.filter(r=>Number(r.ts||0)>=start).length);
+  }
+
+  function installFetch(w){
+    if(!w||w.__V0_NATIVE_SQLITE_FETCH__)return;
     const original=w.fetch.bind(w);
-    w.__V0_NATIVE_FETCH__=true;
+    w.__V0_NATIVE_SQLITE_FETCH__=true;
     w.fetch=async function(input,init){
       const url=String(input&&input.url||input||'');
       if(url.includes('crash-gateway-grm-cr.100hp.app/history')){
-        const s=nativeState();
+        const s=readState();
         if(s&&s.rounds.length){
-          const newest=s.rounds.slice(-80).reverse().map(r=>({
+          const history=s.rounds.slice(-120).reverse().map(r=>({
             id:String(r.id),
             topCoefficient:Number(r.coefficient),
             timestamp:Number(r.ts||Date.now())
           }));
-          return new w.Response(JSON.stringify({history:newest}),{
+          return new w.Response(JSON.stringify({history}),{
             status:200,
             headers:{'Content-Type':'application/json','X-V0xFF3-Source':'NATIVE-SQLITE'}
           });
@@ -54,58 +72,81 @@
     };
   }
 
-  function paintNative(){
-    const s=nativeState();
-    const w=frame.contentWindow;
-    const d=frame.contentDocument;
-    if(w)fakeNativeFetch(w);
-    if(!s||!s.rounds.length||!d)return;
+  function installCss(d){
+    if(!d||d.getElementById('v0-native-layout'))return;
+    const st=d.createElement('style');
+    st.id='v0-native-layout';
+    st.textContent=`
+      @media(max-width:600px) and (max-height:900px){
+        html,body{overflow-y:auto!important;overflow-x:hidden!important}
+        .app{height:auto!important;min-height:100dvh!important;overflow:visible!important;padding-bottom:calc(8px + env(safe-area-inset-bottom))!important}
+        .signal-card.show{position:static!important;left:auto!important;right:auto!important;bottom:auto!important;width:auto!important;margin:0!important;padding:7px 9px!important;border-radius:13px!important;box-shadow:none!important;z-index:1!important}
+        .signal-card h2{font-size:12px!important;margin:0 0 5px!important}
+        .signal-grid{grid-template-columns:repeat(4,1fr)!important;gap:4px!important}
+        .signal-grid div{padding:4px!important}
+        .signal-grid span{font-size:6px!important}.signal-grid b{font-size:9px!important;margin-top:1px!important}
+        .basis{font-size:6px!important;margin-top:4px!important;line-height:1.15!important}
+        .section,.actions{position:relative!important;z-index:2!important}
+      }
+    `;
+    d.head.appendChild(st);
+  }
+
+  function paint(){
+    let d,w;
+    try{d=frame.contentDocument;w=frame.contentWindow}catch(_){return}
+    if(!d||!w)return;
+    installFetch(w);installCss(d);
+    const s=readState();
+    if(!s||!s.rounds.length)return;
 
     const rows=s.rounds;
     const last=rows[rows.length-1];
-    const fingerprint=String(last.id)+'|'+Number(last.coefficient).toFixed(4)+'|'+rows.length;
-    lastNativeFingerprint=fingerprint;
+    const c=Number(last.coefficient);
 
-    const lastCoef=d.getElementById('lastCoef');
-    if(lastCoef)lastCoef.textContent=Number(last.coefficient).toFixed(2)+'X';
+    const coef=d.getElementById('lastCoef');
+    if(coef)coef.textContent=c.toFixed(2)+'X';
 
-    const connection=d.getElementById('connection');
-    if(connection){
-      connection.className='connection ok';
-      connection.textContent='● NATIVE LIVE + SQLite · '+rows.length+' раундов · '+Number(last.coefficient).toFixed(2)+'X';
+    const conn=d.getElementById('connection');
+    if(conn){
+      conn.className='connection ok';
+      conn.textContent='● NATIVE LIVE + SQLite · '+rows.length+' в базе · LIVE '+c.toFixed(2)+'X';
     }
 
-    const roundCount=d.getElementById('roundCount');
-    if(roundCount)roundCount.textContent=rows.length+' раундов · SQLite';
-
-    const roundsAfter=d.getElementById('roundsAfter');
-    if(roundsAfter){
-      let n=null;
-      for(let i=rows.length-1;i>=0;i--){if(Number(rows[i].coefficient)>=140){n=rows.length-1-i;break}}
-      roundsAfter.textContent=n==null?'—':String(n);
+    const roundValue=d.getElementById('roundsAfter');
+    if(roundValue){
+      const box=roundValue.closest('.stat');
+      const label=box&&box.querySelector('span');
+      if(label)label.textContent='РАУНД';
+      roundValue.textContent=progress(s)+'/3';
     }
+
+    const rc=d.getElementById('roundCount');
+    if(rc)rc.textContent=rows.length+' раундов · SQLite';
+
+    const fp=String(last.id)+'|'+c.toFixed(4)+'|'+rows.length;
+    if(fp===lastChartFingerprint)return;
+    lastChartFingerprint=fp;
 
     const chart=d.getElementById('chart');
     if(chart){
-      const tail=rows.slice(-8);
-      chart.innerHTML=tail.map(r=>{
-        const c=Number(r.coefficient);
-        const h=Math.max(5,Math.min(100,Math.log10(Math.max(1.01,c))*58+7));
-        const cls=c>=30?'x30':c>=10?'x10':c>=2?'x2':'';
-        return '<div class="bar-wrap"><div class="bar '+cls+'" style="height:'+h+'%"></div><div class="bar-value">'+c.toFixed(1)+'</div></div>';
+      chart.innerHTML=rows.slice(-8).map(r=>{
+        const x=Number(r.coefficient);
+        const h=Math.max(5,Math.min(100,Math.log10(Math.max(1.01,x))*58+7));
+        const cls=x>=30?'x30':x>=10?'x10':x>=2?'x2':'';
+        return '<div class="bar-wrap"><div class="bar '+cls+'" style="height:'+h+'%"></div><div class="bar-value">'+x.toFixed(1)+'</div></div>';
       }).join('');
     }
   }
 
-  // Called directly by the patched native WKWebView bridge after every SQLite sync.
-  window.V0N=paintNative;
+  window.V0N=paint;
+  window.V0FF3_NATIVE_REFRESH=paint;
   frame.addEventListener('load',()=>{
-    fakeNativeFetch(frame.contentWindow);
-    paintNative();
-    setTimeout(paintNative,100);
-    setTimeout(paintNative,600);
+    try{installFetch(frame.contentWindow);installCss(frame.contentDocument)}catch(_){}
+    paint();setTimeout(paint,150);setTimeout(paint,700);
   });
-  setInterval(paintNative,200);
+  window.addEventListener('storage',paint);
+  setInterval(paint,1000);
 })();
 </script>
 </body>
