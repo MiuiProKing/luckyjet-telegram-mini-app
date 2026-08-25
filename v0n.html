@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+  <meta name="theme-color" content="#090612">
+  <title>V0xFF3 · NATIVE LIVE + SQLite</title>
+  <style>
+    html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#090612}
+    #v0{display:block;width:100%;height:100dvh;border:0;background:#090612}
+  </style>
+</head>
+<body>
+<iframe id="v0" src="./v0xff3.html?v=20260825-4" allow="autoplay; fullscreen; screen-wake-lock"></iframe>
+<script>
+(()=>{
+  'use strict';
+  const STORE='v0xff3_browser_engine_v1';
+  const frame=document.getElementById('v0');
+  let lastNativeFingerprint='';
+
+  function nativeState(){
+    try{
+      const s=JSON.parse(localStorage.getItem(STORE)||'null');
+      if(!s||!Array.isArray(s.rounds))return null;
+      s.rounds=s.rounds
+        .filter(r=>r&&Number.isFinite(Number(r.coefficient)))
+        .sort((a,b)=>Number(a.ts||0)-Number(b.ts||0));
+      return s;
+    }catch(_){return null}
+  }
+
+  function fakeNativeFetch(w){
+    if(!w||w.__V0_NATIVE_FETCH__)return;
+    const original=w.fetch.bind(w);
+    w.__V0_NATIVE_FETCH__=true;
+    w.fetch=async function(input,init){
+      const url=String(input&&input.url||input||'');
+      if(url.includes('crash-gateway-grm-cr.100hp.app/history')){
+        const s=nativeState();
+        if(s&&s.rounds.length){
+          const newest=s.rounds.slice(-80).reverse().map(r=>({
+            id:String(r.id),
+            topCoefficient:Number(r.coefficient),
+            timestamp:Number(r.ts||Date.now())
+          }));
+          return new w.Response(JSON.stringify({history:newest}),{
+            status:200,
+            headers:{'Content-Type':'application/json','X-V0xFF3-Source':'NATIVE-SQLITE'}
+          });
+        }
+      }
+      return original(input,init);
+    };
+  }
+
+  function paintNative(){
+    const s=nativeState();
+    const w=frame.contentWindow;
+    const d=frame.contentDocument;
+    if(w)fakeNativeFetch(w);
+    if(!s||!s.rounds.length||!d)return;
+
+    const rows=s.rounds;
+    const last=rows[rows.length-1];
+    const fingerprint=String(last.id)+'|'+Number(last.coefficient).toFixed(4)+'|'+rows.length;
+    lastNativeFingerprint=fingerprint;
+
+    const lastCoef=d.getElementById('lastCoef');
+    if(lastCoef)lastCoef.textContent=Number(last.coefficient).toFixed(2)+'X';
+
+    const connection=d.getElementById('connection');
+    if(connection){
+      connection.className='connection ok';
+      connection.textContent='● NATIVE LIVE + SQLite · '+rows.length+' раундов · '+Number(last.coefficient).toFixed(2)+'X';
+    }
+
+    const roundCount=d.getElementById('roundCount');
+    if(roundCount)roundCount.textContent=rows.length+' раундов · SQLite';
+
+    const roundsAfter=d.getElementById('roundsAfter');
+    if(roundsAfter){
+      let n=null;
+      for(let i=rows.length-1;i>=0;i--){if(Number(rows[i].coefficient)>=140){n=rows.length-1-i;break}}
+      roundsAfter.textContent=n==null?'—':String(n);
+    }
+
+    const chart=d.getElementById('chart');
+    if(chart){
+      const tail=rows.slice(-8);
+      chart.innerHTML=tail.map(r=>{
+        const c=Number(r.coefficient);
+        const h=Math.max(5,Math.min(100,Math.log10(Math.max(1.01,c))*58+7));
+        const cls=c>=30?'x30':c>=10?'x10':c>=2?'x2':'';
+        return '<div class="bar-wrap"><div class="bar '+cls+'" style="height:'+h+'%"></div><div class="bar-value">'+c.toFixed(1)+'</div></div>';
+      }).join('');
+    }
+  }
+
+  // Called directly by the patched native WKWebView bridge after every SQLite sync.
+  window.V0N=paintNative;
+  frame.addEventListener('load',()=>{
+    fakeNativeFetch(frame.contentWindow);
+    paintNative();
+    setTimeout(paintNative,100);
+    setTimeout(paintNative,600);
+  });
+  setInterval(paintNative,200);
+})();
+</script>
+</body>
+</html>
