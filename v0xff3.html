@@ -67,14 +67,14 @@
   <link rel="stylesheet" href="telegram.css">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="telegram.js?v=20260823-2"></script>
-  
-  
-  
-  
-  
-  
-  
-<script src="app-config.js?v=20260823-2"></script><script src="i18n-runtime.js?v=20260823-2"></script><script src="language-onboarding.js?v=20260823-2"></script><script src="license-client.js?v=20260823-2"></script><script src="access.js?v=20260823-2"></script><script src="analytics-client.js?v=20260823-2"></script><script src="app-center.js?v=20260823-2"></script></head>
+  <script src="app-config.js?v=20260823-2"></script>
+  <script src="i18n-runtime.js?v=20260823-2"></script>
+  <script src="language-onboarding.js?v=20260823-2"></script>
+  <script src="license-client.js?v=20260823-2"></script>
+  <script src="access.js?v=20260823-2"></script>
+  <script src="analytics-client.js?v=20260823-2"></script>
+  <script src="app-center.js?v=20260823-2"></script>
+</head>
 <body>
   <main class="app">
     <header class="top">
@@ -145,6 +145,7 @@
   <aside class="drawer" id="drawer">
     <div class="drawer-box">
       <div class="drawer-head"><h2>V0xFF3 · НАСТРОЙКИ</h2><button class="close" id="closeDrawer">×</button></div>
+      <div class="field"><label>SQLITE SERVER URL · 24/7</label><input id="collectorInput" autocomplete="off" spellcheck="false" placeholder="https://ваш-worker.example"></div>
       <div class="field"><label>LUCKY JET SESSION-ID</label><input id="sessionInput" autocomplete="off" spellcheck="false"></div>
       <div class="row"><button class="small-btn" id="saveSession">СОХРАНИТЬ</button><button class="small-btn" id="checkConnection">ПРОВЕРИТЬ</button></div>
       <div class="row"><button class="small-btn" id="soundBtn">🔊 ЗВУК: ВКЛ</button><button class="small-btn" id="resetStats">СБРОСИТЬ СТАТИСТИКУ</button></div>
@@ -161,6 +162,7 @@
   const CUSTOMER_ID='077dee8d-c923-4c02-9bee-757573662e69';
   const DEFAULT_SESSION_ID='';
   const SESSION_KEY='V0XFF3_LJ_SESSION_ID';
+  const COLLECTOR_KEY='V0XFF3_SQLITE_SERVER_URL';
   const STORE_KEY='v0xff3_browser_engine_v1';
   const POLL_MS=4000, MAX_ROUNDS=5000, ESTIMATED_ROUND_MS=12000;
   const ASSURANCE_X=30, HIGH_X=100, TARGET_X=140;
@@ -172,12 +174,12 @@
     primary:$('primaryWindow'),reserve:$('reserveWindow'),clock:$('clock'),roundsAfter:$('roundsAfter'),lastCoef:$('lastCoef'),
     wins:$('wins'),losses:$('losses'),total:$('total'),series:$('series'),streak:$('streakText'),roundCount:$('roundCount'),chart:$('chart'),
     signalCard:$('signalCard'),signalTitle:$('signalTitle'),signalPrimary:$('signalPrimary'),signalReserve:$('signalReserve'),signalBasis:$('signalBasis'),
-    signalBtn:$('signalBtn'),autoBtn:$('autoBtn'),wakeBtn:$('wakeBtn'),session:$('sessionInput'),saveSession:$('saveSession'),
+    signalBtn:$('signalBtn'),autoBtn:$('autoBtn'),wakeBtn:$('wakeBtn'),collector:$('collectorInput'),session:$('sessionInput'),saveSession:$('saveSession'),
     check:$('checkConnection'),sound:$('soundBtn'),reset:$('resetStats'),history:$('historyList'),toast:$('toast')
   };
 
   const emptyState={rounds:[],signals:[],outcomes:[],wins:0,losses:0,auto:false,sound:true,lastFetch:0};
-  let state=loadState(), polling=false, timer=null, wakeLock=null, toastTimer=null;
+  let state=loadState(), polling=false, timer=null, wakeLock=null, toastTimer=null, lastSource='DIRECT LIVE';
 
   function loadState(){
     try{
@@ -192,6 +194,8 @@
     localStorage.setItem(STORE_KEY,JSON.stringify(state));
   }
   function sessionId(){return (localStorage.getItem(SESSION_KEY)||DEFAULT_SESSION_ID).trim()}
+  function collectorUrl(){return (localStorage.getItem(COLLECTOR_KEY)||'').trim().replace(/\/+$/,'')}
+  function saveCollector(value){const v=String(value||'').trim().replace(/\/+$/,'');if(v)localStorage.setItem(COLLECTOR_KEY,v);else localStorage.removeItem(COLLECTOR_KEY);ui.collector.value=collectorUrl()}
   function saveSession(value){const v=String(value||'').trim();if(v)localStorage.setItem(SESSION_KEY,v);else localStorage.removeItem(SESSION_KEY);ui.session.value=sessionId()}
   function now(){return new Date()}
   function kyivTime(date,seconds=false){return new Intl.DateTimeFormat('ru-RU',{timeZone:'Europe/Kyiv',hour:'2-digit',minute:'2-digit',second:seconds?'2-digit':undefined,hour12:false}).format(date)}
@@ -228,6 +232,16 @@
     const realTs=timeOf(item);return{id,coefficient,ts:realTs||fetchTime-index*ESTIMATED_ROUND_MS,estimated:!realTs};
   }
   async function fetchHistory(){
+    const collector=collectorUrl();
+    if(collector){
+      try{
+        const response=await fetch(collector+'/snapshot?limit=5000&t='+Date.now(),{cache:'no-store'});
+        if(!response.ok)throw new Error('SQLite HTTP '+response.status);
+        const data=await response.json(),items=extractItems(data),fetchTime=Date.now(),seen=new Set(),rows=[];
+        items.forEach((item,index)=>{const row=normalize(item,index,fetchTime);if(row&&!seen.has(row.id)){seen.add(row.id);rows.push(row)}});
+        if(!rows.length)throw new Error('SQLite пока пуст');lastSource='SQLITE 24/7';return rows;
+      }catch(error){console.warn('SQLite collector fallback:',error)}
+    }
     if(!sessionId())throw new Error('Укажите Lucky Jet session-id в меню ≡');
     const ctl=typeof AbortController!=='undefined'?new AbortController():null;const timeout=ctl?setTimeout(()=>ctl.abort(),12000):null;
     try{
@@ -235,7 +249,7 @@
       if(!response.ok)throw new Error('HTTP '+response.status);
       const items=extractItems(await response.json()),fetchTime=Date.now(),seen=new Set(),rows=[];
       items.forEach((item,index)=>{const row=normalize(item,index,fetchTime);if(row&&!seen.has(row.id)){seen.add(row.id);rows.push(row)}});
-      if(!rows.length)throw new Error('История пуста');return rows;
+      if(!rows.length)throw new Error('История пуста');lastSource='DIRECT LIVE';return rows;
     }finally{if(timeout)clearTimeout(timeout)}
   }
   function mergeRounds(fetched){
@@ -309,7 +323,7 @@
   async function poll(){
     if(polling)return;polling=true;
     try{
-      const rows=await fetchHistory(),added=mergeRounds(rows);state.lastFetch=Date.now();saveState();ui.connection.className='connection ok';ui.connection.textContent='● LIVE /history · '+rows.length+' получено · +'+added+' новых';
+      const rows=await fetchHistory(),added=mergeRounds(rows);state.lastFetch=Date.now();saveState();ui.connection.className='connection ok';ui.connection.textContent='● '+lastSource+' · '+rows.length+' в базе · +'+added+' новых';
       resolveSignals();if(state.auto&&!openSignal())showSignal(false);render();
     }catch(error){ui.connection.className='connection bad';ui.connection.textContent='● Ошибка LIVE: '+friendlyError(error);console.warn('V0xFF3:',error)}finally{polling=false}
   }
@@ -327,7 +341,7 @@
   function back(){const entry=new URLSearchParams(location.search).get('entry');location.href='index.html#'+(entry==='pro'?'pro':'games')}
   function wire(){
     ui.back.onclick=back;ui.menu.onclick=()=>ui.drawer.classList.add('show');ui.close.onclick=()=>ui.drawer.classList.remove('show');ui.drawer.addEventListener('click',e=>{if(e.target===ui.drawer)ui.drawer.classList.remove('show')});
-    ui.session.value=sessionId();ui.saveSession.onclick=()=>{saveSession(ui.session.value);toast('Session-id сохранён');poll()};ui.check.onclick=()=>poll();ui.reset.onclick=resetStats;
+    ui.collector.value=collectorUrl();ui.session.value=sessionId();ui.saveSession.onclick=()=>{saveCollector(ui.collector.value);saveSession(ui.session.value);toast('Подключения сохранены');poll()};ui.check.onclick=()=>poll();ui.reset.onclick=resetStats;
     ui.sound.onclick=()=>{state.sound=!state.sound;saveState();render();if(state.sound)sound('ready')};ui.signalBtn.onclick=()=>showSignal(true);ui.autoBtn.onclick=()=>{state.auto=!state.auto;saveState();render();if(state.auto){showSignal(false);toast('Автоматический режим включён')}};ui.wakeBtn.onclick=toggleWake;
     document.addEventListener('visibilitychange',async()=>{if(document.visibilityState==='visible'&&ui.wakeBtn.classList.contains('active')&&!wakeLock)try{wakeLock=await navigator.wakeLock.request('screen')}catch(_){}});
     if(!sessionId())setTimeout(()=>{ui.drawer.classList.add('show');toast('Один раз вставьте Lucky Jet session-id')},250);
