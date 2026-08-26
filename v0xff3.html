@@ -57,7 +57,7 @@
       .series{min-height:18px;gap:6px}.dot{width:12px;height:12px}.streak{font-size:9px}
       .chart{height:calc(100% - 17px);min-height:36px;padding-top:1px;gap:4px}.bar-wrap{min-width:20px;gap:2px}.bar-value{font-size:7px}
       .actions{flex:0 0 43px;grid-template-columns:repeat(3,1fr);gap:5px;margin:0}.big-btn{height:43px;border-radius:12px;padding:2px 4px;font-size:8px;line-height:1.15;letter-spacing:.6px;box-shadow:none}
-      .disclaimer{display:none}.signal-card.show{position:fixed;z-index:70;left:8px;right:8px;bottom:calc(55px + env(safe-area-inset-bottom));margin:0 auto;width:min(520px,calc(100% - 16px));padding:12px;border-radius:17px;background:rgba(12,8,22,.97);box-shadow:0 14px 45px #000}.signal-card h2{font-size:15px;margin-bottom:7px}.signal-grid{grid-template-columns:1fr 1fr;gap:5px}.signal-grid div{padding:6px}.signal-grid span{font-size:7px}.signal-grid b{font-size:12px;margin-top:2px}.basis{font-size:8px;margin-top:6px}
+      .disclaimer{display:none}.signal-card.show{display:none}
     }
     @media(orientation:landscape) and (max-height:600px){
       body{overflow:auto}.app{height:auto;min-height:100dvh;overflow:visible;display:grid;grid-template-columns:.72fr 1.28fr;grid-template-rows:38px 24px auto auto;gap:6px;padding:calc(5px + env(safe-area-inset-top)) calc(10px + env(safe-area-inset-right)) calc(5px + env(safe-area-inset-bottom)) calc(10px + env(safe-area-inset-left))}
@@ -67,14 +67,14 @@
   <link rel="stylesheet" href="telegram.css">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="telegram.js?v=20260823-2"></script>
-  
-  
-  
-  
-  
-  
-  
-<script src="app-config.js?v=20260823-2"></script><script src="i18n-runtime.js?v=20260823-2"></script><script src="language-onboarding.js?v=20260823-2"></script><script src="license-client.js?v=20260823-2"></script><script src="access.js?v=20260823-2"></script><script src="analytics-client.js?v=20260823-2"></script><script src="app-center.js?v=20260823-2"></script></head>
+  <script src="app-config.js?v=20260823-2"></script>
+  <script src="i18n-runtime.js?v=20260823-2"></script>
+  <script src="language-onboarding.js?v=20260823-2"></script>
+  <script src="license-client.js?v=20260823-2"></script>
+  <script src="access.js?v=20260823-2"></script>
+  <script src="analytics-client.js?v=20260823-2"></script>
+  <script src="app-center.js?v=20260823-2"></script>
+</head>
 <body>
   <main class="app">
     <header class="top">
@@ -108,7 +108,7 @@
 
     <section class="stats">
       <div class="stat"><span>ВРЕМЯ</span><b id="clock">--:--</b></div>
-      <div class="stat"><span>ПОСЛЕ 140X</span><b id="roundsAfter">—</b></div>
+      <div class="stat"><span>РАУНД</span><b id="roundProgress">0/3</b></div>
       <div class="stat"><span>ПОСЛЕДНИЙ КОЭФ</span><b id="lastCoef">—</b></div>
       <div class="stat good"><span>УСПЕШНЫЕ ✅</span><b id="wins">0</b></div>
       <div class="stat bad"><span>НЕУДАЧНЫЕ ❌</span><b id="losses">0</b></div>
@@ -164,6 +164,7 @@
   const SESSION_KEY='V0XFF3_LJ_SESSION_ID';
   const COLLECTOR_KEY='V0XFF3_SQLITE_SERVER_URL';
   const STORE_KEY='v0xff3_browser_engine_v1';
+  const DEFAULT_COLLECTOR_URL='https://xlidiojdbozxikjloiaj.supabase.co/functions/v1/v0xff3-live';
   const POLL_MS=4000, MAX_ROUNDS=5000, ESTIMATED_ROUND_MS=12000;
   const ASSURANCE_X=30, HIGH_X=100, TARGET_X=140;
   const MIN_EVENTS=4, RESERVE_GAP_MIN=8, MIN_WINDOW_MIN=2, MAX_WINDOW_MIN=4;
@@ -171,7 +172,7 @@
   const ui={
     back:$('backBtn'),menu:$('menuBtn'),drawer:$('drawer'),close:$('closeDrawer'),connection:$('connection'),
     circle:$('marketCircle'),accuracy:$('accuracy'),accuracyLabel:$('accuracyLabel'),marketNote:$('marketNote'),
-    primary:$('primaryWindow'),reserve:$('reserveWindow'),clock:$('clock'),roundsAfter:$('roundsAfter'),lastCoef:$('lastCoef'),
+    primary:$('primaryWindow'),reserve:$('reserveWindow'),clock:$('clock'),roundProgress:$('roundProgress'),lastCoef:$('lastCoef'),
     wins:$('wins'),losses:$('losses'),total:$('total'),series:$('series'),streak:$('streakText'),roundCount:$('roundCount'),chart:$('chart'),
     signalCard:$('signalCard'),signalTitle:$('signalTitle'),signalPrimary:$('signalPrimary'),signalReserve:$('signalReserve'),signalBasis:$('signalBasis'),
     signalBtn:$('signalBtn'),autoBtn:$('autoBtn'),wakeBtn:$('wakeBtn'),collector:$('collectorInput'),session:$('sessionInput'),saveSession:$('saveSession'),
@@ -179,7 +180,7 @@
   };
 
   const emptyState={rounds:[],signals:[],outcomes:[],wins:0,losses:0,auto:false,sound:true,lastFetch:0};
-  let state=loadState(), polling=false, timer=null, wakeLock=null, toastTimer=null, lastSource='DIRECT LIVE';
+  let state=loadState(), polling=false, timer=null, wakeLock=null, toastTimer=null, lastSource='DIRECT LIVE', collectorTotal=0;
 
   function loadState(){
     try{
@@ -194,8 +195,8 @@
     localStorage.setItem(STORE_KEY,JSON.stringify(state));
   }
   function sessionId(){return (localStorage.getItem(SESSION_KEY)||DEFAULT_SESSION_ID).trim()}
-  function collectorUrl(){return (localStorage.getItem(COLLECTOR_KEY)||'').trim().replace(/\/+$/,'')}
-  function saveCollector(value){const v=String(value||'').trim().replace(/\/+$/,'');if(v)localStorage.setItem(COLLECTOR_KEY,v);else localStorage.removeItem(COLLECTOR_KEY);ui.collector.value=collectorUrl()}
+  function collectorUrl(){return (localStorage.getItem(COLLECTOR_KEY)||DEFAULT_COLLECTOR_URL).trim().replace(/\/+$/,'')}
+  function saveCollector(value){const v=String(value||'').trim().replace(/\/+$/,'');if(v&&v!==DEFAULT_COLLECTOR_URL)localStorage.setItem(COLLECTOR_KEY,v);else localStorage.removeItem(COLLECTOR_KEY);ui.collector.value=collectorUrl()}
   function saveSession(value){const v=String(value||'').trim();if(v)localStorage.setItem(SESSION_KEY,v);else localStorage.removeItem(SESSION_KEY);ui.session.value=sessionId()}
   function now(){return new Date()}
   function kyivTime(date,seconds=false){return new Intl.DateTimeFormat('ru-RU',{timeZone:'Europe/Kyiv',hour:'2-digit',minute:'2-digit',second:seconds?'2-digit':undefined,hour12:false}).format(date)}
@@ -220,7 +221,7 @@
     if(!Number.isFinite(n)||n<1)return null;if(n===1)n=1.01;return Math.round(n*100)/100;
   }
   function timeOf(item){
-    const raw=first(item,['createdAt','created_at','timestamp','time','start_time','stateChangedAt','endedAt','ended_at','updatedAt']);
+    const raw=first(item,['createdAt','created_at','timestamp','ts','time','start_time','stateChangedAt','endedAt','ended_at','updatedAt']);
     if(raw==null)return 0;let n=typeof raw==='string'&&/^\d+$/.test(raw)?Number(raw):raw;
     if(typeof n==='number'){if(n>1e10)n/=1000;const d=new Date(n*1000);return Number.isFinite(d.getTime())?d.getTime():0}
     const d=new Date(String(raw).replace('Z','+00:00'));return Number.isFinite(d.getTime())?d.getTime():0;
@@ -239,7 +240,7 @@
         if(!response.ok)throw new Error('SQLite HTTP '+response.status);
         const data=await response.json(),items=extractItems(data),fetchTime=Date.now(),seen=new Set(),rows=[];
         items.forEach((item,index)=>{const row=normalize(item,index,fetchTime);if(row&&!seen.has(row.id)){seen.add(row.id);rows.push(row)}});
-        if(!rows.length)throw new Error('SQLite пока пуст');lastSource='SQLITE 24/7';return rows;
+        if(!rows.length)throw new Error('SQLite пока пуст');lastSource='SQLITE 24/7';collectorTotal=Math.max(rows.length,Number(data.total)||0);return{rows,total:collectorTotal};
       }catch(error){console.warn('SQLite collector fallback:',error)}
     }
     if(!sessionId())throw new Error('Укажите Lucky Jet session-id в меню ≡');
@@ -249,7 +250,7 @@
       if(!response.ok)throw new Error('HTTP '+response.status);
       const items=extractItems(await response.json()),fetchTime=Date.now(),seen=new Set(),rows=[];
       items.forEach((item,index)=>{const row=normalize(item,index,fetchTime);if(row&&!seen.has(row.id)){seen.add(row.id);rows.push(row)}});
-      if(!rows.length)throw new Error('История пуста');lastSource='DIRECT LIVE';return rows;
+      if(!rows.length)throw new Error('История пуста');lastSource='DIRECT LIVE';collectorTotal=0;return{rows,total:rows.length};
     }finally{if(timeout)clearTimeout(timeout)}
   }
   function mergeRounds(fetched){
@@ -292,6 +293,11 @@
   function currentAccuracy(){const chosen=chooseTier();return confidence(chosen.ints.slice(-20))}
   function accuracyLevel(score){return score<55?{key:'weak',label:'ТОЧНОСТЬ СЛАБАЯ'}:score<75?{key:'medium',label:'ТОЧНОСТЬ СРЕДНЯЯ'}:{key:'high',label:'ТОЧНОСТЬ ВЫСОКАЯ'}}
   function roundsSince(threshold){for(let i=state.rounds.length-1;i>=0;i--)if(state.rounds[i].coefficient>=threshold)return state.rounds.length-1-i;return null}
+  function signalRoundProgress(signal){
+    if(!signal||signal.result)return'0/3';
+    const completed=state.rounds.filter(r=>r.ts>=signal.createdAt).length;
+    return Math.min(3,completed)+'/3';
+  }
   function streakText(){
     if(!state.outcomes.length)return'сигналов пока нет';const last=state.outcomes[state.outcomes.length-1].result;let n=0;for(let i=state.outcomes.length-1;i>=0&&state.outcomes[i].result===last;i--)n++;return(last==='win'?'🟢 ':'🔴 ')+n+' '+(last==='win'?'успех':'неудача')+(n>1?' подряд':'')
   }
@@ -305,14 +311,14 @@
     if(!signal){ui.signalCard.classList.remove('show');return}ui.signalCard.classList.add('show');ui.signalTitle.textContent=signal.resultText||'🔥 V0xFF3 — GROSSE CÔTE';ui.signalPrimary.textContent=fmtWindow(signal.primaryStart,signal.primaryEnd);ui.signalReserve.textContent=fmtWindow(signal.reserveStart,signal.reserveEnd);ui.signalBasis.textContent='📊 Индекс регулярности '+signal.confidence+'% · '+signal.basedOn+' · статистическое окно, не гарантия.';
   }
   function render(){
-    const score=currentAccuracy(),level=accuracyLevel(score),chosen=chooseTier(),windowNow=buildWindow(),last=state.rounds[state.rounds.length-1],since=roundsSince(TARGET_X);
+    const score=currentAccuracy(),level=accuracyLevel(score),chosen=chooseTier(),windowNow=buildWindow(),last=state.rounds[state.rounds.length-1],activeSignal=openSignal();
     ui.circle.className='market-circle '+level.key;ui.accuracy.textContent=score;ui.accuracyLabel.textContent=level.label;
     ui.marketNote.textContent=chosen.stats?chosen.tier.label+' · '+chosen.ints.length+' интервалов · '+chosen.stats.median.toFixed(1)+' мин':'Нужно минимум '+MIN_EVENTS+' события 30X+';
     ui.primary.textContent=windowNow?fmtWindow(windowNow.primaryStart,windowNow.primaryEnd):'СБОР ДАННЫХ';ui.reserve.textContent=windowNow?fmtWindow(windowNow.reserveStart,windowNow.reserveEnd):'СБОР ДАННЫХ';
-    ui.roundsAfter.textContent=since==null?'—':String(since);ui.lastCoef.textContent=last?last.coefficient.toFixed(2)+'X':'—';ui.wins.textContent=state.wins;ui.losses.textContent=state.losses;ui.total.textContent=state.wins+state.losses;ui.roundCount.textContent=state.rounds.length+' раундов';
+    ui.roundProgress.textContent=signalRoundProgress(activeSignal);ui.lastCoef.textContent=last?last.coefficient.toFixed(2)+'X':'—';ui.wins.textContent=state.wins;ui.losses.textContent=state.losses;ui.total.textContent=state.wins+state.losses;ui.roundCount.textContent=state.rounds.length+' раундов';
     ui.series.innerHTML=state.outcomes.slice(-8).map(o=>'<i class="dot '+(o.result==='win'?'win':'loss')+'"></i>').join('')||'<span style="color:#777082;font-size:11px">После завершения сигнала здесь появится серия</span>';ui.streak.textContent=streakText();
     ui.autoBtn.textContent='АВТОМАТИЧЕСКИЙ: '+(state.auto?'ВКЛ':'ВЫКЛ');ui.autoBtn.classList.toggle('active',state.auto);ui.sound.textContent=state.sound?'🔊 ЗВУК: ВКЛ':'🔇 ЗВУК: ВЫКЛ';
-    renderSignal(openSignal()||state.signals[state.signals.length-1]);renderChart();renderHistory();
+    renderSignal(activeSignal||state.signals[state.signals.length-1]);renderChart();renderHistory();
   }
   function showSignal(force){
     const existing=openSignal();if(existing){renderSignal(existing);toast('Сигнал уже активен');return}
@@ -323,7 +329,7 @@
   async function poll(){
     if(polling)return;polling=true;
     try{
-      const rows=await fetchHistory(),added=mergeRounds(rows);state.lastFetch=Date.now();saveState();ui.connection.className='connection ok';ui.connection.textContent='● '+lastSource+' · '+rows.length+' в базе · +'+added+' новых';
+      const result=await fetchHistory(),rows=result.rows,added=mergeRounds(rows);state.lastFetch=Date.now();saveState();ui.connection.className='connection ok';ui.connection.textContent='● '+lastSource+' · '+Math.max(state.rounds.length,result.total||0)+' в SQLite · +'+added+' новых';
       resolveSignals();if(state.auto&&!openSignal())showSignal(false);render();
     }catch(error){ui.connection.className='connection bad';ui.connection.textContent='● Ошибка LIVE: '+friendlyError(error);console.warn('V0xFF3:',error)}finally{polling=false}
   }
@@ -347,6 +353,12 @@
     if(!sessionId())setTimeout(()=>{ui.drawer.classList.add('show');toast('Один раз вставьте Lucky Jet session-id')},250);
   }
   function tick(){ui.clock.textContent=kyivTime(now());}
+  window.V0XFF3_NATIVE_PUSH=function(incoming,meta){
+    const rows=(Array.isArray(incoming)?incoming:[]).map((item,index)=>normalize(item,index,Date.now())).filter(Boolean);
+    const added=mergeRounds(rows);lastSource='NATIVE SQLITE';collectorTotal=Math.max(state.rounds.length,Number(meta&&meta.total)||0);state.lastFetch=Date.now();saveState();
+    ui.connection.className='connection ok';ui.connection.textContent='● NATIVE SQLITE · '+collectorTotal+' в SQLite · +'+added+' новых';
+    resolveSignals();if(state.auto&&!openSignal())showSignal(false);render();return{ok:true,total:state.rounds.length,added};
+  };
   wire();tick();setInterval(tick,1000);render();poll();timer=setInterval(poll,POLL_MS);
 })();
 </script>
