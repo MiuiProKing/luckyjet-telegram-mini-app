@@ -20,3 +20,9 @@ verify_jwt = false
 
 [functions.beta-ai-worker]
 verify_jwt = false
+
+[functions.instagram247-bridge]
+verify_jwt = false
+
+[functions.v0xff3-live]
+verify_jwt = false
