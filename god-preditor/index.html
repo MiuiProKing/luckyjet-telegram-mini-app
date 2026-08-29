@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#080b12">
+<title>GOD PREDITOR — Lucky Jet</title>
+<style>
+:root{--bg:#070a10;--card:#101622;--line:#202a3b;--text:#f7f9fc;--muted:#9aa7ba;--accent:#8b5cf6;--good:#31d17c;--bad:#ff5b6e;--warn:#ffbd45}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at top,#15102b 0,#090c13 40%,#05070b 100%);color:var(--text);font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
+.wrap{max-width:760px;margin:auto;padding:16px 14px 100px}.top{display:flex;justify-content:space-between;align-items:center;margin:6px 2px 14px}
+.brand{font-weight:900;font-size:20px}.live{font-size:12px;color:#86efac;background:#0d2b1b;border:1px solid #1e6b42;border-radius:999px;padding:5px 9px}
+.card{background:rgba(16,22,34,.94);border:1px solid var(--line);border-radius:20px;padding:16px;margin:12px 0;box-shadow:0 16px 40px #0005}
+.hero{background:linear-gradient(145deg,#151b2a,#18102c)}.label{font-size:11px;letter-spacing:.12em;color:var(--muted);text-transform:uppercase}.big{font-size:44px;font-weight:950;margin:4px 0}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.metric{background:#0b1019;border:1px solid #1c2636;border-radius:15px;padding:12px}.metric b{font-size:20px;display:block;margin-top:3px}
+.good{color:var(--good)}.bad{color:var(--bad)}.warn{color:var(--warn)}.muted{color:var(--muted)}
+.btns{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}.btn{border:1px solid #2b3850;color:white;background:#141b28;border-radius:14px;padding:13px 10px;font-weight:800;font-size:13px}.btn.primary{background:linear-gradient(135deg,#7c3aed,#2563eb)}.btn.good{background:#0f3223;color:#95f5bf}.btn.bad{background:#34151b;color:#ff9baa}
+.coefs{display:flex;flex-wrap:wrap;gap:7px}.chip{background:#0b1019;border:1px solid #202b3e;border-radius:999px;padding:7px 9px;font-weight:750}.chip.hi{border-color:#7c3aed;color:#c4b5fd}.chip.mid{border-color:#2563eb;color:#93c5fd}
+.row{display:flex;justify-content:space-between;gap:12px;align-items:center;margin:8px 0}.status{font-weight:800}
+input{width:100%;background:#090d15;border:1px solid #263248;color:white;border-radius:12px;padding:12px;margin-top:6px;outline:none}
+details summary{cursor:pointer;font-weight:800}.history-item{border-top:1px solid #1b2433;padding:10px 0}.ok{color:#58e69a}.fail{color:#ff7280}
+.note{font-size:12px;color:#8895a8;margin-top:10px}.footer{font-size:11px;color:#6f7b8e;text-align:center;margin-top:18px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><div class="brand">H24 🤖 GOD PREDITOR</div><div id="live" class="live">● ОЖИДАНИЕ</div></div>
+
+  <section class="card hero">
+    <div class="label">Lucky Jet · текущий сигнал</div>
+    <div id="pred" class="big">—</div>
+    <div class="grid">
+      <div class="metric"><span class="label">Уверенность</span><b id="conf">—</b></div>
+      <div class="metric"><span class="label">Окно</span><b id="window">—</b></div>
+      <div class="metric"><span class="label">Возможный большой кеф</span><b id="bigcoef">—</b></div>
+      <div class="metric"><span class="label">Уверенность большого</span><b id="bigconf">—</b></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="btns">
+      <button class="btn good" onclick="start()">▶️ ВКЛЮЧИТЬ</button>
+      <button class="btn bad" onclick="stop()">⏹ ОСТАНОВИТЬ</button>
+      <button class="btn primary" onclick="refresh(true)">🧠 СИГНАЛ СЕЙЧАС</button>
+      <button class="btn" onclick="refresh()">🔄 ОБНОВИТЬ</button>
+      <button class="btn" onclick="verify(true)">✅ ПРОВЕРИТЬ</button>
+      <button class="btn" onclick="renderStats()">📊 СТАТИСТИКА</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="grid">
+      <div class="metric"><span class="label">Средний</span><b id="avg">—</b></div>
+      <div class="metric"><span class="label">Максимум</span><b id="max">—</b></div>
+      <div class="metric"><span class="label">≥2X</span><b id="f2">—</b></div>
+      <div class="metric"><span class="label">≥10X</span><b id="f10">—</b></div>
+    </div>
+    <div class="label" style="margin-top:14px">Последние коэффициенты</div>
+    <div id="chips" class="coefs" style="margin-top:9px"></div>
+  </section>
+
+  <section class="card">
+    <div class="row"><b>Проверка сигналов</b><span id="checkStatus" class="muted">нет активного</span></div>
+    <div id="results"></div>
+  </section>
+
+  <section class="card">
+    <details>
+      <summary>⚙️ Подключение Lucky Jet</summary>
+      <div class="note">Эти значения сохраняются только в localStorage твоего браузера и не публикуются в GitHub.</div>
+      <label class="label">API URL</label><input id="api" value="https://crash-gateway-grm-cr.100hp.app/history">
+      <label class="label">customer-id</label><input id="customer" placeholder="Вставь customer-id">
+      <label class="label">session-id</label><input id="session" placeholder="Вставь session-id">
+      <button class="btn primary" style="width:100%;margin-top:10px" onclick="saveSettings()">💾 СОХРАНИТЬ</button>
+    </details>
+  </section>
+
+  <div id="msg" class="note"></div>
+  <div class="footer">Статистический анализ истории. Не гарантирует будущий результат.</div>
+</div>
+
+<script>
+const S={timer:null,rounds:[],prediction:null,pending:JSON.parse(localStorage.getItem('god_pending')||'[]'),results:JSON.parse(localStorage.getItem('god_results')||'[]')};
+const $=id=>document.getElementById(id), fmt=x=>(+x).toFixed(2)+'x', clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+function median(a){if(!a.length)return 0;let s=[...a].sort((x,y)=>x-y),m=s.length>>1;return s.length%2?s[m]:(s[m-1]+s[m])/2}
+function mean(a){return a.length?a.reduce((x,y)=>x+y,0)/a.length:0}
+function std(a){if(a.length<2)return 0;let m=mean(a);return Math.sqrt(mean(a.map(x=>(x-m)**2)))}
+function mad(a){if(a.length<2)return 0;let m=median(a);return median(a.map(x=>Math.abs(x-m)))}
+function geo(a){return a.length?Math.exp(mean(a.map(x=>Math.log(Math.max(x,1.001))))):0}
+function ema(a,alpha){if(!a.length)return 0;let e=a[a.length-1];for(let i=a.length-2;i>=0;i--)e=alpha*a[i]+(1-alpha)*e;return e}
+function ts(v){if(typeof v==='number')return v<1e10?v*1000:v;let n=Number(v);if(Number.isFinite(n)&&String(v).trim()!=='')return n<1e10?n*1000:n;let d=Date.parse(v);return Number.isFinite(d)?d:null}
+function coef(o){let v=o.topCoefficient??o.top_coefficient??o.coefficient??o.coef??o.crash??o.value??o.multiplier;if(v==null&&Array.isArray(o.finalValues))v=o.finalValues.at(-1);v=parseFloat(String(v).replace('x','').replace(',','.'));return Number.isFinite(v)?(v===1?1.01:v):null}
+function normalize(raw){let arr=Array.isArray(raw)?raw:(raw.data||raw.history||raw.rounds||raw.results||raw.items||[]);if(!Array.isArray(arr))throw Error('Не найден массив истории');let now=Date.now();return arr.map((o,i)=>{let c=coef(o),t=ts(o.played_at??o.playedAt??o.createdAt??o.created_at??o.timestamp??o.time??o.date??o.endedAt);return c?{id:o.id||o.roundId||o.round_id||o.hash||`${t}:${c}`,coefficient:c,timestamp:t||now-i*10000}:null}).filter(Boolean)}
+function gapStats(r,thr){let e=r.filter(x=>x.coefficient>=thr).sort((a,b)=>a.timestamp-b.timestamp);if(e.length<2)return {count:e.length,last:e.at(-1)?.timestamp||null,medGap:0,madGap:0};let g=e.slice(1).map((x,i)=>x.timestamp-e[i].timestamp);return {count:e.length,last:e.at(-1).timestamp,medGap:median(g),madGap:mad(g)}}
+function bigOpportunity(r,now){let g=gapStats(r,100),c=[];if(g.count>=5&&g.last&&g.medGap>0){let exp=g.last+g.medGap,delta=exp-now,w=clamp(g.madGap?g.madGap*1.4826:g.medGap*.35,120000,720000),stable=g.madGap>0&&g.madGap<g.medGap*.5,near=Math.abs(delta)<=w*.7,late=now-g.last>=g.medGap*.9;if(stable&&(near||late)){let prox=clamp(1-Math.abs(delta)/Math.max(w,1),0,1),conf=Math.round(clamp(55+Math.min(10,g.count)+prox*12,55,82));c.push({coef:100,conf,at:delta>0?exp:now+Math.max(120000,w*.4),window:clamp(w,180000,600000)})}}
+let chron=[...r].sort((a,b)=>a.timestamp-b.timestamp),last80=chron.slice(-80),n20=last80.filter(x=>x.coefficient>=20).length,n50=last80.filter(x=>x.coefficient>=50).length;if(n50>=3&&n20>=6)c.push({coef:120,conf:Math.round(clamp(55+n50*5+n20,55,82)),at:now+180000,window:360000});if(!c.length)return null;c.sort((a,b)=>b.conf-a.conf);let best=c[0];if(c.length<2&&best.conf<75)return null;if(c.length>=2)best.conf=Math.min(92,best.conf+5);return best}
+function predict(r){if(r.length<20)return null;let now=Date.now(),d=[...r].sort((a,b)=>b.timestamp-a.timestamp),a=d.map(x=>x.coefficient),allGeo=geo(a),med=median(a),l20=a.slice(0,20),l50=a.slice(0,50),avg50=mean(l50),e20=ema(l20,.25),e50=ema(l50,.12),sigma=std(l50),m50=mad(l50),recent20=d.slice(0,30).filter(x=>x.coefficient>=20),low15=a.slice(0,15).length===15&&a.slice(0,15).every(x=>x<2),big=bigOpportunity(r,now);
+if(low15){let est=clamp(allGeo*2.5+med,2.5,15),score=Math.round(clamp(70+Math.min(15,(now-d[14].timestamp)/60000),65,92));return {coef:est,conf:score,at:now+90000,window:120000,big}}
+if(recent20.length>=3){let gg=geo(recent20.map(x=>x.coefficient)),div=recent20.length>=5?3:recent20.length>=4?4:5;return {coef:clamp(gg/div,2,12),conf:Math.min(78,60+recent20.length*3),at:now+120000,window:150000,big}}
+let l60=d.slice(0,60),z=l60.filter(x=>x.coefficient>=5&&x.coefficient<10),low=l60.filter(x=>x.coefficient<2).length/l60.length;if(z.length>=3){let zg=geo(z.map(x=>x.coefficient)),frag=low>.55||sigma>avg50*1.4,est=frag?clamp(zg*.45,2,4.5):clamp(zg*.7,3,7),score=Math.round(clamp(64+z.length*4+(frag?-6:6),58,90));return {coef:est,conf:score,at:now+120000,window:150000,big}}
+let composite=e20*.5+e50*.3+avg50*.2,est=clamp(composite*.6+1.6,1.8,12),danger=low>.6||sigma>avg50*1.6;if(danger)est=Math.min(est,3.2);else if(low>.45)est=Math.min(est,5);let score=Math.round(clamp(52+clamp(r.length/25,0,28)+(m50>0&&m50<avg50*.6?5:0)+(danger?-8:0),50,92));return {coef:est,conf:score,at:now+120000+(((60-new Date().getSeconds())*1000)%45000),window:150000,big}}
+function ftime(ms){return new Date(ms).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}
+function fwindow(p){return ftime(p.at)+'–'+ftime(p.at+p.window)}
+async function fetchRounds(){let api=$('api').value.trim(),customer=$('customer').value.trim(),session=$('session').value.trim();if(!customer||!session)throw Error('Открой ⚙️ и введи customer-id и session-id');let res=await fetch(api,{headers:{'Accept':'application/json','customer-id':customer,'session-id':session}});if(!res.ok)throw Error('API HTTP '+res.status);return normalize(await res.json())}
+async function refresh(force=false){try{$('live').textContent='● ЗАГРУЗКА';let r=await fetchRounds();S.rounds=r;let p=predict(r);if(!p)throw Error('Нужно минимум 20 раундов');S.prediction=p;render();verify(false);if(force)registerPending(p);$('live').textContent='● LIVE';$('msg').textContent='Обновлено '+ftime(Date.now())}catch(e){$('live').textContent='● ОШИБКА';$('msg').textContent=e.message}}
+function registerPending(p){let fp=`${p.coef.toFixed(2)}|${Math.floor(p.at/30000)}`;if(!S.pending.some(x=>x.fp===fp)){S.pending.push({fp,target:p.coef,start:p.at,end:p.at+p.window,kind:'main'});if(p.big)S.pending.push({fp:'big|'+Math.floor(p.big.at/30000),target:p.big.coef,start:p.big.at,end:p.big.at+p.big.window,kind:'big'});localStorage.setItem('god_pending',JSON.stringify(S.pending));renderChecks()}}
+function verify(manual=false){if(!S.rounds.length)return;let now=Date.now(),left=[];for(let x of S.pending){if(now<x.end){left.push(x);continue}let m=S.rounds.filter(r=>r.timestamp>=x.start&&r.timestamp<=x.end).sort((a,b)=>a.timestamp-b.timestamp);if(!m.length&&now<x.end+90000){left.push(x);continue}let hit=m.findIndex(r=>r.coefficient>=x.target),max=m.length?Math.max(...m.map(r=>r.coefficient)):0;S.results.unshift({ok:hit>=0,target:x.target,max,round:hit>=0?hit+1:null,hitcoef:hit>=0?m[hit].coefficient:null,time:hit>=0?m[hit].timestamp:null,kind:x.kind});}S.pending=left;S.results=S.results.slice(0,100);localStorage.setItem('god_pending',JSON.stringify(S.pending));localStorage.setItem('god_results',JSON.stringify(S.results));renderChecks();if(manual)$('msg').textContent='Проверка выполнена'}
+function render(){let r=S.rounds,p=S.prediction;if(!p)return;$('pred').textContent=fmt(p.coef);$('conf').textContent=Math.round(p.conf)+'%';$('window').textContent=fwindow(p);$('bigcoef').textContent=p.big?fmt(p.big.coef):'нет сигнала';$('bigconf').textContent=p.big?p.big.conf+'%':'—';let c=r.map(x=>x.coefficient);$('avg').textContent=fmt(mean(c));$('max').textContent=fmt(Math.max(...c));$('f2').textContent=(100*c.filter(x=>x>=2).length/c.length).toFixed(1)+'%';$('f10').textContent=(100*c.filter(x=>x>=10).length/c.length).toFixed(1)+'%';$('chips').innerHTML=[...r].sort((a,b)=>b.timestamp-a.timestamp).slice(0,20).map(x=>`<span class="chip ${x.coefficient>=10?'hi':x.coefficient>=2?'mid':''}">${fmt(x.coefficient)}</span>`).join('')}
+function renderChecks(){$('checkStatus').textContent=S.pending.length?`⏳ ${S.pending.length} на проверке`:'нет активного';$('results').innerHTML=S.results.slice(0,8).map(x=>`<div class="history-item ${x.ok?'ok':'fail'}"><b>${x.ok?'✅ ЗАШЛО':'❌ НЕ ЗАШЛО'}</b> · цель ${fmt(x.target)}${x.ok?` · раунд №${x.round} · ${fmt(x.hitcoef)} · ${ftime(x.time)}`:` · max ${fmt(x.max)}`}</div>`).join('')||'<div class="muted">Пока результатов нет</div>'}
+function renderStats(){let w=S.results.filter(x=>x.ok).length,l=S.results.length-w,rate=S.results.length?100*w/S.results.length:0;$('msg').innerHTML=`✅ Зашло: <b>${w}</b> · ❌ Не зашло: <b>${l}</b> · 📈 ${rate.toFixed(1)}%`}
+function saveSettings(){localStorage.setItem('god_api',$('api').value.trim());localStorage.setItem('god_customer',$('customer').value.trim());localStorage.setItem('god_session',$('session').value.trim());$('msg').textContent='Настройки сохранены только на этом устройстве';refresh()}
+function loadSettings(){$('api').value=localStorage.getItem('god_api')||$('api').value;$('customer').value=localStorage.getItem('god_customer')||'';$('session').value=localStorage.getItem('god_session')||'';renderChecks()}
+function start(){if(S.timer)return;refresh();S.timer=setInterval(()=>refresh(),5000);$('msg').textContent='Автоанализ включён'}
+function stop(){clearInterval(S.timer);S.timer=null;$('live').textContent='● СТОП';$('msg').textContent='Автоанализ остановлен'}
+loadSettings();
+</script>
+</body>
+</html>
