@@ -4,6 +4,7 @@ const HISTORY_URL = "https://crash-gateway-grm-cr.100hp.app/history";
 const DEFAULT_CUSTOMER_ID = "077dee8d-c923-4c02-9bee-757573662e69";
 const EVENT_NAME = "v0xff3_round_v1";
 const MAX_LIMIT = 5_000;
+const MAX_OFFSET = 1_000_000;
 
 function headers() {
   return {
@@ -128,9 +129,10 @@ async function pushFromLuckyJet(request: Request) {
 
 async function snapshot(url: URL) {
   const limit = Math.min(MAX_LIMIT, Math.max(1, Number.parseInt(url.searchParams.get("limit") || "5000", 10) || 5000));
+  const offset = Math.min(MAX_OFFSET, Math.max(0, Number.parseInt(url.searchParams.get("offset") || "0", 10) || 0));
   const supabase = database();
   const [{ data, error }, countResult] = await Promise.all([
-    supabase.from("app_events").select("page,data,created_at").eq("event_name", EVENT_NAME).order("created_at", { ascending: false }).limit(limit),
+    supabase.from("app_events").select("page,data,created_at").eq("event_name", EVENT_NAME).order("created_at", { ascending: false }).order("page", { ascending: false }).range(offset, offset + limit - 1),
     supabase.from("app_events").select("id", { count: "exact", head: true }).eq("event_name", EVENT_NAME)
   ]);
   if (error) throw error;
@@ -146,7 +148,9 @@ async function snapshot(url: URL) {
     });
   }
   const history = Array.from(map.values()).sort((left, right) => left.timestamp - right.timestamp);
-  return { history, total: Number(countResult.count || history.length), updatedAt: history.at(-1)?.timestamp || 0 };
+  const total = Number(countResult.count || history.length);
+  const nextOffset = offset + (data?.length || 0);
+  return { history, total, offset, limit, nextOffset, hasMore: nextOffset < total, updatedAt: history.at(-1)?.timestamp || 0 };
 }
 
 Deno.serve(async request => {
