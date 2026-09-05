@@ -27,7 +27,7 @@
 (function(){
 'use strict';
 const RELAY='https://xlidiojdbozxikjloiaj.supabase.co/functions/v1/v0xff3-live';
-const PAGE_SIZE=1000,MAX_PAGES=100,MAX_ROUNDS=100000;
+const PAGE_SIZE=5000,MAX_PAGES=100,MAX_ROUNDS=100000;
 const nativeFetch=window.fetch.bind(window);
 let fullRows=[],serverTotal=0,initialized=false,initialLoad=null,paginationWarning='';
 function rowsOf(data){if(Array.isArray(data))return data;return data.history||data.rounds||data.data||data.results||data.items||[]}
