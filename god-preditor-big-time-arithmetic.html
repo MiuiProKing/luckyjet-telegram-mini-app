@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#05070c">
+<title>GOD PREDITOR · BIG TIME LAB</title>
+<style>
+:root{--bg:#05070c;--panel:#0d111b;--panel2:#111827;--line:#263247;--text:#f4f7ff;--muted:#8d9ab0;--cyan:#38bdf8;--violet:#a78bfa;--green:#34d399;--yellow:#fbbf24;--red:#fb7185;--shadow:0 18px 55px rgba(0,0,0,.38)}*{box-sizing:border-box}html{background:var(--bg)}body{margin:0;min-height:100vh;background:radial-gradient(circle at 50% -10%,#172554 0,transparent 35%),var(--bg);color:var(--text);font:16px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;padding:max(14px,env(safe-area-inset-top)) 12px max(28px,env(safe-area-inset-bottom))}.app{width:min(100%,720px);margin:auto}.head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}.brand{font-weight:950;letter-spacing:1px;font-size:1.15rem}.brand b{color:var(--cyan);text-shadow:0 0 18px #38bdf888}.live{display:flex;align-items:center;gap:7px;color:#b8f7de;font-size:.82rem;font-weight:800}.dot{width:9px;height:9px;border-radius:50%;background:var(--green);box-shadow:0 0 15px var(--green);animation:pulse 1.4s infinite}@keyframes pulse{50%{opacity:.35;transform:scale(.72)}}.hero,.card{background:linear-gradient(145deg,rgba(17,24,39,.96),rgba(9,13,22,.96));border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow)}.hero{padding:16px;margin-bottom:12px;position:relative;overflow:hidden}.hero:after{content:"";position:absolute;width:190px;height:190px;border:1px solid #38bdf82e;border-radius:50%;right:-80px;top:-110px;box-shadow:0 0 50px #38bdf81f}.eyebrow{font-size:.75rem;font-weight:900;letter-spacing:1px;color:var(--cyan)}.decision{font-size:1.9rem;font-weight:950;margin:4px 0}.decision.signal{color:var(--green)}.decision.skip{color:var(--yellow)}.window{font-size:1.12rem;font-weight:900}.sub{color:var(--muted);font-size:.84rem;margin-top:5px}.progress{height:5px;border-radius:10px;background:#1e293b;margin-top:12px;overflow:hidden}.progress i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--cyan),var(--violet));transition:width .3s}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:12px}.metric{background:#0b1019;border:1px solid var(--line);border-radius:15px;padding:11px}.metric span{display:block;color:var(--muted);font-size:.72rem;text-transform:uppercase;letter-spacing:.6px}.metric b{display:block;font-size:1.05rem;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.section{margin-top:12px}.section-title{display:flex;align-items:center;justify-content:space-between;margin:0 3px 8px;font-size:.82rem;font-weight:950;letter-spacing:.8px;color:#dbeafe}.cards{display:grid;gap:9px}.card{padding:13px}.threshold-row{display:flex;align-items:center;justify-content:space-between;gap:10px}.threshold{font-size:1.2rem;font-weight:950}.prob{font-weight:950;color:var(--cyan)}.bar{height:7px;border-radius:8px;background:#1e293b;margin:9px 0;overflow:hidden}.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--violet),var(--cyan),var(--green));border-radius:inherit}.details{color:var(--muted);font-size:.82rem}.arith{padding:14px}.input-row{display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:10px}input{min-width:0;height:46px;border-radius:13px;border:1px solid var(--line);background:#070b12;color:#fff;padding:0 13px;font-size:1rem;font-weight:850;outline:none}input:focus{border-color:var(--cyan)}button{height:46px;border:0;border-radius:13px;padding:0 16px;color:white;background:linear-gradient(135deg,#0ea5e9,#4f46e5);font-weight:900;font-size:.9rem}.formula-main{margin-top:12px;padding:13px;border:1px solid #4f46e566;border-radius:14px;background:#111638}.formula{font-size:1.35rem;font-weight:950;color:#c4b5fd}.alternatives{display:grid;gap:7px;margin-top:9px}.alt{display:grid;grid-template-columns:1fr auto;gap:8px;padding:9px 10px;border-radius:11px;background:#090e17}.alt b{color:#dbeafe}.alt span{font-size:.8rem;color:var(--muted)}.notice{border-left:3px solid var(--yellow);padding:9px 11px;margin-top:12px;color:#cbd5e1;font-size:.78rem;background:#fbbf240b;border-radius:0 10px 10px 0}.footer{color:#66748b;text-align:center;font-size:.72rem;margin:14px 6px 0}.skeleton{opacity:.65}.refresh{width:100%;margin-top:12px}.danger{color:var(--red)}@media(min-width:620px){.grid{grid-template-columns:repeat(4,minmax(0,1fr))}.cards{grid-template-columns:repeat(3,minmax(0,1fr))}}@media(max-width:360px){body{padding-left:8px;padding-right:8px}.decision{font-size:1.55rem}.window{font-size:1rem}}
+</style>
+</head>
+<body>
+<main class="app">
+  <header class="head"><div class="brand">GOD <b>BIG TIME LAB</b></div><div class="live"><i class="dot"></i><span id="liveLabel">SQLITE 24/7</span></div></header>
+  <section class="hero">
+    <div class="eyebrow">ЛУЧШЕЕ ВРЕМЕННОЕ ОКНО</div>
+    <div id="decision" class="decision skip">ЗАГРУЗКА</div>
+    <div id="bestWindow" class="window">Получаю всю базу…</div>
+    <div id="bestReason" class="sub">Расчёт по фактическим timestamps каждого раунда</div>
+    <div class="progress"><i id="loadProgress"></i></div>
+  </section>
+  <section class="grid">
+    <div class="metric"><span>Сервер</span><b id="serverCount">—</b></div>
+    <div class="metric"><span>В анализе</span><b id="analysisCount">—</b></div>
+    <div class="metric"><span>Шаг раунда</span><b id="cadence">—</b></div>
+    <div class="metric"><span>Режим</span><b id="regime">—</b></div>
+  </section>
+  <section class="grid">
+    <div class="metric"><span>EMA20</span><b id="ema20">—</b></div>
+    <div class="metric"><span>EMA50</span><b id="ema50">—</b></div>
+    <div class="metric"><span>Медиана</span><b id="median">—</b></div>
+    <div class="metric"><span>MAD / σ</span><b id="dispersion">—</b></div>
+  </section>
+  <section class="section">
+    <div class="section-title"><span>ВЕРОЯТНОСТЬ ПО ВРЕМЕНИ</span><span id="updated">—</span></div>
+    <div id="hazardCards" class="cards"><article class="card skeleton">Считаю интервалы ≥10x…</article></div>
+  </section>
+  <section class="section card arith">
+    <div class="section-title"><span>АРИФМЕТИЧЕСКАЯ МОДЕЛЬ</span><span>следующий BIG</span></div>
+    <div class="details">Берёт большой коэффициент и проверяет на всей истории, какое деление или умножение чаще было ближе к следующему ≥10x.</div>
+    <div class="input-row"><input id="anchorInput" inputmode="decimal" placeholder="Например 123"><button id="calculateBtn">РАССЧИТАТЬ</button></div>
+    <div id="formulaResult" class="formula-main"><div class="formula">Ожидание базы…</div></div>
+    <div id="alternatives" class="alternatives"></div>
+    <div class="notice">Это экспериментальная статистика, а не гарантия результата. Сигнал появляется только при достаточном числе похожих случаев и после проверки на прошлых данных.</div>
+  </section>
+  <button id="refreshBtn" class="refresh">ОБНОВИТЬ SQLITE И ПЕРЕСЧИТАТЬ</button>
+  <div class="footer">Новая отдельная версия · старые страницы не изменены · обновление LIVE каждые 5 секунд</div>
+</main>
+<script>
+(()=>{'use strict';
+const RELAY='https://xlidiojdbozxikjloiaj.supabase.co/functions/v1/v0xff3-live';
+const PAGE_SIZE=5000,MAX_ROWS=100000,TZ='Europe/Kyiv';
+let rows=[],serverTotal=0,loading=false,lastBest=null;
+const $=id=>document.getElementById(id);
+const n=v=>{const x=Number(String(v??'').replace('x','').replace(',','.'));return Number.isFinite(x)?x:0};
+const ts=v=>{const x=Number(v);if(Number.isFinite(x)&&x>0)return x<1e10?x*1000:x;const d=Date.parse(String(v||''));return Number.isFinite(d)?d:0};
+const coef=r=>n(r.topCoefficient??r.top_coefficient??r.coefficient??r.multiplier??r.coef??r.value);
+const time=r=>ts(r.timestamp??r.played_at??r.created_at??r.time??r.endedAt);
+const idOf=r=>String(r.id??r.roundId??r.round_id??r.hash??`${time(r)}:${coef(r)}`);
+const fmtTime=t=>new Intl.DateTimeFormat('ru-RU',{timeZone:TZ,hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date(t));
+const fmtDuration=ms=>ms<60000?`${Math.max(1,Math.round(ms/1000))} сек`:`${(ms/60000).toFixed(1)} мин`;
+const median=a=>{if(!a.length)return 0;const s=[...a].sort((x,y)=>x-y),m=s.length>>1;return s.length%2?s[m]:(s[m-1]+s[m])/2};
+const mean=a=>a.length?a.reduce((s,x)=>s+x,0)/a.length:0;
+const std=a=>{const m=mean(a);return Math.sqrt(mean(a.map(x=>(x-m)**2)))};
+const ema=(a,p)=>{if(!a.length)return 0;const k=2/(p+1);return a.slice(1).reduce((v,x)=>x*k+v*(1-k),a[0])};
+function normalize(items){const map=new Map();for(const raw of items){const c=coef(raw),t=time(raw),id=idOf(raw);if(c>=1.01&&t>0&&!map.has(id))map.set(id,{id,c,t})}return [...map.values()].sort((a,b)=>a.t-b.t).slice(-MAX_ROWS)}
+function merge(a,b){return normalize([...a,...b])}
+async function getPage(offset,limit=PAGE_SIZE){const res=await fetch(`${RELAY}?limit=${limit}&offset=${offset}&t=${Date.now()}`,{cache:'no-store'});if(!res.ok)throw new Error(`HTTP ${res.status}`);const data=await res.json();serverTotal=Number(data.total||serverTotal||0);return Array.isArray(data.history)?data.history:[]}
+async function loadAll(){if(loading)return;loading=true;$('decision').textContent='ЗАГРУЗКА';$('decision').className='decision skip';$('bestWindow').textContent='Получаю всю SQLite 24/7…';try{const first=await getPage(0),limit=Math.min(MAX_ROWS,serverTotal||first.length),offsets=[];for(let offset=PAGE_SIZE;offset<limit;offset+=PAGE_SIZE)offsets.push(offset);let completed=first.length;$('serverCount').textContent=serverTotal.toLocaleString('ru-RU');$('analysisCount').textContent=completed.toLocaleString('ru-RU');const rest=await Promise.all(offsets.map(async offset=>{const batch=await getPage(offset);completed+=batch.length;$('analysisCount').textContent=Math.min(completed,limit).toLocaleString('ru-RU');$('loadProgress').style.width=`${Math.min(100,100*completed/Math.max(1,limit))}%`;return batch}));rows=normalize([first,...rest].flat());analyze()}catch(error){$('decision').textContent='ОШИБКА';$('bestWindow').textContent='Не удалось получить SQLite';$('bestReason').textContent=error.message;$('bestReason').className='sub danger'}finally{loading=false}}
+function cadenceOf(){const tail=rows.slice(-2000),g=[];for(let i=1;i<tail.length;i++){const d=tail[i].t-tail[i-1].t;if(d>1000&&d<180000)g.push(d)}return median(g)||12000}
+function eventGaps(threshold){const events=rows.filter(r=>r.c>=threshold),gaps=[];for(let i=1;i<events.length;i++){const d=events[i].t-events[i-1].t;if(d>0&&d<24*3600000)gaps.push(d)}return {events,gaps}}
+function hazardFor(threshold,base){const {events,gaps}=eventGaps(threshold);if(!events.length||!gaps.length)return {threshold,events:events.length,samples:0,prob:0};const age=Math.max(0,rows.at(-1).t-events.at(-1).t);let best=null;for(let minute=0;minute<8;minute++){const start=age+minute*60000,end=start+60000;const eligible=gaps.filter(g=>g>start);const hits=eligible.filter(g=>g<=end).length;const posterior=(hits+1)/(eligible.length+2);const candidate={threshold,events:events.length,samples:eligible.length,hits,prob:posterior,startAt:base+minute*60000,endAt:base+(minute+1)*60000,age};if(!best||candidate.prob>best.prob)best=candidate}return best}
+function regimeOf(values,med,madValue,sigma){const robustRatio=madValue/Math.max(.01,med),tailRatio=sigma/Math.max(.01,med);if(tailRatio>8)return 'EXTREME';if(tailRatio>4||robustRatio>.8)return 'HIGH';if(tailRatio>2)return 'NORMAL';return 'LOW'}
+function renderHazards(list,regime){$('hazardCards').innerHTML=list.map(h=>{const raw=Math.round(h.prob*100),penalty=regime==='EXTREME'?15:regime==='HIGH'?8:0,adjusted=Math.max(0,raw-penalty);h.adjusted=adjusted;return `<article class="card"><div class="threshold-row"><div class="threshold">≥${h.threshold}x</div><div class="prob">${adjusted}%</div></div><div class="bar"><i style="width:${adjusted}%"></i></div><div class="details">${fmtTime(h.startAt)}–${fmtTime(h.endAt)}<br>После прошлого: ${fmtDuration(h.age)} · база: ${h.events} BIG<br>Похожих интервалов: ${h.samples} · попаданий: ${h.hits}</div></article>`}).join('')}
+function zone(x){return x<10?'до 10x':x<20?'10–20x':x<50?'20–50x':x<100?'50–100x':x<200?'100–200x':'200x+'}
+function pairs(){const big=rows.filter(r=>r.c>=10),out=[];for(let i=0;i<big.length-1;i++)out.push({a:big[i].c,b:big[i+1].c});return out}
+function arithmetic(anchor){anchor=n(anchor);if(anchor<10||!rows.length){$('formulaResult').innerHTML='<div class="formula">Введите число от 10x</div><div class="details">Например: 123</div>';$('alternatives').innerHTML='';return}const all=pairs(),similar=all.filter(p=>p.a>=anchor/2&&p.a<=anchor*2),sample=similar.length>=25?similar:all;const ops=[...([2,3,4,5,6,8,10,12].map(d=>({label:`÷ ${d}`,factor:1/d}))),...([1.25,1.5,2,3,4].map(m=>({label:`× ${m}`,factor:m})))];const ranked=ops.map(op=>{let close=0,sameZone=0;const errors=[];for(const p of sample){const predicted=p.a*op.factor,err=Math.abs(predicted-p.b)/Math.max(1,p.b);errors.push(err);if(err<=.25)close++;if(zone(predicted)===zone(p.b))sameZone++}const score=sample.length?(.7*close+.3*sameZone)/sample.length:0;return {...op,value:anchor*op.factor,score,close,sameZone,samples:sample.length,error:median(errors)}}).filter(x=>x.value>=1.01&&x.value<=50000).sort((a,b)=>b.score-a.score||a.error-b.error);const best=ranked[0];$('formulaResult').innerHTML=`<div class="formula">${anchor.toFixed(2)} ${best.label} = ${best.value.toFixed(2)}x</div><div class="details">Ожидаемая зона: ${zone(best.value)} · историческое совпадение: ${Math.round(best.score*100)}% · проверено пар: ${best.samples}</div>`;const selected=[],add=x=>{if(x&&x!==best&&!selected.includes(x))selected.push(x)};ranked.slice(1,4).forEach(add);add(ranked.find(x=>x.label==='÷ 4'));add(ranked.find(x=>x.label==='÷ 12'));$('alternatives').innerHTML=selected.map(x=>`<div class="alt"><b>${anchor.toFixed(2)} ${x.label} = ${x.value.toFixed(2)}x</b><span>${Math.round(x.score*100)}% · ${zone(x.value)}</span></div>`).join('')}
+function analyze(){if(rows.length<100){$('decision').textContent='МАЛО ДАННЫХ';return}const values=rows.map(r=>r.c),med=median(values),madValue=median(values.map(x=>Math.abs(x-med))),sigma=std(values),cad=cadenceOf(),regime=regimeOf(values,med,madValue,sigma),last=rows.at(-1),base=Math.max(Date.now(),last.t+cad);$('serverCount').textContent=serverTotal.toLocaleString('ru-RU');$('analysisCount').textContent=rows.length.toLocaleString('ru-RU');$('cadence').textContent=fmtDuration(cad);$('regime').textContent=regime;$('regime').style.color=regime==='EXTREME'? 'var(--red)':regime==='HIGH'?'var(--yellow)':'var(--green)';$('ema20').textContent=ema(values.slice(-400),20).toFixed(2)+'x';$('ema50').textContent=ema(values.slice(-500),50).toFixed(2)+'x';$('median').textContent=med.toFixed(2)+'x';$('dispersion').textContent=`${madValue.toFixed(2)} / ${sigma.toFixed(2)}`;$('updated').textContent=fmtTime(Date.now());$('loadProgress').style.width='100%';const hazards=[10,20,50].map(t=>hazardFor(t,base));renderHazards(hazards,regime);const best=[...hazards].sort((a,b)=>(b.adjusted||0)-(a.adjusted||0)||b.samples-a.samples)[0];lastBest=best;const signal=best.adjusted>=65&&best.samples>=30&&regime!=='EXTREME';$('decision').textContent=signal?'СИГНАЛ':'НАБЛЮДЕНИЕ';$('decision').className='decision '+(signal?'signal':'skip');$('bestWindow').textContent=`≥${best.threshold}x примерно ${fmtTime(best.startAt)}–${fmtTime(best.endAt)}`;$('bestReason').textContent=`Оценка ${best.adjusted}% · ${best.samples} исторических интервалов · режим ${regime}${signal?'':' · порог сигнала не пройден'}`;const lastBig=[...rows].reverse().find(r=>r.c>=10);if(lastBig&&!$('anchorInput').value)$('anchorInput').value=lastBig.c.toFixed(2);arithmetic($('anchorInput').value)}
+async function refresh(){try{const latest=await getPage(0);rows=merge(rows,latest);analyze()}catch(error){$('liveLabel').textContent='ОШИБКА LIVE'}}
+$('calculateBtn').addEventListener('click',()=>arithmetic($('anchorInput').value));$('anchorInput').addEventListener('keydown',e=>{if(e.key==='Enter')arithmetic(e.target.value)});$('refreshBtn').addEventListener('click',loadAll);loadAll();setInterval(()=>{if(!loading)refresh()},5000);setInterval(()=>{if(lastBest&&lastBest.startAt>Date.now())$('bestReason').dataset.countdown=Math.ceil((lastBest.startAt-Date.now())/1000)},1000);
+})();
+</script>
+</body>
+</html>
