@@ -336,6 +336,83 @@ function pairs(){
   for(let i=0;i<big.length-1;i++)out.push({a:big[i].c,b:big[i+1].c,dt:big[i+1].t-big[i].t});
   return out;
 }
+function origGeo(v){return v.length?Math.exp(origMean(v.map(x=>Math.log(Math.max(x,1.001))))):0}
+function origMean(v){return v.length?v.reduce((a,b)=>a+b,0)/v.length:0}
+function origMedian(v){if(!v.length)return 0;const s=[...v].sort((a,b)=>a-b),i=Math.floor(s.length/2);return s.length%2?s[i]:(s[i-1]+s[i])/2}
+function origStd(v){if(v.length<2)return 0;const m=origMean(v);return Math.sqrt(origMean(v.map(x=>(x-m)**2)))}
+function origMad(v){if(v.length<2)return 0;const m=origMedian(v);return origMedian(v.map(x=>Math.abs(x-m)))}
+function origEma(v,alpha){if(!v.length)return 0;let e=v[v.length-1];for(let i=v.length-2;i>=0;i--)e=alpha*v[i]+(1-alpha)*e;return e}
+function origGapStats(rs,threshold){
+  const ev=rs.filter(r=>r.c>=threshold).sort((a,b)=>a.t-b.t);
+  if(ev.length<2)return{avgGap:0,medGap:0,stdGap:0,madGap:0,last:ev.length?ev[0].t:null,count:ev.length};
+  const gaps=[];for(let i=1;i<ev.length;i++)gaps.push(ev[i].t-ev[i-1].t);
+  return{avgGap:origMean(gaps),medGap:origMedian(gaps),stdGap:origStd(gaps),madGap:origMad(gaps),last:ev.at(-1).t,count:ev.length};
+}
+function origBucketStats(rs,keyFn){
+  const tmp=new Map();
+  for(const r of rs){const k=keyFn(r),x=tmp.get(k)||{coefs:[],g:0,mg:0};x.coefs.push(r.c);if(r.c>=10)x.g++;if(r.c>=100)x.mg++;tmp.set(k,x)}
+  const out=new Map();
+  for(const [k,x] of tmp)out.set(k,{count:x.coefs.length,goldenCount:x.g,megaCount:x.mg,avg:origGeo(x.coefs),max:Math.max(...x.coefs)});
+  return out;
+}
+function origBigOpportunity(rs,nowMs){
+  const chronological=[...rs].sort((a,b)=>a.t-b.t),candidates=[],s100=origGapStats(chronological,100);
+  if(s100.count>=5&&s100.last&&s100.medGap>0){
+    const expected=s100.last+s100.medGap,delta=expected-nowMs;
+    const robustWidth=clamp(s100.madGap?s100.madGap*1.4826:s100.medGap*.35,2*60000,12*60000);
+    const sinceLast=nowMs-s100.last,stable=s100.madGap>0&&s100.madGap<s100.medGap*.5;
+    const near=Math.abs(delta)<=robustWidth*.7,late=sinceLast>=s100.medGap*.9;
+    if(stable&&(near||late)){
+      const proximity=clamp(1-Math.abs(delta)/Math.max(robustWidth,1),0,1);
+      candidates.push({type:'cycle100',expectedAt:Math.round(delta>0?expected:nowMs+Math.max(2*60000,robustWidth*.4)),windowMs:clamp(robustWidth,3*60000,10*60000),estimatedCoef:100,confidence:Math.round(clamp(55+Math.min(10,s100.count)+proximity*12,55,82)),reason:`Цикл 100x ≈ ${(s100.medGap/60000).toFixed(1)} мин · последний ${(sinceLast/60000).toFixed(1)} мин назад · ${s100.count} событий`});
+    }
+  }
+  const last80=chronological.slice(-80),n20=last80.filter(r=>r.c>=20).length,n50=last80.filter(r=>r.c>=50).length;
+  if(n50>=3&&n20>=6)candidates.push({type:'hotCluster',expectedAt:nowMs+3*60000,windowMs:6*60000,estimatedCoef:120,confidence:Math.round(clamp(55+n50*5+n20,55,82)),reason:`Горячий кластер: ${n20}×≥20x и ${n50}×≥50x за 80 раундов`});
+  const x100=chronological.filter(r=>r.c>=100);
+  if(x100.length>=4&&s100.last&&chronological.length>=80){
+    const elapsed=nowMs-s100.last,span=chronological.at(-1).t-chronological[0].t,rate=span>0?x100.length/span:0;
+    if(rate>0){const pLate=1-Math.exp(-rate*elapsed);if(pLate>=.75){const reciprocal=clamp(1/rate,90000,8*60000);candidates.push({type:'poisson',expectedAt:Math.round(nowMs+reciprocal),windowMs:clamp(reciprocal*.8,3*60000,7*60000),estimatedCoef:100,confidence:Math.round(clamp(50+pLate*30,50,80)),reason:`Пуассон: задержка ${(pLate*100).toFixed(0)}% · средний интервал ≈ ${(1/rate/60000).toFixed(1)} мин`})}}
+  }
+  if(!candidates.length)return null;
+  const best=candidates.reduce((a,b)=>b.confidence>a.confidence?b:a);
+  best.confirmations=candidates.length;if(candidates.length>=2)best.confidence=Math.min(95,best.confidence+5);
+  return best;
+}
+function origConfidenceLabel(score){return score>=82?'Высокая':score>=66?'Средняя':'Слабая'}
+function origBetPlan(target,reliability){
+  const main=Math.max(1.01,target);let insurance;
+  if(main>=20)insurance=Math.min(5,Math.max(2,main*.12));
+  else if(main>=10)insurance=Math.min(3,Math.max(1.8,main*.2));
+  else if(main>=5)insurance=Math.min(2.2,Math.max(1.55,main*.35));
+  else if(main>=2)insurance=Math.max(1.3,main*(reliability>=75?.6:.55));
+  else insurance=Math.max(1.1,main*.8);
+  insurance=Math.min(insurance,Math.max(1.01,main-.05));
+  const risk=main>=20||reliability<60?'ВЫСОКИЙ':main>=5||reliability<75?'СРЕДНИЙ':'НИЗКИЙ';
+  return{main:Math.round(main*100)/100,insurance:Math.round(insurance*100)/100,risk};
+}
+function origPredict(rs,previous,nowMs){
+  if(rs.length<20)return null;
+  if(previous){const holdUntil=Math.max(previous.estimatedAt+previous.windowMs,previous.generatedAt+60000);if(nowMs<holdUntil)return previous}
+  const desc=[...rs].sort((a,b)=>b.t-a.t),coefs=desc.map(r=>r.c),medAll=origMedian(coefs),geoAll=origGeo(coefs),last20=coefs.slice(0,20),last50=coefs.slice(0,50),avg50=origMean(last50),ema20=origEma(last20,.25),ema50=origEma(last50,.12),sigma50=origStd(last50),mad50=origMad(last50);
+  const g10=origGapStats(desc,10),since10=g10.last?nowMs-g10.last:Infinity,byHour=origBucketStats(desc,r=>new Date(r.t).getHours()),byMinute=origBucketStats(desc,r=>new Date(r.t).getMinutes()),d=new Date(nowMs),hourStat=byHour.get(d.getHours()),minuteStat=byMinute.get((d.getMinutes()+2)%60),low15=coefs.slice(0,15).length===15&&coefs.slice(0,15).every(x=>x<2),recentBig20=desc.slice(0,30).filter(r=>r.c>=20),big=origBigOpportunity(rs,nowMs);
+  if(g10.medGap>0&&g10.last){
+    const delta=g10.last+g10.medGap-nowMs,robustWidth=clamp(g10.madGap?g10.madGap*1.4826:g10.medGap*.55,60000,4*60000),stable=g10.count>=8&&g10.madGap>0&&g10.madGap<g10.medGap*.6;
+    if(stable&&Math.abs(delta)<=robustWidth*.6){const nb=recentBig20.length,divisor=nb>=3?2:nb>=1?3:4,peak80=Math.max(...desc.slice(0,80).map(r=>r.c)),estimated=clamp(peak80/divisor,2,20),baseConf=clamp(60-(Math.abs(delta)/robustWidth)*15,40,62),hourBonus=hourStat&&hourStat.avg>geoAll?3:0,score=Math.round(clamp(baseConf+hourBonus+clamp(g10.count/20,0,4),40,68));return{rule:1,divisor,arithmeticBase:peak80,estimatedCoef:Math.round(estimated*100)/100,confidence:score>=66?'Средняя':'Слабая',reliability:score,estimatedAt:Math.round(delta>0?nowMs+Math.max(delta,90000):nowMs+2*60000),windowMs:clamp(g10.medGap*.25,90000,3*60000),pattern:'Обнаружен цикл коэффициентов 10x',basis:`Медиана цикла ${(g10.medGap/60000).toFixed(1)} мин · последний ${(since10/60000).toFixed(1)} мин назад · MAD ${(g10.madGap/60000).toFixed(2)} мин`,generatedAt:nowMs,bigOpportunity:big}}
+  }
+  if(low15){const estimated=clamp(geoAll*2.5+medAll,2.5,15),age15=(nowMs-desc[14].t)/60000,score=Math.round(clamp(70+Math.min(15,age15),65,92));return{rule:2,divisor:null,arithmeticBase:null,estimatedCoef:Math.round(estimated*100)/100,confidence:score>=82?'Высокая':'Средняя',reliability:score,estimatedAt:nowMs+90000,windowMs:2*60000,pattern:'Низкая серия — статистический отскок',basis:`15 раундов <2x · геом. ${geoAll.toFixed(2)}x · медиана ${medAll.toFixed(2)}x`,generatedAt:nowMs,bigOpportunity:big}}
+  if(recentBig20.length>=3){const bigGeo=origGeo(recentBig20.map(r=>r.c)),divisor=recentBig20.length>=5?3:recentBig20.length>=4?4:5,estimated=clamp(bigGeo/divisor,2,12),score=Math.min(78,60+recentBig20.length*3);return{rule:3,divisor,arithmeticBase:bigGeo,estimatedCoef:Math.round(estimated*100)/100,confidence:score>=72?'Высокая':'Средняя',reliability:score,estimatedAt:nowMs+2*60000,windowMs:2.5*60000,pattern:`${recentBig20.length} недавних коэффициента ≥20x`,basis:`Геометрическое среднее BIG ${bigGeo.toFixed(2)}x ÷ ${divisor}`,generatedAt:nowMs,bigOpportunity:big}}
+  const last60=desc.slice(0,60),zone59=last60.filter(r=>r.c>=5&&r.c<10),lowRatio=last60.length?last60.filter(r=>r.c<2).length/last60.length:0;
+  if(zone59.length>=3){const zoneGeo=origGeo(zone59.map(r=>r.c)),fragile=lowRatio>.55||sigma50>avg50*1.4,estimated=fragile?clamp(zoneGeo*.45,2,4.5):clamp(zoneGeo*.7,3,7),score=Math.round(clamp(64+zone59.length*4+(fragile?-6:6),58,90));return{rule:4,divisor:null,arithmeticBase:zoneGeo,estimatedCoef:Math.round(estimated*100)/100,confidence:origConfidenceLabel(score),reliability:score,estimatedAt:nowMs+2*60000,windowMs:2.5*60000,pattern:fragile?`Смешанная фаза — ${zone59.length} коэффициента 5x–9x при нестабильной базе`:`Благоприятная фаза — ${zone59.length} недавних коэффициента 5x–9x`,basis:`Зона 5x–9x · геом. ${zoneGeo.toFixed(2)}x · <2x ${(lowRatio*100).toFixed(0)}% · σ50 ${sigma50.toFixed(2)}`,generatedAt:nowMs,bigOpportunity:big}}
+  const hourRatio=hourStat&&hourStat.count>=5?hourStat.avg/Math.max(geoAll,.1):1,minuteRatio=minuteStat&&minuteStat.count>=5?minuteStat.avg/Math.max(geoAll,.1):1,composite=ema20*.5+ema50*.3+avg50*.2;
+  let estimated=clamp(composite*hourRatio*.6+(minuteStat?minuteStat.max:0)*.1+1.6,1.8,12);const dangerous=lowRatio>.6||sigma50>avg50*1.6;if(dangerous)estimated=Math.min(estimated,3.2);else if(lowRatio>.45)estimated=Math.min(estimated,5);
+  const score=Math.round(clamp(52+clamp(rs.length/25,0,28)+clamp(Math.abs(hourRatio-1)*42,0,22)+clamp(Math.abs(minuteRatio-1)*32,0,16)+(mad50>0&&mad50<avg50*.6?5:0)+(dangerous?-8:0),50,92)),extra=((60-d.getSeconds())*1000)%45000,eta=nowMs+2*60000+extra,pattern=hourRatio>1.1?'Благоприятный час':hourRatio<.9?'Слабый час':'Мультисигнальный анализ';
+  return{rule:5,divisor:null,arithmeticBase:composite,estimatedCoef:Math.round(estimated*100)/100,confidence:origConfidenceLabel(score),reliability:score,estimatedAt:Math.round(eta),windowMs:2.5*60000,pattern,basis:(hourStat?`EMA20 ${ema20.toFixed(2)}x · час ${d.getHours()}: геом. ${hourStat.avg.toFixed(2)}x (${hourStat.count})`:`EMA20 ${ema20.toFixed(2)}x · час ${d.getHours()}: данных нет`)+` · MAD ${mad50.toFixed(2)} · σ ${sigma50.toFixed(2)} · раундов ${rs.length}`,generatedAt:nowMs,bigOpportunity:big};
+}
+function origInspectRules(rs,nowMs){
+  const desc=[...rs].sort((a,b)=>b.t-a.t),coefs=desc.map(r=>r.c),g10=origGapStats(desc,10),delta=g10.last&&g10.medGap?g10.last+g10.medGap-nowMs:Infinity,robust=g10.medGap?clamp(g10.madGap?g10.madGap*1.4826:g10.medGap*.55,60000,4*60000):0,stable=Boolean(g10.count>=8&&g10.madGap>0&&g10.madGap<g10.medGap*.6&&Math.abs(delta)<=robust*.6),low15=coefs.slice(0,15).length===15&&coefs.slice(0,15).every(x=>x<2),big20=desc.slice(0,30).filter(r=>r.c>=20),zone59=desc.slice(0,60).filter(r=>r.c>=5&&r.c<10);
+  return[{no:1,name:'Устойчивый цикл ≥10x',active:stable,state:`${g10.count} событий · median ${(g10.medGap/60000||0).toFixed(1)}м · MAD ${(g10.madGap/60000||0).toFixed(1)}м`},{no:2,name:'15 подряд <2x',active:low15,state:low15?'условие выполнено':'условие не выполнено'},{no:3,name:'Кластер ≥20x / 30',active:big20.length>=3,state:`найдено ${big20.length} событий ≥20x`},{no:4,name:'Зона 5x–9x / 60',active:zone59.length>=3,state:`найдено ${zone59.length} событий`},{no:5,name:'EMA + час + минута',active:!stable&&!low15&&big20.length<3&&zone59.length<3,state:'fallback-модель'}];
+}
 function arithmeticModel(anchor){
   anchor=n(anchor);if(anchor<10||!rows.length)return null;
   const all=pairs(),similar=all.filter(p=>p.a>=anchor/2&&p.a<=anchor*2),sample=similar.length>=25?similar:all;
