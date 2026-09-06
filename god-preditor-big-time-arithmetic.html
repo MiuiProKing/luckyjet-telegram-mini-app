@@ -218,9 +218,9 @@ const store={
   get(k,fallback){try{return JSON.parse(localStorage.getItem(k))??fallback}catch{return fallback}},
   set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{}}
 };
-let activeSignal=store.get('god_big_active_signal_v3',null);
-let signalHistory=store.get('god_big_signal_history_v3',[]);
-let lastSettledKey=store.get('god_big_last_settled_v3','');
+let activeSignal=store.get('god_original_active_signal_v5',null);
+let signalHistory=store.get('god_original_signal_history_v5',[]);
+let lastSettledKey=store.get('god_original_last_settled_v5','');
 let lockedForecast=store.get('god_big_locked_forecast_v4',null);
 
 function setStage(id,state){
@@ -414,34 +414,20 @@ function origInspectRules(rs,nowMs){
   return[{no:1,name:'Устойчивый цикл ≥10x',active:stable,state:`${g10.count} событий · median ${(g10.medGap/60000||0).toFixed(1)}м · MAD ${(g10.madGap/60000||0).toFixed(1)}м`},{no:2,name:'15 подряд <2x',active:low15,state:low15?'условие выполнено':'условие не выполнено'},{no:3,name:'Кластер ≥20x / 30',active:big20.length>=3,state:`найдено ${big20.length} событий ≥20x`},{no:4,name:'Зона 5x–9x / 60',active:zone59.length>=3,state:`найдено ${zone59.length} событий`},{no:5,name:'EMA + час + минута',active:!stable&&!low15&&big20.length<3&&zone59.length<3,state:'fallback-модель'}];
 }
 function arithmeticModel(anchor){
-  anchor=n(anchor);if(anchor<10||!rows.length)return null;
-  const all=pairs(),similar=all.filter(p=>p.a>=anchor/2&&p.a<=anchor*2),sample=similar.length>=25?similar:all;
-  const ops=[
-    ...[2,3,4,5,6,8,10,12,15,20].map(d=>({label:`÷ ${d}`,factor:1/d})),
-    ...[1.25,1.5,2,2.5,3,4,5].map(m=>({label:`× ${m}`,factor:m}))
-  ];
-  const ranked=ops.map(op=>{
-    let close=0,sameZone=0;const errors=[];
-    for(const p of sample){
-      const predicted=p.a*op.factor,err=Math.abs(predicted-p.b)/Math.max(1,p.b);
-      errors.push(err);if(err<=.25)close++;if(zone(predicted)===zone(p.b))sameZone++;
-    }
-    const score=sample.length?(.68*close+.32*sameZone)/sample.length:0;
-    return {...op,value:anchor*op.factor,score,close,sameZone,samples:sample.length,error:median(errors)};
-  }).filter(x=>x.value>=1.01&&x.value<=50000).sort((a,b)=>b.score-a.score||a.error-b.error);
-  return {best:ranked[0],ranked,samples:sample.length};
+  anchor=n(anchor);if(anchor<=0||!rows.length)return null;
+  const desc=[...rows].sort((a,b)=>b.t-a.t),recentBig20=desc.slice(0,30).filter(r=>r.c>=20),nb=recentBig20.length;
+  const cycleDiv=nb>=3?2:nb>=1?3:4,clusterDiv=nb>=5?3:nb>=4?4:5;
+  const activeDiv=activeSignal?.rule===3?clusterDiv:activeSignal?.rule===1?cycleDiv:(nb>=3?clusterDiv:cycleDiv);
+  const ranked=[2,3,4,5].map(d=>({label:`÷ ${d}`,factor:1/d,value:anchor/d,score:d===activeDiv?1:0,samples:nb,error:0}));
+  return{best:ranked.find(x=>x.label===`÷ ${activeDiv}`)||ranked[0],ranked,samples:nb,activeDiv,cycleDiv,clusterDiv};
 }
 function arithmetic(anchor,write=true){
   const model=arithmeticModel(anchor);
-  if(!model){
-    if(write){$('formulaResult').innerHTML='<div class="formula">Введите число от 10x</div><div class="details">Например: 123</div>';$('alternatives').innerHTML=''}
-    return null;
-  }
-  const {best,ranked}=model;
+  if(!model){if(write){$('formulaResult').innerHTML='<div class="formula">Введите коэффициент</div>';$('alternatives').innerHTML=''}return null}
+  const a=n(anchor),best=model.best;
   if(write){
-    $('formulaResult').innerHTML=`<div class="formula">${n(anchor).toFixed(2)} ${best.label} = ${best.value.toFixed(2)}x</div><div class="details">Ожидаемая зона: ${zone(best.value)} · историческое совпадение: ${Math.round(best.score*100)}% · проверено пар: ${best.samples}</div>`;
-    const selected=[];for(const x of ranked.slice(1,7)){if(selected.length<5&&!selected.some(s=>s.label===x.label))selected.push(x)}
-    $('alternatives').innerHTML=selected.map(x=>`<div class="alt"><b>${n(anchor).toFixed(2)} ${x.label} = ${x.value.toFixed(2)}x</b><span>${Math.round(x.score*100)}% · ${zone(x.value)}</span></div>`).join('');
+    $('formulaResult').innerHTML=`<div class="formula">${a.toFixed(2)} ${best.label} = ${best.value.toFixed(2)}x</div><div class="details">Активный делитель выбран по оригинальному engine.ts · ≥20x за последние 30: ${model.samples}</div>`;
+    $('alternatives').innerHTML=model.ranked.map(x=>`<div class="alt"><b>${a.toFixed(2)} ${x.label} = ${x.value.toFixed(2)}x</b><span>${x===best?'АКТИВНЫЙ':'вариант'}</span></div>`).join('');
   }
   return best;
 }
@@ -474,28 +460,29 @@ function ensureLockedForecast(best,regime){
   store.set('god_big_locked_forecast_v4',lockedForecast);
   return lockedForecast;
 }
-function maybeCreateSignal(best,regime,arith){
-  if(activeSignal)return;
-  const strong=best.adjusted>=65&&best.samples>=30&&regime!=='EXTREME';
-  if(!strong)return;
-  const key=activeSignature(best);if(key===lastSettledKey)return;
+function maybeCreateSignal(pred,regime,arith){
+  if(activeSignal||!pred)return;
+  const key=`${pred.generatedAt}:${pred.estimatedAt}:${pred.estimatedCoef}:${pred.reliability}`;
+  if(key===lastSettledKey)return;
+  const plan=origBetPlan(pred.estimatedCoef,pred.reliability);
   activeSignal={
-    key,status:'PENDING',threshold:best.threshold,confidence:best.adjusted,
-    startAt:best.startAt,endAt:best.endAt,createdAt:Date.now(),
-    samples:best.samples||0,events:best.events||0,hits:best.hits||0,age:best.age||0,regime,
-    baseId:rows.at(-1)?.id||'',baseTime:rows.at(-1)?.t||Date.now(),
-    arithmetic:arith?{value:arith.value,label:arith.label,score:arith.score}:null
+    key,status:'PENDING',threshold:plan.main,insurance:plan.insurance,risk:plan.risk,
+    confidence:pred.reliability,startAt:pred.estimatedAt,endAt:Math.round(pred.estimatedAt+Math.max(pred.windowMs,60000)),
+    createdAt:pred.generatedAt,rule:pred.rule,pattern:pred.pattern,basis:pred.basis,prediction:pred,
+    bigOpportunity:pred.bigOpportunity||null,baseId:rows.at(-1)?.id||'',baseTime:rows.at(-1)?.t||Date.now(),
+    arithmetic:pred.divisor&&pred.arithmeticBase?{value:pred.estimatedCoef,label:`÷ ${pred.divisor}`,base:pred.arithmeticBase}:null
   };
-  store.set('god_big_active_signal_v3',activeSignal);
+  store.set('god_original_active_signal_v5',activeSignal);
 }
 function settleSignal(result,hit){
   if(!activeSignal)return false;
-  const item={...activeSignal,status:result,settledAt:Date.now(),hit:hit?{id:hit.id,c:hit.c,t:hit.t}:null};
-  signalHistory=[item,...signalHistory].slice(0,12);
-  lastSettledKey=activeSignal.key;
-  store.set('god_big_last_settled_v3',lastSettledKey);store.set('god_big_signal_history_v3',signalHistory);
-  activeSignal=null;store.set('god_big_active_signal_v3',null);
-  clearLockedForecast();
+  const candidates=rows.filter(r=>r.t>=activeSignal.startAt&&r.t<=activeSignal.endAt&&r.id!==activeSignal.baseId);
+  const insuranceHit=candidates.find(r=>r.c>=activeSignal.insurance);
+  const maxCoef=candidates.length?Math.max(...candidates.map(r=>r.c)):0;
+  const item={...activeSignal,status:result,settledAt:Date.now(),insuranceOk:Boolean(insuranceHit),maxCoef,matchedCount:candidates.length,hit:hit?{id:hit.id,c:hit.c,t:hit.t}:null};
+  signalHistory=[item,...signalHistory].slice(0,20);lastSettledKey=activeSignal.key;
+  store.set('god_original_last_settled_v5',lastSettledKey);store.set('god_original_signal_history_v5',signalHistory);
+  activeSignal=null;store.set('god_original_active_signal_v5',null);
   renderSignalHistory();return true;
 }
 function verifyActiveSignal(){
@@ -507,24 +494,32 @@ function verifyActiveSignal(){
   return false;
 }
 function renderSignalHistory(){
-  const win=signalHistory.filter(x=>x.status==='WIN').length,lose=signalHistory.filter(x=>x.status==='LOSE').length;
-  $('scoreLine').textContent=`${win} WIN · ${lose} LOSE`;
-  if(!signalHistory.length){$('signalHistory').innerHTML='<div class="details">История появится после первого автоматически проверенного сигнала.</div>';return}
-  $('signalHistory').innerHTML=signalHistory.map(x=>`<div class="history-row"><div class="outcome ${x.status==='WIN'?'win':'lose'}">${x.status==='WIN'?'✓':'×'}</div><div><b>≥${x.threshold}x · окно ${fmtTime(x.startAt)}–${fmtTime(x.endAt)}</b><small>${x.status==='WIN'&&x.hit?`попало ${x.hit.c.toFixed(2)}x в ${fmtTime(x.hit.t)}`:'окно завершено без достижения цели'}</small></div><strong>${x.confidence}%</strong></div>`).join('');
+  const win=signalHistory.filter(x=>x.status==='WIN').length,lose=signalHistory.filter(x=>x.status==='LOSE').length,total=win+lose,rate=total?Math.round(win/total*100):0;
+  $('scoreLine').textContent=`${win} WIN · ${lose} LOSE · ${rate}%`;
+  if(!signalHistory.length){$('signalHistory').innerHTML='<div class="details">Первый результат появится после окончания зафиксированного окна.</div>';return}
+  $('signalHistory').innerHTML=signalHistory.map(x=>`<div class="history-row"><div class="outcome ${x.status==='WIN'?'win':'lose'}">${x.status==='WIN'?'✓':'×'}</div><div><b>П${x.rule||'?'} · ${x.threshold.toFixed(2)}x · ${fmtTime(x.startAt)}–${fmtTime(x.endAt)}</b><small>${x.status==='WIN'&&x.hit?`попало ${x.hit.c.toFixed(2)}x в ${fmtTime(x.hit.t)}`:`максимум ${Number(x.maxCoef||0).toFixed(2)}x`} · страховка ${Number(x.insurance||0).toFixed(2)}x ${x.insuranceOk?'WIN':'LOSE'}</small></div><strong>${x.confidence}%</strong></div>`).join('');
 }
-function renderAuto(best,regime,arith){
-  const signalOkay=best.adjusted>=65&&best.samples>=30&&regime!=='EXTREME';
-  setStage('stageLive','on');setStage('stageModel','on');
-  setStage('stageSignal',activeSignal?'on':signalOkay?'work':'');
-  setStage('stageCheck',activeSignal?'work':signalHistory.length?'on':'');
+function renderOriginalRules(pred){
+  const list=origInspectRules(rows,Date.now());
+  $('hazardCards').innerHTML=list.map(r=>`<article class="card rule-card card3d ${pred?.rule===r.no?'active':''}"><div class="rule-no">ПРАВИЛО ${r.no}</div><div class="rule-name">${r.name}</div><div class="rule-state">${pred?.rule===r.no?'● ИСПОЛЬЗУЕТСЯ · ':''}${r.state}</div></article>`).join('');
+  installTilt();
+}
+function renderBigOpportunity(pred){
+  const b=pred?.bigOpportunity;
+  if(!b){$('bigDecision').textContent='НЕТ BIG-СИГНАЛА';$('bigDecision').className='decision skip';$('bigWindow').textContent='Сейчас нет подтверждённого окна ≥100x';$('bigReason').textContent='Проверяются цикл 100x, горячий кластер и Пуассоновская задержка.';return}
+  $('bigDecision').textContent=`BIG ≈ ${b.estimatedCoef}x · ${b.confidence}%`;$('bigDecision').className='decision signal';
+  $('bigWindow').textContent=`${fmtTime(b.expectedAt)}–${fmtTime(b.expectedAt+b.windowMs)}`;
+  $('bigReason').textContent=`${b.reason}${b.confirmations>1?` · подтверждений ${b.confirmations}`:''}`;
+}
+function renderAuto(pred,regime,arith){
+  if(!pred)return;
+  const plan=origBetPlan(pred.estimatedCoef,pred.reliability);
+  setStage('stageLive','on');setStage('stageModel','on');setStage('stageSignal','on');setStage('stageCheck',activeSignal?'work':signalHistory.length?'on':'');
   document.body.classList.toggle('signal-mode',Boolean(activeSignal));
-  $('autoTarget').textContent=activeSignal?`≥${activeSignal.threshold}x · ${activeSignal.confidence}%`:`≥${best.threshold}x · ${best.adjusted}%`;
-  if(activeSignal){
-    $('autoSignalText').textContent=`≥${activeSignal.threshold}x · ${fmtTime(activeSignal.startAt)}–${fmtTime(activeSignal.endAt)} · ${activeSignal.confidence}%`;
-  }else{
-    $('autoSignalText').textContent=signalOkay?'Подготовка нового окна…':`Наблюдение · лучший расчёт ≥${best.threshold}x ${best.adjusted}%`;
-  }
-  $('autoArithmetic').textContent=arith?`${arith.label} → ${arith.value.toFixed(2)}x · ${Math.round(arith.score*100)}%`:'нет BIG-якоря';
+  $('autoTarget').textContent=`${plan.main.toFixed(2)}x · ${pred.reliability}%`;
+  $('autoSignalText').textContent=`П${pred.rule} · ${fmtTime(pred.estimatedAt)}–${fmtTime(pred.estimatedAt+Math.max(pred.windowMs,60000))} · ${pred.pattern}`;
+  $('autoArithmetic').textContent=pred.divisor&&pred.arithmeticBase?`${pred.arithmeticBase.toFixed(2)} ÷ ${pred.divisor} → ${pred.estimatedCoef.toFixed(2)}x`:`П${pred.rule}: без делителя`;
+  renderBigOpportunity(pred);renderOriginalRules(pred);
 }
 function updateCountdown(){
   const el=$('autoCountdown');if(!el)return;
@@ -541,46 +536,26 @@ function updateCountdown(){
 }
 function analyze(isNew=false){
   clearTimeout(analysisTimer);
-  if(rows.length<100){$('decision').textContent='МАЛО ДАННЫХ';return}
+  if(rows.length<20){$('decision').textContent='МАЛО ДАННЫХ';return}
   setStage('stageModel','work');renderLive(isNew);
-  const values=rows.map(r=>r.c),med=median(values),madValue=median(values.map(x=>Math.abs(x-med))),sigma=std(values),cad=cadenceOf(),regime=regimeOf(values,med,madValue,sigma),last=rows.at(-1),base=Math.max(Date.now()+3000,last.t+cad);
-  $('serverCount').textContent=serverTotal.toLocaleString('ru-RU');$('analysisCount').textContent=rows.length.toLocaleString('ru-RU');
-  $('cadence').textContent=fmtDuration(cad);$('regime').textContent=regime;
-  $('regime').style.color=regime==='EXTREME'?'var(--red)':regime==='HIGH'?'var(--yellow)':'var(--green)';
-  $('ema20').textContent=ema(values.slice(-400),20).toFixed(2)+'x';$('ema50').textContent=ema(values.slice(-600),50).toFixed(2)+'x';
-  $('median').textContent=med.toFixed(2)+'x';$('dispersion').textContent=`${madValue.toFixed(2)} / ${sigma.toFixed(2)}`;
-  $('updated').textContent=fmtTime(Date.now());$('loadProgress').style.width='100%';
-
-  const hazards=[10,20,50,100].map(t=>hazardFor(t,base));
-  renderHazards(hazards,regime);
-  const rawBest=[...hazards].sort((a,b)=>(b.adjusted||0)-(a.adjusted||0)||b.samples-a.samples)[0];
-
-  const lastBig=[...rows].reverse().find(r=>r.c>=10),arith=lastBig?arithmetic(lastBig.c,true):null;
-  if(lastBig){$('anchorInput').value=lastBig.c.toFixed(2)}
+  const desc=[...rows].sort((a,b)=>b.t-a.t),values=desc.map(r=>r.c),last20=values.slice(0,20),last50=values.slice(0,50),med=origMedian(values),madValue=origMad(last50),sigma=origStd(last50),cad=cadenceOf(),lowRatio=desc.slice(0,60).length?desc.slice(0,60).filter(r=>r.c<2).length/desc.slice(0,60).length:0,avg50=origMean(last50),regime=lowRatio>.6||sigma>avg50*1.6?'HIGH':lowRatio>.45?'NORMAL':'LOW';
+  $('serverCount').textContent=serverTotal.toLocaleString('ru-RU');$('analysisCount').textContent=rows.length.toLocaleString('ru-RU');$('cadence').textContent=fmtDuration(cad);$('regime').textContent=regime;$('regime').style.color=regime==='HIGH'?'var(--red)':regime==='NORMAL'?'var(--yellow)':'var(--green)';
+  $('ema20').textContent=origEma(last20,.25).toFixed(2)+'x';$('ema50').textContent=origEma(last50,.12).toFixed(2)+'x';$('median').textContent=med.toFixed(2)+'x';$('dispersion').textContent=`${madValue.toFixed(2)} / ${sigma.toFixed(2)}`;$('updated').textContent=fmtTime(Date.now());$('loadProgress').style.width='100%';
 
   verifyActiveSignal();
-  const best=ensureLockedForecast(rawBest,regime);
-  lastBest=best;
-  maybeCreateSignal(best,best.regime||regime,arith);
-  if(activeSignal){
-    ensureLockedForecast(best,best.regime||regime);
-    lastBest=lockedForecast;
-  }
+  let pred=activeSignal?.prediction||null;
+  if(!pred){pred=origPredict(rows,null,Date.now());if(pred)maybeCreateSignal(pred,regime,null)}
+  pred=activeSignal?.prediction||pred;
+  lastBest=pred;
 
-  renderAuto(lastBest,lastBest.regime||regime,arith);
-  renderSignalHistory();
-  updateCountdown();
+  const lastBig=[...rows].reverse().find(r=>r.c>=10);if(lastBig){$('anchorInput').value=lastBig.c.toFixed(2);arithmetic(lastBig.c,true)}
+  renderAuto(pred,regime,null);renderSignalHistory();updateCountdown();
 
-  const signal=Boolean(activeSignal);
-  $('decision').textContent=signal?'АВТО СИГНАЛ':'ВРЕМЯ ЗАФИКСИРОВАНО';
-  $('decision').className='decision '+(signal?'signal':'skip');
-
-  if(signal){
-    $('bestWindow').textContent=`≥${activeSignal.threshold}x · ${fmtTime(activeSignal.startAt)}–${fmtTime(activeSignal.endAt)}`;
-    $('bestReason').textContent=`Время заблокировано · оценка ${activeSignal.confidence}% · новые раунды обновляют LIVE, но НЕ меняют это окно до WIN/LOSE или его окончания`;
-  }else{
-    $('bestWindow').textContent=`≥${lastBest.threshold}x · ${fmtTime(lastBest.startAt)}–${fmtTime(lastBest.endAt)}`;
-    $('bestReason').textContent=`Время зафиксировано · оценка ${lastBest.adjusted}% · ${lastBest.samples} исторических интервалов · режим ${lastBest.regime||regime} · пересчёт только после окончания этого окна`;
+  if(pred){
+    const plan=origBetPlan(pred.estimatedCoef,pred.reliability);
+    $('decision').textContent=`ПРАВИЛО ${pred.rule} · ${plan.main.toFixed(2)}x`;$('decision').className='decision signal';
+    $('bestWindow').textContent=`${fmtTime(pred.estimatedAt)}–${fmtTime(pred.estimatedAt+Math.max(pred.windowMs,60000))} · страховка ${plan.insurance.toFixed(2)}x`;
+    $('bestReason').textContent=`Время зафиксировано · ${pred.reliability}% (${pred.confidence}) · риск ${plan.risk} · ${pred.pattern} · ${pred.basis}`;
   }
   setStage('stageModel','on');
 }
@@ -612,15 +587,7 @@ $('refreshBtn').addEventListener('click',loadAll);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh()});
 renderSignalHistory();installTilt();loadAll();
 setInterval(()=>{if(!loading&&!document.hidden)refresh()},POLL_MS);
-setInterval(()=>{
-  updateCountdown();
-  if(verifyActiveSignal()){
-    analyze(false);
-  }else if(!activeSignal&&lockedForecast&&Date.now()>Number(lockedForecast.endAt)){
-    clearLockedForecast();
-    analyze(false);
-  }
-},1000);
+setInterval(()=>{updateCountdown();if(verifyActiveSignal())analyze(false)},1000);
 })();
 </script>
 </body>
