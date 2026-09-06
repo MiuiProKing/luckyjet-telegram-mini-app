@@ -111,6 +111,18 @@ body:after{
 @media(max-width:460px){.cockpit{min-height:365px;padding:13px}.scene3d{height:240px}.holo-core{width:168px;height:168px}.orbit.a{width:235px}.orbit.b{width:205px;height:205px}.orbit.c{width:265px;height:265px}.holo-value b{font-size:2.3rem}.pipeline{gap:5px}.stage{padding:9px 3px}.stage b{font-size:.58rem}.cockpit-data{grid-template-columns:1fr 1fr}.signal-console{grid-template-columns:1fr}.head{margin-bottom:8px}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.001ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important}}
 
+/* ORIGINAL ENGINE V5 */
+.rule-card{padding:12px;position:relative;overflow:hidden}
+.rule-card.active{border-color:rgba(52,211,153,.5);box-shadow:0 16px 42px rgba(0,0,0,.35),0 0 28px rgba(52,211,153,.08)}
+.rule-card .rule-no{font-size:.65rem;font-weight:950;letter-spacing:.8px;color:#7dd3fc}
+.rule-card .rule-name{font-size:.9rem;font-weight:950;margin-top:3px}
+.rule-card .rule-state{font-size:.72rem;color:#8fa0bb;margin-top:5px}
+.rule-card.active .rule-state{color:#a7f3d0}
+#bigHero{border-color:rgba(251,191,36,.22);background:radial-gradient(circle at 90% 15%,rgba(251,191,36,.09),transparent 25%),linear-gradient(145deg,rgba(25,18,8,.9),rgba(8,10,18,.94))}
+#bigHero .eyebrow{color:#fbbf24}
+#bigHero .decision.signal{color:#fbbf24;text-shadow:0 0 18px rgba(251,191,36,.28)}
+#autoArithmetic{color:#c4b5fd}
+
 </style>
 <script src="app-config.js?v=20260823-2"></script><script src="i18n-runtime.js?v=20260823-2"></script><script src="language-onboarding.js?v=20260823-2"></script><script src="license-client.js?v=20260823-2"></script><script src="access.js?v=20260823-2"></script><script src="analytics-client.js?v=20260823-2"></script><script src="app-center.js?v=20260823-2"></script></head>
 <body>
@@ -159,6 +171,12 @@ body:after{
     <div id="bestWindow" class="window">Получаю всю базу…</div>
     <div id="bestReason" class="sub">Расчёт по фактическим timestamps каждого раунда</div>
     <div class="progress"><i id="loadProgress"></i></div>
+  </section>
+  <section class="hero card3d" id="bigHero">
+    <div class="eyebrow">ОТДЕЛЬНЫЙ BIG ≥100x</div>
+    <div id="bigDecision" class="decision skip">НЕТ BIG-СИГНАЛА</div>
+    <div id="bigWindow" class="window">Проверяю цикл 100x / горячий кластер / Пуассон…</div>
+    <div id="bigReason" class="sub">BIG-модель работает независимо от основного прогноза.</div>
   </section>
   <section class="grid">
     <div class="metric"><span>Сервер</span><b id="serverCount">—</b></div>
