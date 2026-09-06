@@ -221,6 +221,7 @@ const store={
 let activeSignal=store.get('god_big_active_signal_v3',null);
 let signalHistory=store.get('god_big_signal_history_v3',[]);
 let lastSettledKey=store.get('god_big_last_settled_v3','');
+let lockedForecast=store.get('god_big_locked_forecast_v4',null);
 
 function setStage(id,state){
   const el=$(id); if(!el)return;
@@ -368,6 +369,34 @@ function arithmetic(anchor,write=true){
   return best;
 }
 function activeSignature(h){return `${h.threshold}:${Math.round(h.startAt/60000)}:${Math.round(h.endAt/60000)}`}
+function clearLockedForecast(){
+  lockedForecast=null;
+  store.set('god_big_locked_forecast_v4',null);
+}
+function ensureLockedForecast(best,regime){
+  const now=Date.now();
+  if(activeSignal){
+    lockedForecast={
+      threshold:activeSignal.threshold,adjusted:activeSignal.confidence,confidence:activeSignal.confidence,
+      samples:activeSignal.samples||best.samples||0,startAt:activeSignal.startAt,endAt:activeSignal.endAt,
+      events:activeSignal.events||best.events||0,hits:activeSignal.hits||best.hits||0,age:activeSignal.age||best.age||0,
+      regime:activeSignal.regime||regime,locked:true,key:activeSignal.key
+    };
+    store.set('god_big_locked_forecast_v4',lockedForecast);
+    return lockedForecast;
+  }
+  if(lockedForecast && Number(lockedForecast.endAt)>now){
+    return lockedForecast;
+  }
+  if(lockedForecast)clearLockedForecast();
+  lockedForecast={
+    threshold:best.threshold,adjusted:best.adjusted,confidence:best.adjusted,samples:best.samples,
+    startAt:best.startAt,endAt:best.endAt,events:best.events,hits:best.hits,age:best.age,
+    regime,locked:true,key:activeSignature(best),lockedAt:now
+  };
+  store.set('god_big_locked_forecast_v4',lockedForecast);
+  return lockedForecast;
+}
 function maybeCreateSignal(best,regime,arith){
   if(activeSignal)return;
   const strong=best.adjusted>=65&&best.samples>=30&&regime!=='EXTREME';
@@ -376,6 +405,7 @@ function maybeCreateSignal(best,regime,arith){
   activeSignal={
     key,status:'PENDING',threshold:best.threshold,confidence:best.adjusted,
     startAt:best.startAt,endAt:best.endAt,createdAt:Date.now(),
+    samples:best.samples||0,events:best.events||0,hits:best.hits||0,age:best.age||0,regime,
     baseId:rows.at(-1)?.id||'',baseTime:rows.at(-1)?.t||Date.now(),
     arithmetic:arith?{value:arith.value,label:arith.label,score:arith.score}:null
   };
@@ -388,6 +418,7 @@ function settleSignal(result,hit){
   lastSettledKey=activeSignal.key;
   store.set('god_big_last_settled_v3',lastSettledKey);store.set('god_big_signal_history_v3',signalHistory);
   activeSignal=null;store.set('god_big_active_signal_v3',null);
+  clearLockedForecast();
   renderSignalHistory();return true;
 }
 function verifyActiveSignal(){
@@ -442,19 +473,37 @@ function analyze(isNew=false){
   $('ema20').textContent=ema(values.slice(-400),20).toFixed(2)+'x';$('ema50').textContent=ema(values.slice(-600),50).toFixed(2)+'x';
   $('median').textContent=med.toFixed(2)+'x';$('dispersion').textContent=`${madValue.toFixed(2)} / ${sigma.toFixed(2)}`;
   $('updated').textContent=fmtTime(Date.now());$('loadProgress').style.width='100%';
-  const hazards=[10,20,50,100].map(t=>hazardFor(t,base));renderHazards(hazards,regime);
-  const best=[...hazards].sort((a,b)=>(b.adjusted||0)-(a.adjusted||0)||b.samples-a.samples)[0];lastBest=best;
+
+  const hazards=[10,20,50,100].map(t=>hazardFor(t,base));
+  renderHazards(hazards,regime);
+  const rawBest=[...hazards].sort((a,b)=>(b.adjusted||0)-(a.adjusted||0)||b.samples-a.samples)[0];
+
   const lastBig=[...rows].reverse().find(r=>r.c>=10),arith=lastBig?arithmetic(lastBig.c,true):null;
   if(lastBig){$('anchorInput').value=lastBig.c.toFixed(2)}
-  verifyActiveSignal();maybeCreateSignal(best,regime,arith);renderAuto(best,regime,arith);renderSignalHistory();updateCountdown();
+
+  verifyActiveSignal();
+  const best=ensureLockedForecast(rawBest,regime);
+  lastBest=best;
+  maybeCreateSignal(best,best.regime||regime,arith);
+  if(activeSignal){
+    ensureLockedForecast(best,best.regime||regime);
+    lastBest=lockedForecast;
+  }
+
+  renderAuto(lastBest,lastBest.regime||regime,arith);
+  renderSignalHistory();
+  updateCountdown();
+
   const signal=Boolean(activeSignal);
-  $('decision').textContent=signal?'АВТО СИГНАЛ':'НАБЛЮДЕНИЕ';$('decision').className='decision '+(signal?'signal':'skip');
+  $('decision').textContent=signal?'АВТО СИГНАЛ':'ВРЕМЯ ЗАФИКСИРОВАНО';
+  $('decision').className='decision '+(signal?'signal':'skip');
+
   if(signal){
     $('bestWindow').textContent=`≥${activeSignal.threshold}x · ${fmtTime(activeSignal.startAt)}–${fmtTime(activeSignal.endAt)}`;
-    $('bestReason').textContent=`Автоматически создано · оценка ${activeSignal.confidence}% · после окна система сама поставит WIN/LOSE и пересчитает следующий прогноз`;
+    $('bestReason').textContent=`Время заблокировано · оценка ${activeSignal.confidence}% · новые раунды обновляют LIVE, но НЕ меняют это окно до WIN/LOSE или его окончания`;
   }else{
-    $('bestWindow').textContent=`≥${best.threshold}x примерно ${fmtTime(best.startAt)}–${fmtTime(best.endAt)}`;
-    $('bestReason').textContent=`Оценка ${best.adjusted}% · ${best.samples} исторических интервалов · режим ${regime} · автомат ждёт порог 65% и 30+ похожих интервалов`;
+    $('bestWindow').textContent=`≥${lastBest.threshold}x · ${fmtTime(lastBest.startAt)}–${fmtTime(lastBest.endAt)}`;
+    $('bestReason').textContent=`Время зафиксировано · оценка ${lastBest.adjusted}% · ${lastBest.samples} исторических интервалов · режим ${lastBest.regime||regime} · пересчёт только после окончания этого окна`;
   }
   setStage('stageModel','on');
 }
