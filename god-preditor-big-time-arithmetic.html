@@ -209,7 +209,7 @@ body:after{
   </section>
 
   <button id="refreshBtn" class="refresh">ОБНОВИТЬ SQLITE И ПЕРЕСЧИТАТЬ</button>
-  <div class="footer">FULL AUTO 3D · LIVE + расчёт + сигнал + WIN/LOSE работают автоматически · статистическая модель без гарантии результата</div>
+  <div class="footer">FULL AUTO 3D · ORIGINAL ENGINE 1→5 + BIG ≥100x · LIVE + фиксация времени + WIN/LOSE</div>
 </main>
 <script>
 (function app(){
@@ -584,7 +584,7 @@ async function refresh(){
     const changed=Boolean(rows.at(-1)?.id&&rows.at(-1).id!==before);
     if(changed){setStage('stageLive','work');analyze(true)}
     else{renderLive(false);setStage('stageLive','on');if(verifyActiveSignal())analyze(false)}
-    $('liveLabel').textContent='LIVE AUTO 24/7';
+    $('liveLabel').textContent='ORIGINAL ENGINE · LIVE';
   }catch(error){$('liveLabel').textContent='RECONNECT…';setStage('stageLive','alert')}
 }
 function installTilt(){
