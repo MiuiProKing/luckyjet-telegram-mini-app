@@ -173,12 +173,12 @@ body:after{
     <div class="metric"><span>MAD / σ</span><b id="dispersion">—</b></div>
   </section>
   <section class="section">
-    <div class="section-title"><span>ВЕРОЯТНОСТЬ ПО ВРЕМЕНИ</span><span id="updated">—</span></div>
-    <div id="hazardCards" class="cards"><article class="card skeleton">Считаю интервалы ≥10x…</article></div>
+    <div class="section-title"><span>ОРИГИНАЛЬНЫЕ ПРАВИЛА 1→5</span><span id="updated">—</span></div>
+    <div id="hazardCards" class="cards"><article class="card skeleton">Проверяю правила из engine.ts…</article></div>
   </section>
   <section class="section card arith">
-    <div class="section-title"><span>АРИФМЕТИЧЕСКАЯ МОДЕЛЬ</span><span>следующий BIG</span></div>
-    <div class="details">Берёт большой коэффициент и проверяет на всей истории, какое деление или умножение чаще было ближе к следующему ≥10x.</div>
+    <div class="section-title"><span>ОРИГИНАЛЬНАЯ АРИФМЕТИКА</span><span>÷2 / ÷3 / ÷4 / ÷5</span></div>
+    <div class="details">Делитель выбирается по состоянию последних ≥20x, как в сохранённом engine.ts. Вручную можно проверить любое число, например 123x.</div>
     <div class="input-row"><input id="anchorInput" inputmode="decimal" placeholder="Например 123"><button id="calculateBtn">РАССЧИТАТЬ</button></div>
     <div id="formulaResult" class="formula-main"><div class="formula">Ожидание базы…</div></div>
     <div id="alternatives" class="alternatives"></div>
