@@ -535,7 +535,15 @@ $('refreshBtn').addEventListener('click',loadAll);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh()});
 renderSignalHistory();installTilt();loadAll();
 setInterval(()=>{if(!loading&&!document.hidden)refresh()},POLL_MS);
-setInterval(()=>{updateCountdown();if(verifyActiveSignal())analyze(false)},1000);
+setInterval(()=>{
+  updateCountdown();
+  if(verifyActiveSignal()){
+    analyze(false);
+  }else if(!activeSignal&&lockedForecast&&Date.now()>Number(lockedForecast.endAt)){
+    clearLockedForecast();
+    analyze(false);
+  }
+},1000);
 })();
 </script>
 </body>
