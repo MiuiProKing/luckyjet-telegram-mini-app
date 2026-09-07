@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Instagram 24/7 WEB</title>
+  <style>
+    :root{color-scheme:dark;--bg:#07090d;--card:#0f141d;--line:#202a38;--text:#f5f7fb;--muted:#8d99aa;--accent:#21e6a7;--danger:#ff5d72;--blue:#4aa8ff}
+    *{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(circle at 20% 0,#10253a 0,transparent 34%),radial-gradient(circle at 90% 10%,#271225 0,transparent 34%),var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;padding:max(22px,env(safe-area-inset-top)) 16px max(28px,env(safe-area-inset-bottom))}
+    .wrap{width:min(680px,100%);margin:auto}h1{font-size:30px;margin:8px 0 4px}.sub{color:var(--muted);margin:0 0 18px}.card{background:rgba(15,20,29,.94);border:1px solid var(--line);border-radius:22px;padding:18px;margin:12px 0;box-shadow:0 20px 60px rgba(0,0,0,.28)}label{display:block;color:#bbc6d4;font-size:13px;margin:13px 0 7px}input{width:100%;border:1px solid #293447;background:#090d13;color:white;border-radius:14px;padding:14px 15px;font-size:16px;outline:none}input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(74,168,255,.12)}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}button{border:0;border-radius:14px;padding:14px 16px;font-size:15px;font-weight:700;color:#07120e;background:var(--accent);cursor:pointer}button.secondary{background:#1b2635;color:white}button.stop{background:#3b1720;color:#ff9baa}button.danger{background:#2b1218;color:#ff8797}button:disabled{opacity:.5;cursor:not-allowed}.status{white-space:pre-wrap;background:#090d13;border:1px solid #1f2937;border-radius:14px;padding:14px;min-height:94px;color:#d8e2ee;font:14px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace}.ok{color:#55efb5}.bad{color:#ff7a8c}.tip{font-size:13px;color:var(--muted);line-height:1.5}@media(max-width:560px){.grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Instagram 24/7 WEB</h1>
+  <p class="sub">Панель вместо IPA. Логин и пароль отправляются только на твой Python-сервер.</p>
+  <div class="card">
+    <label>Адрес Python-сервера</label>
+    <input id="serverUrl" type="url" inputmode="url" autocomplete="url" placeholder="https://твой-сервер.example.com">
+    <p class="tip" style="margin:8px 0 2px">GitHub Pages работает по HTTPS, поэтому сервер тоже должен иметь HTTPS.</p>
+    <label>Код панели</label>
+    <input id="panelCode" type="password" autocomplete="off" placeholder="Код из IG247_PANEL_CODE или файла сервера">
+    <label>Instagram логин</label>
+    <input id="username" autocomplete="username" placeholder="@username">
+    <label>Instagram пароль</label>
+    <input id="password" type="password" autocomplete="current-password" placeholder="Пароль Instagram">
+    <label>Код 2FA (если Instagram попросит)</label>
+    <input id="twofa" inputmode="numeric" autocomplete="one-time-code" placeholder="123456">
+    <div class="grid" style="margin-top:14px">
+      <button id="loginBtn" onclick="login()">ВОЙТИ INSTAGRAM</button>
+      <button class="secondary" onclick="send2fa()">ОТПРАВИТЬ 2FA</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="grid">
+      <button onclick="startOnline()">🟢 ВКЛ ONLINE 24/7</button>
+      <button class="stop" onclick="stopOnline()">⏸ ОСТАНОВИТЬ</button>
+      <button class="secondary" onclick="status()">🔄 СТАТУС</button>
+      <button class="danger" onclick="logoutServer()">🚨 УДАЛИТЬ СЕССИЮ</button>
+    </div>
+  </div>
+  <div class="card">
+    <div id="statusBox" class="status">Введите код панели и нажмите «СТАТУС».</div>
+    <p class="tip">Важно: Realtime MQTT Instagram — неофициальный механизм. Сервер может поддерживать foreground/keepalive, но Instagram сам решает, показывать ли зелёную точку «В сети».</p>
+  </div>
+</div>
+<script>
+const $=id=>document.getElementById(id);
+function panelCode(){const v=$("panelCode").value.trim();if(v)sessionStorage.setItem("ig247_code",v);return v||sessionStorage.getItem("ig247_code")||""}
+function serverUrl(){
+  const v=$("serverUrl").value.trim().replace(/\/$/,"");
+  if(v)localStorage.setItem("ig247_server_url",v);
+  const out=v||localStorage.getItem("ig247_server_url")||"";
+  if(!out)throw new Error("Введи адрес Python-сервера");
+  if(!/^https:\/\//i.test(out))throw new Error("Для GitHub Pages нужен HTTPS-адрес сервера");
+  return out;
+}
+async function api(path,payload={}){payload.panel_code=panelCode();const r=await fetch(serverUrl()+path,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload),cache:"no-store",credentials:"omit"});let data={};try{data=await r.json()}catch(e){}if(!r.ok)throw new Error(data.error||("HTTP "+r.status));return data}
+function show(msg,ok=true){const box=$("statusBox");box.textContent=msg;box.className="status "+(ok?"ok":"bad")}
+async function login(){const btn=$("loginBtn");btn.disabled=true;try{const d=await api("/api/login",{username:$("username").value,password:$("password").value,code_2fa:$("twofa").value});if(d.need_2fa){show("🔐 "+d.message+"\nВведи код 2FA и нажми «ОТПРАВИТЬ 2FA».",false)}else{show("✅ "+(d.message||"Вход выполнен"));$("password").value="";setTimeout(status,1000)}}catch(e){show("❌ "+e.message,false)}finally{btn.disabled=false}}
+async function send2fa(){try{const d=await api("/api/2fa",{code_2fa:$("twofa").value});show("✅ "+d.message);$("password").value="";$("twofa").value="";setTimeout(status,1000)}catch(e){show("❌ "+e.message,false)}}
+async function startOnline(){try{const d=await api("/api/online/start");show("✅ "+d.message);setTimeout(status,800)}catch(e){show("❌ "+e.message,false)}}
+async function stopOnline(){try{const d=await api("/api/online/stop");show("⏸ "+d.message);setTimeout(status,500)}catch(e){show("❌ "+e.message,false)}}
+async function status(){try{const d=await api("/api/status");const lines=["✅ Python-сервер работает","👤 Аккаунт: "+(d.account||"не авторизован"),"🔐 Сессия: "+(d.authorized?"есть":"нет"),"🟢 ONLINE 24/7: "+(d.online_enabled?"ВКЛ":"ВЫКЛ"),"🧵 Realtime-поток: "+(d.realtime_thread?"РАБОТАЕТ":"НЕ РАБОТАЕТ"),"💓 Последний keepalive: "+(d.last_heartbeat_text||"ещё не было"),"⚠️ Последняя ошибка: "+(d.last_error||"нет")];show(lines.join("\n"),!d.last_error)}catch(e){show("❌ "+e.message,false)}}
+async function logoutServer(){if(!confirm("Удалить сохранённую Instagram-сессию с сервера?"))return;try{const d=await api("/api/logout");show("🚨 "+d.message)}catch(e){show("❌ "+e.message,false)}}
+window.addEventListener("load",()=>{
+  const saved=sessionStorage.getItem("ig247_code");if(saved)$("panelCode").value=saved;
+  const srv=localStorage.getItem("ig247_server_url");if(srv)$("serverUrl").value=srv;
+});
+</script>
+</body>
+</html>
