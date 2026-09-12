@@ -42,5 +42,5 @@ async function testApi(){testStatus.textContent='Проверяю…';const out=
 function renderHist(){historyList.innerHTML=hist.length?hist.slice(0,30).map(x=>`<div style="padding:7px 0;border-bottom:1px solid #31517f">${Number(x.coef).toFixed(2)}x • ${new Date(x.time).toLocaleString('ru-RU')} • ${x.conf==null?'—':Math.round(x.conf)+'%'}</div>`).join(''):'Пока пусто'}
 settingsBtn.onclick=()=>{apiKey.value=key;settings.classList.add('open')};closeSettings.onclick=()=>settings.classList.remove('open');historyBtn.onclick=()=>{renderHist();history.classList.add('open')};closeHistory.onclick=()=>history.classList.remove('open');saveBtn.onclick=()=>{const v=apiKey.value.trim();if(!v.startsWith('ap_')){testStatus.textContent='Ключ должен начинаться с ap_';return}key=v;set(K,v);testStatus.textContent='Сохранено';poll()};testBtn.onclick=testApi;manualBtn.onclick=predict;autoBtn.onclick=()=>{auto=!auto;autoBtn.textContent='АВТО: '+(auto?'ВКЛ':'ВЫКЛ');clearInterval(timer);if(auto){predict();timer=setInterval(predict,15000)}};clearHistory.onclick=()=>{hist=[];set(H,'[]');renderHist()};renderStats();renderHist();if(key){poll();setInterval(poll,5000)}else setStatus('Открой ⚙️ и вставь ap_ ключ');
 </script>
-<script src="live-coefficients.js?v=20260912"></script>
+<script src="live-coefficients.js?v=20260912-2"></script>
 </body></html>
