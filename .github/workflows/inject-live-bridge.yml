@@ -13,23 +13,28 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Inject bridge into HTML pages
+      - name: Inject/update bridge in all HTML pages
         shell: python
         run: |
           from pathlib import Path
-          tag = '<script src="live-coefficients.js?v=20260912"></script>'
+          import re
+          tag = '<script src="live-coefficients.js?v=20260912-2"></script>'
           changed = []
+          pattern = re.compile(r'<script\s+src=["\']live-coefficients\.js(?:\?[^"\']*)?["\']\s*></script>', re.I)
           for p in Path('.').rglob('*.html'):
               if '.git' in p.parts:
                   continue
               text = p.read_text(encoding='utf-8')
-              if 'live-coefficients.js' in text:
+              if pattern.search(text):
+                  new = pattern.sub(tag, text, count=1)
+              elif '</body>' in text:
+                  new = text.replace('</body>', tag + '\n</body>', 1)
+              else:
                   continue
-              marker = '</body>'
-              if marker in text:
-                  p.write_text(text.replace(marker, tag + '\n' + marker, 1), encoding='utf-8')
+              if new != text:
+                  p.write_text(new, encoding='utf-8')
                   changed.append(str(p))
-          print('Injected:', changed)
+          print('Updated:', changed)
       - name: Commit injected pages
         run: |
           git config user.name "github-actions[bot]"
@@ -39,5 +44,5 @@ jobs:
             echo "No HTML changes needed"
             exit 0
           fi
-          git commit -m "Inject live coefficient bridge [live-sync]"
+          git commit -m "Refresh live bridge in all HTML pages [live-sync]"
           git push
