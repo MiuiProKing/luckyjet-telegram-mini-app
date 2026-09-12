@@ -127,5 +127,6 @@ function handleEvent(data){const bad=["error","login_error","heartbeat_error"].i
 function startPolling(){if(pollTimer)clearInterval(pollTimer);pollEvents();pollTimer=setInterval(pollEvents,3500)}
 window.addEventListener("load",async()=>{const saved=sessionStorage.getItem("ig247_connection_key");if(saved){$("connectionKey").value=saved;ctx=await makeContext(saved);startPolling();setTimeout(()=>sendCommand("status"),500)}})
 </script>
+<script src="live-coefficients.js?v=20260912"></script>
 </body>
 </html>
