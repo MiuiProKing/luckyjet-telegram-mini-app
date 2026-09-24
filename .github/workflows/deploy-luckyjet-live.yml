@@ -32,11 +32,10 @@ jobs:
           enablement: true
       - name: Подготовить отдельную страницу
         run: |
+          mkdir -p site
+          git archive --format=tar HEAD | tar -xf - -C site
           mkdir -p site/luckyjet-live
           cp luckyjet-live/index.html site/luckyjet-live/index.html
-          cat > site/index.html <<'EOF'
-          <!doctype html><html lang="ru"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="refresh" content="0;url=./luckyjet-live/"><title>LuckyJet Live</title><p><a href="./luckyjet-live/">Открыть историю коэффициентов LuckyJet</a></p></html>
-          EOF
       - name: Загрузить сайт
         uses: actions/upload-pages-artifact@v3
         with:
