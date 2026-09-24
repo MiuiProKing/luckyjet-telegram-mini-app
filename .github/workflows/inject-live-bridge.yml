@@ -25,7 +25,9 @@ jobs:
               if '.git' in p.parts:
                   continue
               text = p.read_text(encoding='utf-8')
-              if pattern.search(text):
+              if p.parts and p.parts[0] == 'luckyjet-live':
+                  new = pattern.sub('', text)
+              elif pattern.search(text):
                   new = pattern.sub(tag, text, count=1)
               elif '</body>' in text:
                   new = text.replace('</body>', tag + '\n</body>', 1)
