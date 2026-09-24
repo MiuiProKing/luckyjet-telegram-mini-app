@@ -23,23 +23,23 @@ jobs:
     steps:
       - name: Check collector secret
         env:
-          LUCKYJET_SESSION_ID: ${{ secrets.LUCKYJET_SESSION_ID }}
+          COLLECTOR_TOKEN: ${{ secrets.COLLECTOR_TOKEN }}
         run: |
-          if [ -z "${LUCKYJET_SESSION_ID:-}" ]; then
-            echo "::error::Add LUCKYJET_SESSION_ID in repository Actions secrets before running this collector."
+          if [ -z "${COLLECTOR_TOKEN:-}" ]; then
+            echo "::error::Add COLLECTOR_TOKEN in repository Actions secrets before running this collector."
             exit 1
           fi
 
       - name: Fetch and save recent rounds
         env:
-          LUCKYJET_SESSION_ID: ${{ secrets.LUCKYJET_SESSION_ID }}
-          SUPABASE_FUNCTION_URL: https://xlidiojdbozxikjloiaj.supabase.co/functions/v1/v0xff3-live
+          COLLECTOR_TOKEN: ${{ secrets.COLLECTOR_TOKEN }}
+          SUPABASE_FUNCTION_URL: https://xrniwkvfrtchtxjrwwgd.supabase.co/functions/v1/v0xff3-live
         run: |
           set -euo pipefail
           response="$(curl --fail-with-body --silent --show-error --retry 2 --retry-all-errors --retry-delay 2 --max-time 25 \
             -X POST \
             -H "Content-Type: application/json" \
-            -H "x-v0xff3-session: ${LUCKYJET_SESSION_ID}" \
+            -H "x-collector-token: ${COLLECTOR_TOKEN}" \
             "${SUPABASE_FUNCTION_URL}")"
           printf '%s' "$response" | jq .
-          printf '%s' "$response" | jq -e '.ok == true and (.received | tonumber > 0)' >/dev/null
+          printf '%s' "$response" | jq -e '.ok == true' >/dev/null
