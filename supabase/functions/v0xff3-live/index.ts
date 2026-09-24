@@ -144,7 +144,8 @@ async function snapshot(url: URL) {
       id,
       topCoefficient: Number(row.data?.coefficient),
       timestamp: Number(row.data?.timestamp) || Date.parse(row.created_at),
-      estimated: Boolean(row.data?.estimated)
+      estimated: Boolean(row.data?.estimated),
+      storedAt: Date.parse(row.created_at) || 0
     });
   }
   const history = Array.from(map.values()).sort((left, right) => left.timestamp - right.timestamp);
