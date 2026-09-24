@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#08080f">
+<title>LuckyJet — коэффициенты в прямом эфире</title>
+<style>
+:root{color-scheme:dark;--bg:#08080f;--panel:#12131b;--border:#282936;--muted:#a3a8b8;--text:#f5f6fb;--blue:#0799ed;--violet:#a02bf1;--orange:#ff7900;--green:#39c56a;--nav:#101019}
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:18px}body{margin:0;background:radial-gradient(ellipse at 50% -20%,#19182a 0,#08080f 58%);color:var(--text);font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;padding:20px 16px 116px}.app{width:min(920px,100%);margin:auto}.top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:4px 0 18px}.brand{display:flex;align-items:center;gap:11px}.mark{width:42px;height:42px;border-radius:14px;background:linear-gradient(145deg,#9e25f2,#087fea);display:grid;place-items:center;font-size:22px;box-shadow:0 0 26px #9228e944}.brand h1{font-size:18px;letter-spacing:.08em;margin:0}.brand small{display:block;font-size:11px;color:var(--muted);letter-spacing:.13em;margin-top:4px}.status{border:1px solid var(--border);border-radius:999px;padding:8px 12px;font-size:12px;color:var(--muted);white-space:nowrap}.dot{display:inline-block;width:8px;height:8px;background:#7d8392;border-radius:50%;margin-right:7px}.dot.ok{background:var(--green);box-shadow:0 0 11px #39c56a}.dot.err{background:#ff5c65}.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}.card{background:linear-gradient(155deg,#14151e,#101118);border:1px solid var(--border);border-radius:23px;padding:21px;box-shadow:0 15px 40px #0002}.metric-label{font-size:12px;letter-spacing:.17em;color:#a6abba;text-transform:uppercase;line-height:1.45;min-height:35px}.metric-value{font-size:clamp(27px,5vw,42px);line-height:1.1;font-weight:800;margin-top:9px;letter-spacing:-.04em;text-shadow:0 0 25px currentColor}.blue{color:var(--blue)}.violet{color:var(--violet)}.orange{color:var(--orange)}.green{color:var(--green)}.section{margin-top:18px}.history-card{padding:22px 22px 20px}.section-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:16px}.section-head h2{font-size:21px;margin:0 0 7px}.section-head p{color:var(--muted);line-height:1.5;font-size:14px;margin:0}.live-state{display:flex;gap:8px;align-items:center;color:#d5d9e5;font-size:12px;white-space:nowrap}.live-state .dot{margin:0}.history-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}.coef{min-height:74px;border-radius:23px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;box-shadow:0 0 24px color-mix(in srgb,var(--coef) 28%,transparent);border:1px solid #ffffff24;background:linear-gradient(145deg,color-mix(in srgb,var(--coef) 91%,white 6%),color-mix(in srgb,var(--coef) 72%,#5b1685));transition:transform .15s}.coef:hover{transform:translateY(-2px)}.coef strong{font-size:20px;letter-spacing:-.02em}.coef time{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:12px;color:#ffffffb8;margin-top:5px}.legend{display:flex;flex-wrap:wrap;gap:18px;margin-top:20px;color:#c0c4d0;font-size:13px}.legend span{display:flex;align-items:center;gap:8px}.swatch{width:14px;height:14px;border-radius:50%;background:var(--c);box-shadow:0 0 12px var(--c)}.warning{border-left:3px solid #f5a623;background:#211b12;color:#f0d7a7;border-radius:8px;padding:11px 13px;font-size:12px;line-height:1.5;margin-top:16px}.meta{display:flex;justify-content:space-between;gap:8px;color:#8f95a5;font-size:12px;margin-top:13px}.load{display:block;margin:17px auto 0;padding:11px 17px;border:1px solid #414252;border-radius:12px;background:#1b1c27;color:#fff;font-weight:700;cursor:pointer}.load:hover{border-color:#aa4cff}.load:disabled{opacity:.55;cursor:wait}.about{color:var(--muted);font-size:13px;line-height:1.65}.about strong{color:#f3f4fa}.empty{grid-column:1/-1;border:1px dashed #343543;border-radius:16px;padding:26px;text-align:center;color:var(--muted)}.bottom-nav{position:fixed;z-index:5;bottom:0;left:0;right:0;display:flex;justify-content:center;gap:clamp(18px,7vw,70px);padding:12px 14px calc(12px + env(safe-area-inset-bottom));background:#101019f2;border-top:1px solid #292a35;backdrop-filter:blur(14px)}.bottom-nav a{color:#9da2b2;text-decoration:none;font-size:11px;text-align:center;min-width:50px}.bottom-nav b{display:block;font-size:20px;font-weight:500;margin-bottom:3px}.bottom-nav a:hover{color:#fff}.foot{color:#757b8c;text-align:center;font-size:11px;margin-top:20px}
+@media(max-width:680px){body{padding:16px 12px 105px}.metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.card{border-radius:20px;padding:17px}.metric-label{font-size:11px;min-height:29px}.metric-value{font-size:35px}.history-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.coef{min-height:68px;border-radius:20px}.coef strong{font-size:17px}.coef time{font-size:10px}.history-card{padding:17px 13px}.section-head h2{font-size:18px}.section-head p{font-size:12px}.live-state{font-size:11px}.bottom-nav{gap:clamp(8px,5vw,30px)}}
+@media(max-width:390px){.brand h1{font-size:15px}.status{padding:7px 9px;font-size:10px}.history-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.coef{min-height:64px}}
+</style>
+</head>
+<body>
+<main class="app" id="overview">
+  <header class="top"><div class="brand"><div class="mark" aria-hidden="true">✈</div><div><h1>LUCKYJET LIVE</h1><small>ИСТОРИЯ КОЭФФИЦИЕНТОВ</small></div></div><div class="status"><i class="dot" id="statusDot"></i><span id="statusText">Подключение…</span></div></header>
+  <section class="metrics" aria-label="Статистика последних раундов">
+    <article class="card"><div class="metric-label">Средний коэффициент</div><div class="metric-value blue" id="avg">—</div></article>
+    <article class="card"><div class="metric-label">Самый крупный</div><div class="metric-value orange" id="max">—</div></article>
+    <article class="card"><div class="metric-label">Раунды от 2×</div><div class="metric-value violet" id="rate2">—</div></article>
+    <article class="card"><div class="metric-label">Раунды от 10×</div><div class="metric-value orange" id="rate10">—</div></article>
+  </section>
+  <section class="section card history-card" id="history">
+    <div class="section-head"><div><h2>Коэффициенты в эфире</h2><p id="subtitle">Последние результаты из нашей базы Supabase</p></div><div class="live-state"><i class="dot" id="liveDot"></i><span id="liveLabel">Ожидание</span></div></div>
+    <div class="history-grid" id="grid" aria-live="polite"><div class="empty">Загружаю историю…</div></div>
+    <div class="legend"><span><i class="swatch" style="--c:#0799ed"></i>меньше 2×</span><span><i class="swatch" style="--c:#a02bf1"></i>от 2× до 9,99×</span><span><i class="swatch" style="--c:#ff7900"></i>от 10×</span></div>
+    <div class="warning" id="timeWarning">Внимание: время раундов в базе может быть примерным. Коэффициенты отображаются по сохранённой истории.</div>
+    <div class="meta"><span id="count">Раундов: —</span><span id="updated">Обновление: —</span></div>
+    <button class="load" id="more" type="button" hidden>Загрузить ещё</button>
+  </section>
+  <section class="section card about" id="about"><strong>Источник данных</strong><br>Страница читает публичную историю из подключённой базы Supabase и обновляет её автоматически. Статистика рассчитана по показанным последним раундам. Она описывает прошлые результаты и не предсказывает следующий коэффициент.</section>
+  <div class="foot">LuckyJet Live · обновление каждые 10 секунд</div>
+</main>
+<nav class="bottom-nav" aria-label="Навигация"><a href="#overview"><b>⌂</b>Обзор</a><a href="#history"><b>▦</b>История</a><a href="#about"><b>ⓘ</b>О данных</a></nav>
+<script>
+'use strict';
+const API='https://xlidiojdbozxikjloiaj.supabase.co/functions/v1/v0xff3-live';
+const $=id=>document.getElementById(id), LIMIT=100, PAGE=100;
+let rounds=[],nextOffset=0,hasMore=false,busy=false,estimatedAny=false;
+function coefficient(r){const n=Number(r.topCoefficient??r.coefficient??r.multiplier);return Number.isFinite(n)&&n>=1?n:null}
+function millis(v){let n=Number(v);if(!Number.isFinite(n))n=Date.parse(v);if(Number.isFinite(n)&&n>0)return n<1e11?n*1000:n;return null}
+function color(n){return n<2?'#0799ed':n<10?'#a02bf1':'#ff7900'}
+function fmtTime(v){const ms=millis(v);if(!ms)return'время —';return new Intl.DateTimeFormat('ru-RU',{hour:'2-digit',minute:'2-digit',second:'2-digit'}).format(new Date(ms))}
+function setState(ok,text){$('statusDot').className='dot '+(ok?'ok':'err');$('liveDot').className='dot '+(ok?'ok':'err');$('statusText').textContent=text;$('liveLabel').textContent=ok?'В эфире':'Нет связи'}
+function render(){const valid=rounds.map(r=>({r,n:coefficient(r)})).filter(x=>x.n!==null),sample=valid.slice(0,LIMIT),nums=sample.map(x=>x.n),grid=$('grid');
+ if(!nums.length){grid.innerHTML='<div class="empty">Пока нет данных. Попробуйте обновить страницу позже.</div>';return}
+ const avg=nums.reduce((a,b)=>a+b,0)/nums.length,max=Math.max(...nums),pct=n=>Math.round(nums.filter(x=>x>=n).length*100/nums.length);
+ $('avg').textContent=avg.toFixed(2)+'×';$('max').textContent=max.toFixed(2)+'×';$('rate2').textContent=pct(2)+'%';$('rate10').textContent=pct(10)+'%';
+ grid.replaceChildren();sample.forEach(({r,n})=>{const item=document.createElement('div');item.className='coef';item.style.setProperty('--coef',color(n));const strong=document.createElement('strong');strong.textContent=n.toFixed(2)+'×';const time=document.createElement('time');time.textContent=fmtTime(r.timestamp);time.title=r.estimated?'Время ориентировочное':'Время из источника';item.append(strong,time);grid.appendChild(item)});
+ estimatedAny=sample.some(x=>x.r.estimated);$('timeWarning').textContent=estimatedAny?'Внимание: часть времён раундов в базе рассчитана приблизительно, а не получена от игрового источника. Коэффициенты показаны по сохранённой истории.':'Время получено из источника; статистика описывает прошлые результаты и не предсказывает следующий раунд.';
+ $('count').textContent=`Показано раундов: ${sample.length}${rounds.length>sample.length?' из '+rounds.length:''}`;$('more').hidden=!hasMore;
+}
+async function fetchPage(offset=0,append=false){if(busy)return;busy=true;$('more').disabled=true;try{const response=await fetch(`${API}?limit=${PAGE}&offset=${offset}`,{cache:'no-store',headers:{Accept:'application/json'}});if(!response.ok)throw new Error('HTTP '+response.status);const body=await response.json();if(!body.ok||!Array.isArray(body.history))throw new Error('Ответ базы не распознан');const fresh=body.history.filter(r=>coefficient(r)!==null).sort((a,b)=>(millis(b.timestamp)||0)-(millis(a.timestamp)||0));if(append){rounds=[...rounds,...fresh];}else{rounds=fresh;}nextOffset=Number(body.nextOffset??offset+fresh.length);hasMore=Boolean(body.hasMore);setState(true,'Подключено');$('updated').textContent='Обновлено: '+new Intl.DateTimeFormat('ru-RU',{hour:'2-digit',minute:'2-digit',second:'2-digit'}).format(new Date());$('subtitle').textContent=`Последние результаты · всего в базе ${Number(body.total||rounds.length).toLocaleString('ru-RU')}`;render()}catch(error){setState(false,'Нет связи');$('updated').textContent='Не удалось обновить';if(!rounds.length)$('grid').innerHTML='<div class="empty">Не удалось загрузить данные. Проверьте подключение к Supabase и обновите страницу.</div>'}finally{busy=false;$('more').disabled=false}}
+$('more').addEventListener('click',()=>fetchPage(nextOffset,true));fetchPage(0);setInterval(()=>fetchPage(0),10000);
+</script>
+</body>
+</html>
+

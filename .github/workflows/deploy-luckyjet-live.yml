@@ -1,0 +1,47 @@
+name: Deploy LuckyJet Live
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'luckyjet-live/**'
+      - '.github/workflows/deploy-luckyjet-live.yml'
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Получить исходники
+        uses: actions/checkout@v4
+      - name: Настроить GitHub Pages
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+      - name: Подготовить отдельную страницу
+        run: |
+          mkdir -p site/luckyjet-live
+          cp luckyjet-live/index.html site/luckyjet-live/index.html
+          cat > site/index.html <<'EOF'
+          <!doctype html><html lang="ru"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="refresh" content="0;url=./luckyjet-live/"><title>LuckyJet Live</title><p><a href="./luckyjet-live/">Открыть историю коэффициентов LuckyJet</a></p></html>
+          EOF
+      - name: Загрузить сайт
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - name: Опубликовать страницу
+        id: deployment
+        uses: actions/deploy-pages@v4
+
