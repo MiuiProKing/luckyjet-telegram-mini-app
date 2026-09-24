@@ -54,6 +54,7 @@ function render(){const valid=rounds.map(r=>({r,n:coefficient(r)})).filter(x=>x.
 async function fetchPage(offset=0,append=false){if(busy)return;busy=true;$('more').disabled=true;try{const response=await fetch(`${API}?limit=${PAGE}&offset=${offset}`,{cache:'no-store',headers:{Accept:'application/json'}});if(!response.ok)throw new Error('HTTP '+response.status);const body=await response.json();if(!body.ok||!Array.isArray(body.history))throw new Error('Ответ базы не распознан');const fresh=body.history.filter(r=>coefficient(r)!==null).sort((a,b)=>(millis(b.timestamp)||0)-(millis(a.timestamp)||0));if(append){rounds=[...rounds,...fresh];}else{rounds=fresh;}nextOffset=Number(body.nextOffset??offset+fresh.length);hasMore=Boolean(body.hasMore);setState(true,'Подключено');$('updated').textContent='Обновлено: '+new Intl.DateTimeFormat('ru-RU',{hour:'2-digit',minute:'2-digit',second:'2-digit'}).format(new Date());$('subtitle').textContent=`Последние результаты · всего в базе ${Number(body.total||rounds.length).toLocaleString('ru-RU')}`;render()}catch(error){setState(false,'Нет связи');$('updated').textContent='Не удалось обновить';if(!rounds.length)$('grid').innerHTML='<div class="empty">Не удалось загрузить данные. Проверьте подключение к Supabase и обновите страницу.</div>'}finally{busy=false;$('more').disabled=false}}
 $('more').addEventListener('click',()=>fetchPage(nextOffset,true));fetchPage(0);setInterval(()=>fetchPage(0),10000);
 </script>
+<script src="live-coefficients.js?v=20260912-2"></script>
 </body>
 </html>
 
