@@ -1,170 +1,311 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const HISTORY_URL = "https://crash-gateway-grm-cr.100hp.app/history";
-const DEFAULT_CUSTOMER_ID = "077dee8d-c923-4c02-9bee-757573662e69";
-const EVENT_NAME = "v0xff3_round_v1";
-const MAX_LIMIT = 5_000;
-const MAX_OFFSET = 1_000_000;
+const LIVE_API = "https://crash-gateway-grm-cr.gamedev-tech.cc";
+const API = LIVE_API + "/state";
+const LIVE_WS = "wss://crash-gateway-grm-cr.gamedev-tech.cc/websocket/lifecycle";
+const PAGE_ORIGIN = "https://miuiproking.github.io";
+const GAME_ORIGIN = "https://1play.gamedev-tech.cc";
+const FALLBACK_CUSTOMER = "077dee8d-c923-4c02-9bee-757573662e69";
+const TABLE = "luckyjet_rounds";
+const cors = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "content-type,x-collector-token",
+  "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+  "Cache-Control": "no-store",
+  "Content-Type": "application/json; charset=utf-8",
+};
+const reply = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: cors });
 
-function headers() {
-  return {
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Headers": "content-type, x-v0xff3-session, x-v0xff3-customer",
-    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-    "Access-Control-Max-Age": "86400",
-    "Cache-Control": "no-store",
-    "Content-Type": "application/json; charset=utf-8"
-  };
-}
-
-function reply(body: unknown, status = 200) {
-  return new Response(JSON.stringify(body), { status, headers: headers() });
-}
-
-function database() {
-  const url = Deno.env.get("SUPABASE_URL") || "";
-  const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
-  if (!url || !key) throw new Error("SERVER_NOT_CONFIGURED");
-  return createClient(url, key, { auth: { persistSession: false } });
-}
-
-function first(item: Record<string, unknown>, keys: string[]) {
-  for (const key of keys) if (item[key] != null) return item[key];
+function pick(value: any, keys: string[]) {
+  for (const key of keys) if (value && value[key] != null) return value[key];
   return null;
 }
 
-function extractItems(value: unknown): Record<string, unknown>[] {
-  if (Array.isArray(value)) return value.filter(row => row && typeof row === "object") as Record<string, unknown>[];
-  if (!value || typeof value !== "object") return [];
-  const data = value as Record<string, unknown>;
-  for (const key of ["history", "rounds", "data", "items", "results"]) {
-    const nested = data[key];
-    if (Array.isArray(nested)) return nested.filter(row => row && typeof row === "object") as Record<string, unknown>[];
-    if (nested && typeof nested === "object") {
-      const object = nested as Record<string, unknown>;
-      for (const sub of ["history", "rounds", "items", "results"]) {
-        if (Array.isArray(object[sub])) return (object[sub] as unknown[]).filter(row => row && typeof row === "object") as Record<string, unknown>[];
+function parseCoefficient(value: any, depth = 0): number | null {
+  if (depth > 5 || value == null) return null;
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const found = parseCoefficient(item, depth + 1);
+      if (found != null) return found;
+    }
+    return null;
+  }
+  if (typeof value === "object") {
+    for (const [key, nested] of Object.entries(value)) {
+      if (/coef|multiplier|value|crash|stop|final/i.test(key)) {
+        const found = parseCoefficient(nested, depth + 1);
+        if (found != null) return found;
       }
     }
+    return null;
   }
-  return [];
+  const number = Number(String(value).toLowerCase().replace("x", "").trim());
+  return Number.isFinite(number) && number >= 1 ? Math.round(number * 100) / 100 : null;
 }
 
-function coefficient(item: Record<string, unknown>) {
-  let value = first(item, ["topCoefficient", "top_coefficient", "coefficient", "multiplier", "value", "coef", "crash"]);
-  if (value == null) {
-    const finals = first(item, ["finalValues", "final_values"]);
-    if (Array.isArray(finals)) {
-      const values = finals.map(Number).filter(Number.isFinite);
-      if (values.length) value = Math.max(...values);
-    }
-  }
-  const parsed = Number(String(value ?? "").toLowerCase().replace("x", "").trim());
-  return Number.isFinite(parsed) && parsed >= 1 ? Math.round(Math.max(1.01, parsed) * 100) / 100 : null;
-}
-
-function timestamp(value: unknown) {
+function parseTime(value: any): number {
   if (value == null) return 0;
-  if (typeof value === "number" || /^\d+$/.test(String(value))) {
-    const numeric = Number(value);
-    return Number.isFinite(numeric) ? Math.trunc(numeric < 10_000_000_000 ? numeric * 1_000 : numeric) : 0;
+  if (typeof value === "number" || /^[0-9]+$/.test(String(value))) {
+    const number = Number(value);
+    return number < 10_000_000_000 ? number * 1_000 : number;
   }
   const parsed = Date.parse(String(value));
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-function normalize(items: Record<string, unknown>[]) {
-  const fetchedAt = Date.now();
-  return items.map((item, index) => {
-    const value = coefficient(item);
-    const rawId = first(item, ["id", "round_id", "roundId", "_id", "gameId", "hash"]);
-    if (value == null || rawId == null) return null;
-    const rawTime = first(item, ["createdAt", "created_at", "timestamp", "time", "start_time", "stateChangedAt", "endedAt", "ended_at", "updatedAt"]);
-    const realTime = timestamp(rawTime);
-    return {
-      id: String(rawId).slice(0, 120),
-      coefficient: value,
-      timestamp: realTime || fetchedAt - index * 12_000,
-      estimated: !realTime
-    };
-  }).filter(Boolean) as Array<{ id: string; coefficient: number; timestamp: number; estimated: boolean }>;
+function database() {
+  const url = Deno.env.get("SUPABASE_URL") || "";
+  const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+  if (!url || !key) throw new Error("DATABASE_NOT_CONFIGURED");
+  return createClient(url, key, { auth: { persistSession: false } });
 }
 
-async function pushFromLuckyJet(request: Request) {
-  const sessionId = String(request.headers.get("x-v0xff3-session") || "").trim();
-  const customerId = String(request.headers.get("x-v0xff3-customer") || DEFAULT_CUSTOMER_ID).trim();
-  if (!/^[0-9a-f-]{32,64}$/i.test(sessionId)) throw new Error("SESSION_REQUIRED");
-  if (!customerId || customerId.length > 100) throw new Error("CUSTOMER_INVALID");
-
-  const upstream = await fetch(HISTORY_URL, {
-    headers: { "customer-id": customerId, "session-id": sessionId, "Accept": "application/json" },
-    cache: "no-store"
-  });
-  if (!upstream.ok) throw new Error(`LUCKYJET_HTTP_${upstream.status}`);
-  const rounds = normalize(extractItems(await upstream.json()));
-  if (!rounds.length) throw new Error("LUCKYJET_EMPTY");
-
-  const supabase = database();
-  const ids = rounds.map(row => row.id);
-  const { data: existing, error: selectError } = await supabase
-    .from("app_events")
-    .select("page")
-    .eq("event_name", EVENT_NAME)
-    .in("page", ids);
-  if (selectError) throw selectError;
-  const known = new Set((existing || []).map((row: any) => String(row.page || "")));
-  const fresh = rounds.filter(row => !known.has(row.id));
-  if (fresh.length) {
-    const { error: insertError } = await supabase.from("app_events").insert(fresh.map(row => ({
-      telegram_id: null,
-      event_name: EVENT_NAME,
-      page: row.id,
-      game: "luckyjet",
-      data: { coefficient: row.coefficient, timestamp: row.timestamp, estimated: row.estimated }
-    })));
-    if (insertError) throw insertError;
-  }
-  return { received: rounds.length, inserted: fresh.length, latest: rounds[0] };
-}
-
-async function snapshot(url: URL) {
-  const limit = Math.min(MAX_LIMIT, Math.max(1, Number.parseInt(url.searchParams.get("limit") || "5000", 10) || 5000));
-  const offset = Math.min(MAX_OFFSET, Math.max(0, Number.parseInt(url.searchParams.get("offset") || "0", 10) || 0));
-  const supabase = database();
-  const [{ data, error }, countResult] = await Promise.all([
-    supabase.from("app_events").select("page,data,created_at").eq("event_name", EVENT_NAME).order("created_at", { ascending: false }).order("page", { ascending: false }).range(offset, offset + limit - 1),
-    supabase.from("app_events").select("id", { count: "exact", head: true }).eq("event_name", EVENT_NAME)
-  ]);
+async function readHistory(url: URL) {
+  const limit = Math.min(5_000, Math.max(1, Number.parseInt(url.searchParams.get("limit") || "100", 10) || 100));
+  const offset = Math.max(0, Number.parseInt(url.searchParams.get("offset") || "0", 10) || 0);
+  const { data, error, count } = await database()
+    .from(TABLE)
+    .select("id,coefficient,round_timestamp,estimated", { count: "exact" })
+    .order("round_timestamp", { ascending: false })
+    .range(offset, offset + limit - 1);
   if (error) throw error;
-  const map = new Map<string, any>();
-  for (const row of data || []) {
-    const id = String(row.page || "");
-    if (!id || map.has(id)) continue;
-    map.set(id, {
-      id,
-      topCoefficient: Number(row.data?.coefficient),
-      timestamp: Number(row.data?.timestamp) || Date.parse(row.created_at),
-      estimated: Boolean(row.data?.estimated),
-      storedAt: Date.parse(row.created_at) || 0
-    });
-  }
-  const history = Array.from(map.values()).sort((left, right) => left.timestamp - right.timestamp);
-  const total = Number(countResult.count || history.length);
-  const nextOffset = offset + (data?.length || 0);
-  return { history, total, offset, limit, nextOffset, hasMore: nextOffset < total, updatedAt: history.at(-1)?.timestamp || 0 };
+  const history = (data || []).map((row: any) => ({
+    id: row.id,
+    topCoefficient: Number(row.coefficient),
+    coefficient: Number(row.coefficient),
+    timestamp: Date.parse(row.round_timestamp),
+    round_timestamp: row.round_timestamp,
+    estimated: Boolean(row.estimated),
+  }));
+  return {
+    ok: true,
+    history,
+    total: count || 0,
+    offset,
+    limit,
+    nextOffset: offset + history.length,
+    hasMore: offset + history.length < (count || 0),
+    updatedAt: history[0]?.timestamp || 0,
+  };
 }
 
-Deno.serve(async request => {
-  if (request.method === "OPTIONS") return new Response("ok", { headers: headers() });
+async function saveRound(coefficient: number, rawTime: unknown, rawId?: unknown) {
+  const timestamp = parseTime(rawTime) || Date.now();
+  const id = String(rawId ?? ("live-" + timestamp + "-" + coefficient)).slice(0, 120);
+  const { error } = await database().from(TABLE).upsert({
+    id,
+    coefficient,
+    round_timestamp: new Date(timestamp).toISOString(),
+    estimated: !rawTime,
+  }, { onConflict: "id" });
+  if (error) throw error;
+  return {
+    id,
+    topCoefficient: coefficient,
+    coefficient,
+    timestamp,
+    round_timestamp: new Date(timestamp).toISOString(),
+    estimated: !rawTime,
+  };
+}
+
+function findToken(value: any, depth = 0): string | null {
+  if (depth > 6 || value == null) return null;
+  if (typeof value === "string") return /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(value) ? value : null;
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const token = findToken(item, depth + 1);
+      if (token) return token;
+    }
+    return null;
+  }
+  if (typeof value !== "object") return null;
+  const entries = Object.entries(value);
+  for (const [key, nested] of entries) {
+    if (/token|jwt/i.test(key)) {
+      const token = findToken(nested, depth + 1);
+      if (token) return token;
+    }
+  }
+  for (const [, nested] of entries) {
+    const token = findToken(nested, depth + 1);
+    if (token) return token;
+  }
+  return null;
+}
+
+async function liveToken() {
+  const sessionId = (Deno.env.get("LUCKYJET_SESSION_ID") || "").trim();
+  if (!/^[0-9a-f-]{32,64}$/i.test(sessionId)) throw new Error("SESSION_NOT_CONFIGURED");
+  const customerId = (Deno.env.get("LUCKYJET_CUSTOMER_ID") || FALLBACK_CUSTOMER).trim();
+  const headers = {
+    "customer-id": customerId,
+    "session-id": sessionId,
+    "accept": "application/json",
+    "content-type": "application/json",
+    "origin": GAME_ORIGIN,
+    "referer": GAME_ORIGIN + "/",
+  };
+  const auth = await fetch((LIVE_API + "/user/auth"), { method: "POST", headers, body: "{}", cache: "no-store" });
+  const authText = await auth.text();
+  if (!auth.ok) throw new Error(("GAME_AUTH_HTTP_" + auth.status));
+  let authData: any = null;
+  try { authData = JSON.parse(authText); } catch { /* empty success body is valid */ }
+
+  const tokenHeaders: Record<string, string> = { ...headers };
+  const authToken = findToken(authData);
+  if (authToken) tokenHeaders.authorization = ("Bearer " + authToken);
+  const cookie = auth.headers.get("set-cookie");
+  if (cookie) tokenHeaders.cookie = cookie;
+  const tokenResponse = await fetch((LIVE_API + "/user/token"), {
+    method: "POST",
+    headers: tokenHeaders,
+    body: "{}",
+    cache: "no-store",
+  });
+  const tokenText = await tokenResponse.text();
+  if (!tokenResponse.ok) throw new Error(("GAME_TOKEN_HTTP_" + tokenResponse.status));
+  let tokenData: any = tokenText;
+  try { tokenData = JSON.parse(tokenText); } catch { /* token may be returned as plain text */ }
+  const token = findToken(tokenData) || (typeof tokenData === "string" && tokenData.length > 30 ? tokenData : null);
+  if (!token) throw new Error("GAME_TOKEN_MISSING");
+  return token;
+}
+
+function liveStream(request: Request): Response {
+  const origin = request.headers.get("origin") || "";
+  if (origin !== PAGE_ORIGIN) return reply({ ok: false, error: "ORIGIN_NOT_ALLOWED" }, 403);
+  if ((request.headers.get("upgrade") || "").toLowerCase() !== "websocket") {
+    return reply({ ok: false, error: "WEBSOCKET_REQUIRED" }, 426);
+  }
+
+  const { socket: client, response } = Deno.upgradeWebSocket(request);
+  let upstream: WebSocket | null = null;
+  let ended = false;
+  let lifetime: ReturnType<typeof setTimeout> | undefined;
+  let resolveDone: () => void = () => {};
+  const done = new Promise<void>((resolve) => { resolveDone = resolve; });
+  const stop = (code = 1000, reason = "stream ended") => {
+    if (ended) return;
+    ended = true;
+    if (lifetime) clearTimeout(lifetime);
+    try { upstream?.close(); } catch { /* already closed */ }
+    try { if (client.readyState === WebSocket.OPEN) client.close(code, reason); } catch { /* already closed */ }
+    resolveDone();
+  };
+  client.onclose = () => stop();
+  client.onerror = () => stop(1011, "client socket error");
+
+  const work = (async () => {
+    try {
+      client.send(JSON.stringify({ type: "status", status: "connecting" }));
+      const token = await liveToken();
+      if (ended) return;
+      upstream = new WebSocket(LIVE_WS);
+      await new Promise<void>((resolve, reject) => {
+        const timeout = setTimeout(() => reject(new Error("GAME_SOCKET_TIMEOUT")), 8_000);
+        upstream!.onopen = () => { clearTimeout(timeout); resolve(); };
+        upstream!.onerror = () => { clearTimeout(timeout); reject(new Error("GAME_SOCKET_FAILED")); };
+      });
+      if (ended || !upstream) return;
+      lifetime = setTimeout(() => stop(1000, "refresh stream"), 110_000);
+
+      upstream.onmessage = (event) => {
+        void (async () => {
+          let frame: any;
+          try { frame = JSON.parse(String(event.data)); } catch { return; }
+          if (frame?.connect?.error) {
+            client.send(JSON.stringify({ type: "status", status: "upstream_error" }));
+            stop(1011, "upstream rejected stream");
+            return;
+          }
+          if (frame?.connect && client.readyState === WebSocket.OPEN) {
+            client.send(JSON.stringify({ type: "status", status: "connected" }));
+          }
+          const data = frame?.push?.pub?.data;
+          if (!data || data.eventType !== "endGame") return;
+          const values = Array.isArray(data.finalCoefficientValues) ? data.finalCoefficientValues : [data.finalCoefficientValues];
+          for (const value of values) {
+            const coefficient = parseCoefficient(value);
+            if (coefficient == null) continue;
+            const round = await saveRound(coefficient, data.currentTime, data.roundId ?? data.round_id);
+            if (client.readyState === WebSocket.OPEN) client.send(JSON.stringify({ type: "round", round }));
+          }
+        })().catch(() => {
+          if (client.readyState === WebSocket.OPEN) client.send(JSON.stringify({ type: "status", status: "save_error" }));
+        });
+      };
+      upstream.onclose = () => stop(1011, "upstream closed");
+      upstream.onerror = () => stop(1011, "upstream socket error");
+      upstream.send(JSON.stringify({ id: 1, connect: { token, name: "js" } }));
+      await done;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "LIVE_STREAM_FAILED";
+      console.error("live stream setup failed", message);
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(JSON.stringify({ type: "status", status: "fallback" }));
+        client.close(1011, "live stream unavailable");
+      }
+      stop(1011, "live stream unavailable");
+    } finally {
+      if (lifetime) clearTimeout(lifetime);
+      try { upstream?.close(); } catch { /* already closed */ }
+    }
+  })();
+  (globalThis as any).EdgeRuntime?.waitUntil(work);
+  return response;
+}
+
+async function collect(request: Request) {
+  const token = Deno.env.get("COLLECTOR_TOKEN") || "";
+  if (!token || request.headers.get("x-collector-token") !== token) return reply({ ok: false, error: "UNAUTHORIZED" }, 401);
+  const sessionId = (Deno.env.get("LUCKYJET_SESSION_ID") || "").trim();
+  if (!/^[0-9a-f-]{32,64}$/i.test(sessionId)) return reply({ ok: false, error: "SESSION_NOT_CONFIGURED" }, 503);
+  const customerId = (Deno.env.get("LUCKYJET_CUSTOMER_ID") || FALLBACK_CUSTOMER).trim();
+  const upstream = await fetch(API, {
+    headers: { "customer-id": customerId, "session-id": sessionId, accept: "application/json", origin: GAME_ORIGIN, referer: GAME_ORIGIN + "/" },
+    cache: "no-store",
+  });
+  if (!upstream.ok) return reply({ ok: false, error: "LUCKYJET_HTTP_" + upstream.status }, 502);
+  const state = await upstream.json();
+  const raw = state?.stopCoefficients?.[0];
+  if (raw == null) return reply({ ok: true, received: 0, inserted: 0, waitingForStop: true });
+  const coefficient = parseCoefficient(raw);
+  if (coefficient == null) return reply({ ok: false, error: "STATE_COEFFICIENT_INVALID" }, 502);
+  const rawId = pick(raw, ["id", "round_id", "roundId", "gameId", "hash"])
+    ?? pick(state, ["roundId", "round_id", "gameId", "id"]);
+  const rawTime = pick(raw, ["createdAt", "created_at", "timestamp", "time", "endedAt"])
+    ?? pick(state, ["createdAt", "created_at", "timestamp", "time", "stateChangedAt", "updatedAt"]);
+  const timestamp = parseTime(rawTime) || Date.now();
+  const db = database();
+  const { data: last, error: readError } = await db
+    .from(TABLE).select("id,coefficient").order("round_timestamp", { ascending: false }).limit(1).maybeSingle();
+  if (readError) throw readError;
+  if (rawId == null && last && Number(last.coefficient) === coefficient) {
+    return reply({ ok: true, received: 1, inserted: 0, latest: { coefficient, duplicate: true } });
+  }
+  const id = String(rawId ?? ("state-" + timestamp + "-" + coefficient)).slice(0, 120);
+  const { error: writeError } = await db.from(TABLE).upsert({
+    id,
+    coefficient,
+    round_timestamp: new Date(timestamp).toISOString(),
+    estimated: !rawTime && rawId == null,
+  }, { onConflict: "id" });
+  if (writeError) throw writeError;
+  return reply({ ok: true, received: 1, inserted: last?.id === id ? 0 : 1, latest: { id, coefficient, round_timestamp: new Date(timestamp).toISOString() } });
+}
+
+Deno.serve(async (request) => {
+  if (request.method === "OPTIONS") return new Response("ok", { headers: cors });
   try {
     const url = new URL(request.url);
-    if (request.method === "POST") return reply({ ok: true, ...(await pushFromLuckyJet(request)) });
-    if (request.method === "GET") return reply({ ok: true, ...(await snapshot(url)) });
+    if (request.method === "GET" && url.searchParams.get("mode") === "live") return liveStream(request);
+    if (request.method === "GET") return reply(await readHistory(url));
+    if (request.method === "POST") return await collect(request);
     return reply({ ok: false, error: "METHOD_NOT_ALLOWED" }, 405);
   } catch (error) {
     const message = error instanceof Error ? error.message : "UNKNOWN_ERROR";
-    const status = message === "SESSION_REQUIRED" || message === "CUSTOMER_INVALID" ? 401 : message.startsWith("LUCKYJET_HTTP_4") ? 401 : 500;
     console.error("v0xff3-live", message);
-    return reply({ ok: false, error: message }, status);
+    return reply({ ok: false, error: message === "DATABASE_NOT_CONFIGURED" ? message : "COLLECTOR_FAILED" }, 502);
   }
 });
