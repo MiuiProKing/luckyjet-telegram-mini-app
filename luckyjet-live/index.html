@@ -61,36 +61,76 @@ function ordinaryPrediction(){const data=rounds.filter(r=>coefficient(r)!==null)
  const last60=c.slice(0,60),zone=last60.filter(x=>x>=5&&x<10),fragile=lowRatio>.55||sigma50>avg50*1.4;if(zone.length>=3){const zg=geo(zone);target=fragile?clamp(zg*.45,2,4.5):clamp(zg*.7,3,7);score=round(clamp(64+zone.length*4+(fragile?-6:6),58,90));at=now+120000;window=150000;pattern=fragile?'Смешанная фаза 5–9×':'Фаза роста 5–9×';basis=`${zone.length} раундов в диапазоне 5–9×`;return{target,score,at,window,pattern,basis,estimated}}
  const composite=ema20*.5+ema50*.3+avg50*.2;target=clamp(composite*.6+1.6,1.8,12);const dangerous=lowRatio>.6||sigma50>avg50*1.6;if(dangerous)target=Math.min(target,3.2);else if(lowRatio>.45)target=Math.min(target,5);score=round(clamp(52+clamp(n/25,0,28)+(mad50>0&&mad50<avg50*.6?5:0)+(dangerous?-8:0),50,92));const sec=new Date().getSeconds(),extra=((60-sec)*1000)%45000;at=now+120000+extra;window=150000;pattern=dangerous?'Повышенная нестабильность':'Мультисигнальный анализ';basis=`EMA20 ${ema20.toFixed(2)}× · ${n} раундов${estimated?' · время раундов оценочное':''}`;return{target,score,at,window,pattern,basis,estimated}}
 function vipPrediction(){
- const data=rounds.filter(r=>coefficient(r)!==null).slice(0,MODEL_LIMIT),now=Date.now();
+ const data=rounds.filter(r=>coefficient(r)!==null).slice(0,MODEL_LIMIT);
  if(!data.length)return null;
- const recent=data.slice(0,80),values=recent.map(coefficient),n=values.length;
- const n10=values.filter(x=>x>=10).length,n20=values.filter(x=>x>=20).length,n50=values.filter(x=>x>=50).length,n100=values.filter(x=>x>=100).length;
- let target=10;
- if(n20>=3)target=20;
- if(n50>=2&&n20>=5)target=50;
- if(n100>=2&&n50>=3&&n20>=5)target=100;
- const hits=values.filter(x=>x>=target).length,hitRate=Math.round(hits*100/Math.max(n,1));
- const estimated=data.some(r=>r.estimated);
- let at=now+120000,window=180000,timeBasis='Вход назначен на ближайшее окно VIP-анализа';
+ const now=Date.now(),estimated=data.some(r=>r.estimated);
+ const chronological=[...data].sort((a,b)=>millis(a.timestamp)-millis(b.timestamp));
+ const last80=chronological.slice(-80),count20=last80.filter(r=>coefficient(r)>=20).length,count50=last80.filter(r=>coefficient(r)>=50).length;
+ const candidates=[];
  if(!estimated){
-  const g=gapStats(data,target);
-  if(g.count>=4&&g.med>=60000&&g.med<=1200000&&g.mad<g.med*.8){
+  const g=gapStats(data,100);
+  if(g.count>=5&&g.last&&g.med>0){
    const expected=g.last+g.med,delta=expected-now;
-   if(delta>=60000&&delta<=1200000){
-    at=expected;
-    window=clamp(g.mad?g.mad*1.4826:g.med*.35,120000,360000);
-    timeBasis='Время оценено по медианному интервалу крупных результатов';
+   const width=clamp(g.mad?g.mad*1.4826:g.med*.35,120000,720000);
+   const since=now-g.last,stable=g.mad>0&&g.mad<g.med*.5;
+   const near=Math.abs(delta)<=width*.7,late=since>=g.med*.9;
+   if(stable&&(near||late)){
+    const proximity=clamp(1-Math.abs(delta)/Math.max(width,1),0,1);
+    const confidence=clamp(55+Math.min(10,g.count)+proximity*12,55,82);
+    candidates.push({
+     target:100,score:round(confidence),
+     at:delta>0?expected:now+Math.max(120000,width*.4),
+     window:clamp(width,180000,600000),
+     pattern:'Возможный интервал крупного результата 100×',
+     basis:'Медианный интервал: '+(g.med/60000).toFixed(1)+' мин · случаев в истории: '+g.count,
+     estimated:false
+    });
    }
   }
  }
- const score=round(clamp(55+Math.min(20,hits*3)+(n>=80?5:0),55,80));
- return{target,score,hitRate,hits,sampleSize:n,at,window,pattern:'Автоматический VIP-анализ крупного коэффициента',basis:'За последние '+n+' раундов: ≥10× - '+n10+', ≥20× - '+n20+', ≥50× - '+n50+'. '+timeBasis+'.',estimated};
+ if(count50>=3&&count20>=6){
+  const confidence=clamp(55+count50*5+count20,55,82);
+  candidates.push({
+   target:120,score:round(confidence),at:now+180000,window:360000,
+   pattern:'Кластер крупных результатов',
+   basis:'За последние 80 раундов: '+count20+' результатов ≥20×, включая '+count50+' ≥50×',
+   estimated
+  });
+ }
+ if(!estimated&&chronological.length>=80){
+  const x100=chronological.filter(r=>coefficient(r)>=100);
+  if(x100.length>=4){
+   const span=millis(chronological[chronological.length-1].timestamp)-millis(chronological[0].timestamp);
+   const rate=span>0?x100.length/span:0;
+   const elapsed=now-millis(x100[x100.length-1].timestamp);
+   const probability=rate>0?1-Math.exp(-rate*elapsed):0;
+   if(probability>=.75){
+    const interval=clamp(1/rate,90000,480000);
+    candidates.push({
+     target:100,score:round(clamp(50+probability*30,50,80)),
+     at:now+interval,window:clamp(interval*.8,180000,420000),
+     pattern:'Оценка задержки результата 100×',
+     basis:'Расчёт по '+x100.length+' результатам ≥100× · средний интервал около '+(1/rate/60000).toFixed(1)+' мин',
+     estimated:false
+    });
+   }
+  }
+ }
+ if(!candidates.length)return null;
+ candidates.sort((a,b)=>b.score-a.score);
+ const best=candidates[0];
+ if(candidates.length<2&&best.score<75)return null;
+ if(candidates.length>=2)best.score=Math.min(92,best.score+5);
+ const sample=last80.map(coefficient),hits=sample.filter(x=>x>=best.target).length;
+ best.hitRate=Math.round(hits*100/Math.max(sample.length,1));
+ best.hits=hits;best.sampleSize=sample.length;
+ return best;
 }
 function lockedPrediction(kind){const now=Date.now(),key=kind==='normal'?'activeNormal':'activeVip',current=kind==='normal'?activeNormal:activeVip;if(current&&now<Math.max(current.at+current.window,current.generatedAt+60000))return current;const next=kind==='normal'?ordinaryPrediction():vipPrediction();if(next)next.generatedAt=now;if(kind==='normal')activeNormal=next;else activeVip=next;return next}
 function durationLabel(ms){const seconds=Math.max(0,Math.ceil(ms/1000));return String(Math.floor(seconds/60)).padStart(2,'0')+':'+String(seconds%60).padStart(2,'0')}
 function countdownLabel(s){const now=Date.now();return now<s.at?'До входа: '+durationLabel(s.at-now):'Окно входа: '+durationLabel(s.at+s.window-now)}
 function signalMarkup(s,vip){
- if(!s)return'<div class="signal-empty">'+(vip?'VIP-прогноз появится после загрузки истории из базы.':'Для расчёта нужно не менее 20 сохранённых раундов.')+'</div>';
+ if(!s)return'<div class="signal-empty">'+(vip?'Пока нет статистического сигнала на крупный коэффициент.':'Для расчёта нужно не менее 20 сохранённых раундов.')+'</div>';
  const p=plan(s.target,s.score),end=s.at+s.window;
  const metricTitle=vip?'Частота цели в истории':'Оценка модели';
  const metricValue=vip?String(s.hitRate):String(s.score);
