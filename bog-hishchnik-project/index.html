@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#0a0b13">
+  <meta name="description" content="Бог Хищник — история LuckyJet по датам и часам, live-раунды и статистический анализ.">
+  <title>БОГ ХИЩНИК · LuckyJet</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="games.css">
+  <script src="model.js" defer></script>
+  <script src="data.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+<svg class="symbols" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><defs>
+  <symbol id="i-live" viewBox="0 0 24 24"><path d="M3 12h4l3-7 4 14 3-7h4"/></symbol>
+  <symbol id="i-signal" viewBox="0 0 24 24"><path d="m13 2-9 12h7l-1 8 10-13h-7z"/></symbol>
+  <symbol id="i-history" viewBox="0 0 24 24"><path d="M3 11a9 9 0 1 1 2.6 7M3 4v7h7M12 7v5l3 2"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6m0-11v1"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14m-5-5 5 5-5 5"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12m-5-5 5 5 5-5M4 17v4h16v-4"/></symbol>
+</defs></svg>
+<aside class="sidebar">
+  <a class="brand" href="#live" aria-label="Бог Хищник — эфир"><span class="brand-mark" aria-hidden="true">ϟ</span><span>БОГ <em>ХИЩНИК</em><small>LUCKYJET ANALYTICS</small></span></a>
+  <div class="nav-label">РАБОЧЕЕ ПРОСТРАНСТВО</div>
+  <nav class="navigation" aria-label="Разделы">
+    <a href="#live" data-view="live" aria-current="page"><svg><use href="#i-live"/></svg><span>Прямой эфир</span><i></i></a>
+    <a href="#forecast" data-view="forecast"><svg><use href="#i-signal"/></svg><span>Прогнозы</span><b>VIP</b></a>
+    <a href="#history" data-view="history"><svg><use href="#i-history"/></svg><span>История раундов</span></a>
+    <a href="#method" data-view="method"><svg><use href="#i-info"/></svg><span>Как это работает</span></a>
+  </nav>
+  <div class="sidebar-note"><span class="pulse-dot"></span> СВОЯ БАЗА РАУНДОВ<p>Время показано в часовом поясе вашего устройства.</p><span id="timezone" class="mono">—</span></div>
+  <div class="sidebar-bottom">БОГ ХИЩНИК <span>01 / 2026.09</span></div>
+</aside>
+<main>
+  <header class="topbar"><div class="crumb"><span>LUCKYJET</span><span class="slash">/</span><span id="viewName">ПРЯМОЙ ЭФИР</span></div><div class="top-right"><span id="connection" class="connection waiting"><i></i><span>Подключение</span></span><time id="clock" class="clock">--:--:--</time></div></header>
+
+  <details class="game-switcher" open>
+    <summary><span>ИГРЫ</span><strong>Выбрать игру</strong><span class="game-switcher-hint">4 игры · открыть ↗</span></summary>
+    <div class="game-cards">
+      <a class="game-card selected" href="https://allpredictor.com/sites/luckyjet" target="_blank" rel="noopener noreferrer" aria-label="LuckyJet — открыть в новой вкладке"><img loading="lazy" alt="LuckyJet" src="https://f1w-1801.com/resources/v1/optimizeimages/unsafe/casino_game_card_x1/plain/https://v1.bundlecdn.com/casino-images/v/15104946-3407-452c-be6a-9c7f5110994d_vertical.png@webp"><span><strong>LuckyJet</strong><small>Открыть ↗</small></span></a>
+      <a class="game-card" href="https://allpredictor.com/sites/rocket-queen" target="_blank" rel="noopener noreferrer" aria-label="Rocket Queen — открыть в новой вкладке"><img loading="lazy" alt="Rocket Queen" src="https://f1w-1801.com/resources/v1/optimizeimages/unsafe/casino_game_card_x1/plain/https://v1.bundlecdn.com/casino-images/v/86489246-a24c-4f71-88ec-9f2a4cfcd6d6_vertical.png@webp"><span><strong>Rocket Queen</strong><small>Открыть ↗</small></span></a>
+      <a class="game-card" href="https://allpredictor.com/sites/astro" target="_blank" rel="noopener noreferrer" aria-label="Астронавт — открыть в новой вкладке"><img loading="lazy" alt="Астронавт" src="https://f1w-1801.com/resources/v1/optimizeimages/unsafe/casino_game_card_x1/plain/https://v1.bundlecdn.com/casino-images/v/d32abd0e-c517-4e03-88c2-6f36a928426b_vertical.png@webp"><span><strong>Астронавт</strong><small>Открыть ↗</small></span></a>
+      <a class="game-card" href="https://allpredictor.com/sites/tropicana" target="_blank" rel="noopener noreferrer" aria-label="Tropicana — открыть в новой вкладке"><img loading="lazy" alt="Tropicana" src="https://f1w-1801.com/resources/v1/optimizeimages/unsafe/casino_game_card_x1/plain/https://v1.bundlecdn.com/casino-images/v/e16f018a-38b6-4dcf-b4a7-6319791d28e1_vertical.png@webp"><span><strong>Tropicana</strong><small>Открыть ↗</small></span></a>
+    </div>
+  </details>
+  <section class="view" id="view-live">
+    <div class="page-heading"><div><span class="eyebrow">ВИДЕТЬ БОЛЬШЕ, ЧЕМ ОДИН РАУНД</span><h1>Каждый раунд.<br><span>Вся история.</span></h1><p>Коэффициенты в эфире, статистика и анализ вашей базы LuckyJet.</p></div><a class="text-link" href="#history">Открыть архив <svg><use href="#i-arrow"/></svg></a></div>
+    <div class="metrics" id="liveMetrics">
+      <article class="metric"><span>Средний коэффициент</span><strong id="statAvg" class="cyan">—</strong><small>Последние 100 раундов</small></article>
+      <article class="metric"><span>Самый крупный</span><strong id="statMax" class="amber">—</strong><small>В текущей выборке</small></article>
+      <article class="metric"><span>Раунды от 2×</span><strong id="stat2" class="purple">—</strong><small>Историческая частота</small></article>
+      <article class="metric"><span>Раунды от 10×</span><strong id="stat10" class="amber">—</strong><small>Историческая частота</small></article>
+    </div>
+    <div class="overview-signals"><a href="#forecast" class="preview-card"><div><span class="eyebrow">ОБЫЧНЫЙ АНАЛИЗ</span><h2 id="normalPreview">Набираю историю…</h2><p id="normalPreviewTime">Для первого расчёта нужно 20 раундов</p></div><span class="preview-arrow">↗</span></a><a href="#vip" class="preview-card vip-preview"><div><span class="eyebrow">VIP · КРУПНЫЕ РЕЗУЛЬТАТЫ</span><h2 id="vipPreview">Ожидание условий</h2><p id="vipPreviewTime">Циклы 100× и кластеры крупных коэффициентов</p></div><span class="preview-arrow">↗</span></a></div>
+    <section class="panel live-panel"><div class="panel-heading"><div><span class="eyebrow">ЛЕНТА РЕЗУЛЬТАТОВ</span><h2>Коэффициенты в эфире</h2></div><div class="live-meta"><span id="liveAge">Проверяю источник…</span><span id="sourceMode">Ожидание</span></div></div><div id="liveGrid" class="round-grid" aria-label="Последние раунды"><p class="empty">Загружаю реальные раунды из базы…</p></div><div class="legend"><span><i class="low"></i>меньше 2×</span><span><i class="medium"></i>2–9,99×</span><span><i class="high"></i>от 10×</span><a href="#history">Все раунды <span>→</span></a></div></section>
+    <p class="small-note" id="liveNote">Зелёный статус появится после подтверждения свежих данных.</p>
+  </section>
+
+  <section class="view" id="view-forecast" hidden>
+    <div class="page-heading compact"><div><span class="eyebrow">АНАЛИЗ ПО СОХРАНЁННЫМ РАУНДАМ</span><h1>Прогнозы<span class="dot-accent">.</span></h1><p>Два независимых режима. Окно готового сигнала закрепляется до завершения.</p></div><span class="sample-badge" id="modelSample">Выборка: —</span></div>
+    <div class="tabs" role="tablist" aria-label="Режим анализа"><button type="button" role="tab" id="tabNormal" aria-controls="signalNormal" aria-selected="true">Обычный анализ</button><button type="button" role="tab" id="tabVip" aria-controls="signalVip" aria-selected="false">VIP · 100× / 120×</button></div>
+    <div id="signalNormal" role="tabpanel" aria-labelledby="tabNormal" class="signal-slot"></div><div id="signalVip" role="tabpanel" aria-labelledby="tabVip" class="signal-slot" hidden></div>
+    <div class="analysis-notes"><article class="panel"><span class="eyebrow">ВРЕМЯ СИГНАЛА</span><h3>Одно окно — один расчёт</h3><p>Обычный и VIP-анализ обновляются независимо от открытого раздела. До окончания окна время начала не переносится. После завершения нужен актуальный раунд для следующего расчёта.</p></article><article class="panel"><span class="eyebrow">КАК ЧИТАТЬ ОЦЕНКУ</span><h3>Баллы правил, не шанс выигрыша</h3><p>Оценка 82/100 показывает силу условий в алгоритме. Она не означает вероятность 82%. История коэффициентов не гарантирует следующий результат.</p></article></div>
+  </section>
+
+  <section class="view" id="view-history" hidden>
+    <div class="page-heading compact"><div><span class="eyebrow">АРХИВ LUCKYJET</span><h1>История раундов<span class="dot-accent">.</span></h1><p>Выберите день или откройте весь архив. Результаты сгруппированы по местному времени.</p></div><button type="button" id="exportCsv" class="button secondary"><svg><use href="#i-download"/></svg>Скачать CSV</button></div>
+    <div class="panel history-toolbar"><div class="date-controls"><button id="prevDay" class="icon-button" aria-label="Предыдущий день">‹</button><input type="date" id="historyDate" aria-label="Дата истории"><button id="nextDay" class="icon-button" aria-label="Следующий день">›</button><button id="today" class="button secondary">Сегодня</button><button id="allDates" class="button secondary" aria-pressed="false">Все даты</button></div><label class="filter-label">Коэффициенты<select id="minCoefficient" aria-label="Минимальный коэффициент"><option value="1">Все</option><option value="2">от 2×</option><option value="10">от 10×</option><option value="50">от 50×</option><option value="100">от 100×</option></select></label></div>
+    <div class="archive-state"><div><strong id="historyCoverage">Проверяю глубину истории…</strong><span id="archiveProgress">—</span></div><div class="archive-actions"><button id="loadDay" class="button primary">Загрузить выбранный день</button><button id="loadAll" class="button secondary">Загрузить весь архив</button></div></div>
+    <div class="history-stats"><article><span>Раундов в выборке</span><strong id="historyCount">—</strong></article><article><span>Средний коэффициент</span><strong id="historyAvg">—</strong></article><article><span>Максимальный</span><strong id="historyMax" class="amber">—</strong></article></div>
+    <section class="panel hourly-panel"><div class="panel-heading"><h3>Распределение раундов по часам</h3><span class="muted" id="hourlyScope">В загруженной выборке</span></div><div id="hourlyChart" class="hourly-chart" aria-label="Число раундов по местным часам"></div></section>
+    <div id="historyGroups" class="history-groups"><p class="empty">Загрузка истории…</p></div>
+    <div class="history-bottom"><span id="historyShown" class="muted"></span><button type="button" id="historyMore" class="button secondary">Показать ещё</button></div>
+  </section>
+
+  <section class="view" id="view-method" hidden>
+    <div class="page-heading compact"><div><span class="eyebrow">ПРОЗРАЧНЫЙ РАСЧЁТ</span><h1>Как это работает<span class="dot-accent">.</span></h1><p>Проверяемые правила, известная выборка и понятное состояние источника.</p></div></div>
+    <div class="method-grid"><article class="panel"><span class="eyebrow">01 / ОБЫЧНЫЙ РЕЖИМ</span><h2>Последовательность условий</h2><ol><li>Устойчивый медианный цикл результатов от 10×.</li><li>Серия из 15 коэффициентов ниже 2×.</li><li>Три и более результата от 20× за 30 раундов.</li><li>Три и более результата 5–9,99× за 60 раундов.</li><li>EMA20, EMA50, среднее последних 50, статистика часа и минуты +2.</li></ol><p>Срабатывает первое подходящее правило. Базовая выборка — до 2 000 последних раундов.</p></article><article class="panel"><span class="eyebrow">02 / VIP-РЕЖИМ</span><h2>Три возможных условия</h2><ol><li>Устойчивые интервалы между результатами от 100×.</li><li>За 80 раундов не менее шести от 20×, из них минимум три от 50×. Цель правила — 120×.</li><li>Оценка интервала 100× по исторической частоте с пуассоновской формулой.</li></ol><p>Один кандидат с оценкой ниже 75 не публикуется. Совпадение двух условий добавляет 5 баллов.</p></article><article class="panel"><span class="eyebrow">03 / ИСТОРИЯ</span><h2>Дата, часы и полный архив</h2><p>Кнопка загрузки проходит все страницы, которые возвращает наша база. Одинаковые коэффициенты с настоящими разными ID сохраняются. Вероятные повторы технических записей live/state в пределах 2,5 секунды объединяются; исходная база не удаляется. До конца загрузки статистика явно отмечена как неполная.</p><p>CSV содержит ID, коэффициент, точное время и признак приблизительной метки. Фильтры и группировка используют часовой пояс устройства.</p></article><article class="panel"><span class="eyebrow">04 / ПРОИСХОЖДЕНИЕ РАСЧЁТОВ</span><h2>Что удалось подтвердить</h2><p>Правила повторно изучены в публичных JavaScript-модулях historique-luckyjet.shop 28 сентября 2026 года. В этих модулях используется статистическая логика JavaScript; обученная нейросеть не обнаружена.</p><p>Закрытые данные истории, внутренние серверные журналы и закрытый серверный код не проверены. Полный разбор и сравнение сохранены в <a href="RESEARCH.md">RESEARCH.md</a>.</p></article></div>
+    <section class="panel diagnostics"><div class="panel-heading"><h2>Состояние данных</h2><button id="refresh" class="button secondary">Проверить сейчас</button></div><dl><div><dt>Раундов в базе</dt><dd id="diagTotal">—</dd></div><div><dt>Получено в этой сессии</dt><dd id="diagLoaded">—</dd></div><div><dt>Последний раунд</dt><dd id="diagLatest">—</dd></div><div><dt>Последний успешный запрос</dt><dd id="diagPoll">—</dd></div><div><dt>Приблизительных времён в модели</dt><dd id="diagEstimated">—</dd></div><div><dt>Режим доставки</dt><dd id="diagTransport">—</dd></div></dl><p id="diagnosticMessage" class="small-note">Серверная база — источник хранения. Открытая страница показывает доступные ей данные.</p></section>
+  </section>
+  <footer>БОГ ХИЩНИК <span>Наблюдение · история · статистика</span></footer>
+</main>
+<div id="toast" class="toast" role="status" hidden></div>
+</body>
+</html>
+
