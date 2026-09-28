@@ -1,0 +1,2 @@
+[functions.astronaut-live]
+verify_jwt = false
