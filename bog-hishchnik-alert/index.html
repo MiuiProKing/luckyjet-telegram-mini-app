@@ -10,7 +10,7 @@
 
 <meta name="theme-color" content="#08080f">
 
-<title>LuckyJet — коэффициенты в прямом эфире</title>
+<title>БОГ ХИЩНИК — история и статистический прогноз</title>
 
 <style>
 
@@ -26,7 +26,7 @@
 
 
 .big-alert{border:1px solid #e28a25;border-radius:18px;padding:20px;margin-top:18px;background:linear-gradient(115deg,#442b20,#30213f);box-shadow:0 0 30px #ff790018}.big-title{font-size:19px;font-weight:800;color:#ffb14f}.big-main{margin-top:12px;font-size:16px;font-weight:700}.journal-row{display:grid;gap:6px;border-bottom:1px solid #353644;padding:14px 0;font-size:13px}.journal-row span{color:#b9bdc9}.archive-tools{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0}.archive-tools button,.archive-tools select{padding:10px;background:#191a24;color:white;border:1px solid #353644;border-radius:10px}.history-grid time{font-size:10px}.section details summary{cursor:pointer;font-weight:700}
-</style>
+.facts-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:16px}.facts-grid span{border:1px solid #353644;border-radius:12px;padding:12px}.facts-grid b{display:block;color:#46bcff;font-size:18px;margin-top:5px}.archive-tools input{background:#191a24;color:white;border:1px solid #353644;border-radius:10px;padding:10px}a{color:#73caff}</style>
 
 </head>
 
@@ -73,8 +73,8 @@
   </section>
 
   <section class="section card"><details><summary>История прогнозов · проверка в заданном окне</summary><p class="signal-note">Попадание отмечается только по точному времени раунда внутри окна. Если часть истории отсутствует, результат ожидает данных. Журнал хранится в этом браузере.</p><div id="signalJournal"></div></details></section>
-<section class="section card" id="archive"><h2>Архив раундов</h2><p class="signal-note">Старые раунды загружаются из нашей Supabase порциями. Одинаковые коэффициенты разных раундов сохраняются.</p><div class="archive-tools"><input type="date" id="archiveDate" aria-label="Дата раундов"><select id="archiveMin" aria-label="Минимальный коэффициент"><option value="1">Все результаты</option><option value="2">От 2×</option><option value="10">От 10×</option><option value="100">От 100×</option></select><button id="archiveMore">Загрузить ещё 500 раундов</button><button id="archiveCsv">Скачать загруженные раунды CSV</button></div><p id="archiveCount" class="signal-note">Архив ещё не загружен</p><div class="history-grid" id="archiveGrid"></div></section>
-<section class="section card about" id="about"><strong>Источник данных</strong><br>Отдельная версия от 01.10.2026. Обычная модель: EMA20/50, геометрическое среднее, медиана и MAD, часовые группы и серии результатов. Предупреждение: цикл 100×, кластер и формула Пуассона. Проценты — оценки эвристик, а не измеренная точность. <a href="MODEL_AUDIT.md">Подробный разбор формул</a><br>Страница читает публичную историю из подключённой базы Supabase и обновляет её автоматически. Прогнозные значения являются статистическими оценками по истории и не гарантируют результат следующего раунда.</section>
+<section class="section card"><details><summary>Как рассчитан сигнал · показатели модели</summary><div id="modelFacts" class="signal-note">Ожидаю историю</div><p class="signal-note">Правила по порядку: цикл ≥10× → 15 низких → ≥3 крупных за 30 → зона 5–9× → EMA с часовыми и минутными поправками. Большая возможность: цикл ≥100×, кластер, Пуассон. Сигнал закреплён до конца окна; коэффициенты обновляются независимо.</p></details></section><section class="section card" id="archive"><h2>Архив раундов</h2><p class="signal-note">Старые раунды загружаются из нашей Supabase порциями. Одинаковые коэффициенты разных раундов сохраняются.</p><div class="archive-tools"><input type="date" id="archiveDate" aria-label="Дата раундов"><select id="archiveMin" aria-label="Минимальный коэффициент"><option value="1">Все результаты</option><option value="2">От 2×</option><option value="10">От 10×</option><option value="100">От 100×</option></select><button id="archiveMore">Загрузить ещё 500 раундов</button><button id="archiveCsv">Скачать загруженные раунды CSV</button></div><p id="archiveCount" class="signal-note">Архив ещё не загружен</p><div class="history-grid" id="archiveGrid"></div></section>
+<section class="section card about" id="about"><strong>Источник данных</strong><br>Отдельная версия 2 от 01.10.2026. Выборка 2000 раундов, полное обновление каждые 30 секунд, пересчёт каждые 8 секунд. Обычная модель: EMA20/50, геометрическое среднее, медиана и MAD, часовые группы и серии результатов. Предупреждение: цикл 100×, кластер и формула Пуассона. Проценты — оценки эвристик, а не измеренная точность. <a href="MODEL_AUDIT.md">Подробный разбор формул</a><br>Страница читает публичную историю из подключённой базы Supabase и обновляет её автоматически. Прогнозные значения являются статистическими оценками по истории и не гарантируют результат следующего раунда.</section>
 
   <div class="foot">БОГ ХИЩНИК · проверка базы Supabase каждую секунду</div>
 
@@ -88,7 +88,7 @@
 
 const API='https://xrniwkvfrtchtxjrwwgd.supabase.co/functions/v1/v0xff3-live';
 
-const $=id=>document.getElementById(id), LIMIT=100, MODEL_LIMIT=5000, PAGE=100;
+const $=id=>document.getElementById(id), LIMIT=100, MODEL_LIMIT=2000, PAGE=100;
 
 let rounds=[],busy=false,estimatedAny=false,mode='normal',activeNormal=null,activeVip=null,lastSeenId='';
 
@@ -106,7 +106,7 @@ function fmtTime(v){const ms=millis(v);if(!ms)return'время —';return new 
 
 function setState(ok,text){const isLive=ok&&text.includes('LIVE'),isFallback=text.includes('Резервное обновление')||text.includes('База доступна');$('statusDot').className='dot '+(isLive?'ok':isFallback?'':'err');$('liveDot').className='dot '+(isLive?'ok':isFallback?'':'err');$('statusText').textContent=text;$('liveLabel').textContent=isLive?'LIVE':isFallback?'БАЗА':'Нет связи'}
 
-function clamp(x,a,b){return Math.max(a,Math.min(b,x))}function mean(a){return a.length?a.reduce((x,y)=>x+y,0)/a.length:0}function median(a){if(!a.length)return 0;const s=[...a].sort((x,y)=>x-y),m=s.length>>1;return s.length%2?s[m]:(s[m-1]+s[m])/2}function geo(a){if(!a.length)return 0;return Math.exp(mean(a.map(x=>Math.log(Math.max(x,.01)))))}function deviation(a){const m=mean(a);return Math.sqrt(mean(a.map(x=>(x-m)**2)))}function mad(a){const m=median(a);return median(a.map(x=>Math.abs(x-m)))}function ema(a,alpha){if(!a.length)return 0;let x=a[a.length-1];for(let i=a.length-2;i>=0;i--)x=alpha*a[i]+(1-alpha)*x;return x}function round(x){return Math.floor(x+.5)}function label(score){return score>=82?'Высокая':score>=66?'Средняя':'Слабая'}
+function clamp(x,a,b){return Math.max(a,Math.min(b,x))}function mean(a){return a.length?a.reduce((x,y)=>x+y,0)/a.length:0}function median(a){if(!a.length)return 0;const s=[...a].sort((x,y)=>x-y),m=s.length>>1;return s.length%2?s[m]:(s[m-1]+s[m])/2}function geo(a){if(!a.length)return 0;return Math.exp(mean(a.map(x=>Math.log(Math.max(x,1.001)))))}function deviation(a){const m=mean(a);return Math.sqrt(mean(a.map(x=>(x-m)**2)))}function mad(a){const m=median(a);return median(a.map(x=>Math.abs(x-m)))}function ema(a,alpha){if(!a.length)return 0;let x=a[a.length-1];for(let i=a.length-2;i>=0;i--)x=alpha*a[i]+(1-alpha)*x;return x}function round(x){return Math.floor(x+.5)}function label(score){return score>=82?'Высокая':score>=66?'Средняя':'Слабая'}
 
 function gapStats(rows,threshold){const e=rows.filter(r=>coefficient(r)>=threshold).sort((a,b)=>millis(a.timestamp)-millis(b.timestamp));if(e.length<2)return{count:e.length,last:e.length?millis(e[0].timestamp):null,med:0,mad:0};const gaps=e.slice(1).map((r,i)=>millis(r.timestamp)-millis(e[i].timestamp)).filter(x=>x>0);return{count:e.length,last:millis(e[e.length-1].timestamp),med:median(gaps),mad:mad(gaps)}}
 
@@ -184,11 +184,11 @@ function countdownLabel(s){const now=Date.now();return now<s.at?'До входа
 
 function signalMarkup(s,vip){
 
- if(!s)return'<div class="signal-empty">'+(vip?'VIP-прогноз появится после загрузки истории из базы.':'Для расчёта нужно не менее 20 сохранённых раундов.')+'</div>';
+ if(!s)return'<div class="signal-empty">'+(vip?'VIP-анализ ожидает свежей истории из базы.':'Ожидаю не менее 20 свежих раундов. Проверка модели каждые 8 секунд.')+'</div>';
 
  const p=plan(s.target,s.score),end=s.at+s.window;
 
- const metricTitle=vip?'Частота цели в истории':'Оценка модели';
+ const metricTitle=vip?'Частота цели в истории':'Оценка правил';
 
  const metricValue=vip?String(s.hitRate):String(s.score);
 
@@ -198,7 +198,7 @@ function signalMarkup(s,vip){
 
 }
 
-function renderSignals(){const n=lockedPrediction('normal'),v=lockedPrediction('vip');$('normalSignal').innerHTML=signalMarkup(n,false);$('vipSignal').innerHTML=signalMarkup(v,true);renderExtras()}
+function renderSignals(){const n=activeNormal,v=activeVip;$('normalSignal').innerHTML=signalMarkup(n,false);$('vipSignal').innerHTML=signalMarkup(v,true);renderExtras()}
 
 function render(){const valid=rounds.map(r=>({r,n:coefficient(r)})).filter(x=>x.n!==null),sample=valid.slice(0,LIMIT),nums=sample.map(x=>x.n),grid=$('grid');if(!nums.length){grid.innerHTML='<div class="empty">Пока нет данных. Попробуйте обновить страницу позже.</div>';return}const avg=nums.reduce((a,b)=>a+b,0)/nums.length,max=Math.max(...nums),pct=n=>Math.round(nums.filter(x=>x>=n).length*100/nums.length);$('avg').textContent=avg.toFixed(2)+'×';$('max').textContent=max.toFixed(2)+'×';$('rate2').textContent=pct(2)+'%';$('rate10').textContent=pct(10)+'%';grid.replaceChildren();sample.forEach(({r,n})=>{const item=document.createElement('div');item.className='coef';item.style.setProperty('--coef',color(n));const strong=document.createElement('strong');strong.textContent=n.toFixed(2)+'×';const time=document.createElement('time');time.textContent=fmtTime(r.timestamp);time.title=r.estimated?'Время ориентировочное':'Время из источника';item.append(strong,time);grid.appendChild(item)});estimatedAny=sample.some(x=>x.r.estimated);$('timeWarning').textContent=estimatedAny?'Внимание: часть времён раундов в базе рассчитана приблизительно. Обычный прогноз показывает ориентировочное время, а циклические сигналы по неточным временным меткам отключены.':'Время получено из источника; прогнозные оценки не гарантируют результат.';$('count').textContent=`Показано раундов: ${sample.length}${rounds.length>sample.length?' · в модели '+rounds.length:''}`;renderSignals()}
 
@@ -207,7 +207,7 @@ async function fetchPage(limit=PAGE,merge=true){if(busy)return;busy=true;try{con
 function chooseMode(next){mode=next;const vip=next==='vip';$('normalTab').classList.toggle('active',!vip);$('vipTab').classList.toggle('active',vip);$('normalTab').setAttribute('aria-selected',String(!vip));$('vipTab').setAttribute('aria-selected',String(vip));$('normalSignal').hidden=vip;$('vipSignal').hidden=!vip}
 
 $('normalTab').addEventListener('click',()=>chooseMode('normal'));$('vipTab').addEventListener('click',()=>chooseMode('vip'));let liveSocket=null,liveConnected=false,liveReconnectDelay=1000,liveReconnectTimer=null;
-function applyLiveRound(row){const n=coefficient(row);if(n===null)return;const stamp=row.timestamp??row.round_timestamp??row.createdAt;const id=String(row.id??(String(stamp||Date.now())+':'+n));const normalized={...row,id,coefficient:n,topCoefficient:n,timestamp:stamp};if(isDuplicateRound(normalized,rounds)){lastSeenId=id;return}rounds=dedupeRounds([normalized,...rounds]).slice(0,MODEL_LIMIT);lastSeenId=String(rounds[0]?.id||id);liveKnownTotal=Math.max(liveKnownTotal+1,rounds.length);setState(true,'LIVE · Supabase');$('liveLabel').textContent='LIVE';$('subtitle').textContent='Последние результаты · всего в базе '+liveKnownTotal.toLocaleString('ru-RU');$('updated').textContent='Новый раунд: '+fmtTime(stamp||Date.now());render()}
+function applyLiveRound(row){const n=coefficient(row);if(n===null)return;const stamp=row.timestamp??row.round_timestamp??row.createdAt;const id=String(row.id??(String(stamp||Date.now())+':'+n));const normalized={...row,id,coefficient:n,topCoefficient:n,timestamp:stamp};if(isDuplicateRound(normalized,rounds))return;rounds=dedupeRounds([normalized,...rounds]).slice(0,MODEL_LIMIT);lastSeenId=String(rounds[0]?.id||id);liveKnownTotal=Math.max(liveKnownTotal+1,rounds.length);setState(true,'LIVE · Supabase');$('liveLabel').textContent='LIVE';$('subtitle').textContent='Последние результаты · всего в базе '+liveKnownTotal.toLocaleString('ru-RU');$('updated').textContent='Новый раунд: '+fmtTime(stamp||Date.now());render()}
 function scheduleLiveReconnect(){if(liveReconnectTimer)return;const delay=liveReconnectDelay;liveReconnectDelay=Math.min(15000,Math.round(liveReconnectDelay*1.7));liveReconnectTimer=setTimeout(()=>{liveReconnectTimer=null;connectLive()},delay)}
 function connectLive(){if(liveSocket&&liveSocket.readyState<2)return;try{const socket=new WebSocket(API.replace(/^https:/,'wss:')+'?mode=live');liveSocket=socket;socket.onopen=()=>{liveReconnectDelay=1000};socket.onmessage=event=>{try{const message=JSON.parse(event.data);if(message.type==='status'&&message.status==='connected'){liveConnected=true;setState(true,'LIVE · Supabase');$('liveLabel').textContent='LIVE'}else if(message.type==='status'&&(message.status==='fallback'||message.status==='upstream_error')){liveConnected=false;if(!document.hidden)setState(true,'База доступна · Supabase')}else if(message.type==='round')applyLiveRound(message.round)}catch(_){}};socket.onerror=()=>socket.close();socket.onclose=()=>{if(liveSocket===socket)liveSocket=null;liveConnected=false;if(!document.hidden)setState(true,'База доступна · Supabase');scheduleLiveReconnect()}}catch(_){scheduleLiveReconnect()}}
 let liveKnownTotal=0,checkingLatest=false;
@@ -215,7 +215,7 @@ async function checkForNewRound(){if(checkingLatest||busy)return;checkingLatest=
 // Independent large-result signal. Formulas verified in the public PredictionPanel module, 2026-10-01.
 function bigOpportunity(now=Date.now()) {
  const data=rounds.filter(r=>!r.estimated&&millis(r.timestamp)).slice(0,MODEL_LIMIT).sort((a,b)=>millis(a.timestamp)-millis(b.timestamp));
- if(data.length<80)return null;
+ if(data.length<20)return null;
  const g=gapStats(data,100), candidates=[], minute=60000;
  if(g.count>=5&&g.med>0&&g.mad>0&&g.mad<g.med*.5){
   const expected=g.last+g.med, delta=expected-now, width=clamp(g.mad*1.4826||g.med*.35,2*minute,12*minute), elapsed=now-g.last;
@@ -224,7 +224,7 @@ function bigOpportunity(now=Date.now()) {
  const recent=data.slice(-80), c20=recent.filter(r=>coefficient(r)>=20).length,c50=recent.filter(r=>coefficient(r)>=50).length;
  if(c50>=3&&c20>=6)candidates.push({target:120,at:now+3*minute,window:6*minute,score:round(clamp(55+c50*5+c20,55,82)),basis:`Кластер: ${c20} результатов ≥20× и ${c50} результатов ≥50× за 80 раундов`,rule:'Кластер крупных результатов'});
  const span=millis(data.at(-1).timestamp)-millis(data[0].timestamp),rate=span>0?g.count/span:0;
- if(g.count>=4&&g.last&&rate>0){
+ if(data.length>=80&&g.count>=4&&g.last&&rate>0){
   const elapsed=now-g.last, p=1-Math.exp(-rate*elapsed);
   if(p>=.75){const interval=clamp(1/rate,90000,8*minute);candidates.push({target:100,at:now+interval,window:clamp(interval*.8,3*minute,7*minute),score:round(clamp(50+p*30,50,80)),basis:`Пуассон: 1−exp(−λt) = ${(p*100).toFixed(0)}% · λ⁻¹ = ${(1/rate/minute).toFixed(1)} мин · событий ${g.count}`,rule:'Историческая пауза по Пуассону'})}
  }
@@ -248,7 +248,7 @@ function evaluateJournal(){
 function escapeText(value){return String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function renderExtras(){
  const now=Date.now(),fresh=rounds.length&&now-sortMillis(rounds[0])<180000;
- if(!activeBig||now>=activeBig.at+activeBig.window){activeBig=fresh?bigOpportunity(now):null;recordSignal('big',activeBig)}
+
  const s=activeBig;
  $('bigAlert').innerHTML=s?`<div class="big-title">🔥 Ожидается крупный коэффициент</div><div class="big-main">Потенциальная цель ≥${s.target.toFixed(0)}× · ${fmtTime(s.at)} — ${fmtTime(s.at+s.window)}</div><div class="signal-note">${escapeText(s.basis)}</div><div class="signal-note">Оценка условий: <b>${s.score}%</b> · ${escapeText(s.rules.join(' + '))}. Это оценка правил, не вероятность выигрыша.</div>`:`<div class="big-title">Крупные коэффициенты · наблюдение</div><div class="signal-note">${fresh?'Сейчас условия предупреждения не выполнены. Анализ продолжается.':'Ожидаю свежие раунды. Новые прогнозы по устаревшей базе не создаются.'}</div>`;
  recordSignal('normal',activeNormal);recordSignal('vip',activeVip);evaluateJournal();
@@ -261,14 +261,37 @@ function renderArchive(){const chosen=archiveSelection();$('archiveGrid').innerH
 async function loadArchive(){if(archiveBusy||archiveDone)return;archiveBusy=true;renderArchive();try{const response=await fetch(`${API}?limit=500&offset=${archiveOffset}&t=${Date.now()}`,{cache:'no-store',signal:AbortSignal.timeout(10000)});if(!response.ok)throw Error('HTTP '+response.status);const body=await response.json();if(!body.ok||!Array.isArray(body.history))throw Error('Неверный ответ');archiveOffset+=body.history.length;archiveRows=dedupeRounds([...archiveRows,...body.history]);archiveDone=!body.history.length||archiveOffset>=Number(body.total);renderArchive()}catch(e){$('archiveCount').textContent='Архив не загружен: '+e.message}finally{archiveBusy=false;$('archiveMore').disabled=archiveDone}}
 $('archiveMore').addEventListener('click',loadArchive);$('archiveMin').addEventListener('change',renderArchive);$('archiveDate').addEventListener('change',renderArchive);
 $('archiveCsv').addEventListener('click',()=>{const rows=archiveSelection(),csv='id,coefficient,timestamp,estimated\r\n'+rows.map(r=>[String(r.id).replace(/[",\r\n]/g,''),coefficient(r),new Date(sortMillis(r)).toISOString(),Boolean(r.estimated)].join(',')).join('\r\n');const url=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'})),a=document.createElement('a');a.href=url;a.download='bog-hishchnik-rounds.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)});
-async function hydrateModel(){
- const initial=await fetchPage(1000,false);if(!initial)return;
- for(let offset=initial;offset<MODEL_LIMIT;){
-  try{const response=await fetch(`${API}?limit=1000&offset=${offset}&t=${Date.now()}`,{cache:'no-store',signal:AbortSignal.timeout(10000)});if(!response.ok)break;const body=await response.json();if(!body.ok||!Array.isArray(body.history)||!body.history.length)break;offset+=body.history.length;rounds=dedupeRounds([...rounds,...body.history]).slice(0,MODEL_LIMIT);render();if(offset>=Number(body.total))break}catch(_){break}
- }
+let modelRefreshing=false,modelRefreshedAt=0,lastAnalysisAt=0;
+async function refreshModel(){
+ if(modelRefreshing||busy)return;modelRefreshing=true;
+ const loaded=[];let offset=0,total=Infinity;
+ try{
+  while(offset<MODEL_LIMIT&&offset<total){
+   const response=await fetch(`${API}?limit=${Math.min(1000,MODEL_LIMIT-offset)}&offset=${offset}&t=${Date.now()}`,{cache:'no-store',headers:{Accept:'application/json'},signal:AbortSignal.timeout(10000)});
+   if(!response.ok)throw Error('HTTP '+response.status);
+   const body=await response.json();if(!body.ok||!Array.isArray(body.history))throw Error('Неверный ответ истории');
+   total=Number(body.total)||total;if(!body.history.length)break;loaded.push(...body.history);offset+=body.history.length;
+  }
+  rounds=dedupeRounds([...loaded,...rounds]).slice(0,MODEL_LIMIT);liveKnownTotal=Number.isFinite(total)?total:rounds.length;lastSeenId=String(rounds[0]?.id||lastSeenId);modelRefreshedAt=Date.now();
+  $('subtitle').textContent='Последние результаты · всего в базе '+liveKnownTotal.toLocaleString('ru-RU');
+  if(!liveConnected)setState(true,'База доступна · Supabase');render();updateAnalysis();
+ }catch(e){if(loaded.length){rounds=dedupeRounds([...loaded,...rounds]).slice(0,MODEL_LIMIT);render()}if(!liveConnected)setState(false,'Ошибка обновления истории');$('modelFacts').textContent='История не обновилась: '+e.message+'; следующая попытка через 30 секунд.'}
+ finally{modelRefreshing=false}
+}
+function updateAnalysis(){
+ const now=Date.now();if(lastAnalysisAt&&now-lastAnalysisAt<8000)return;lastAnalysisAt=now;
+ lockedPrediction('normal');lockedPrediction('vip');
+ const fresh=rounds.length&&now-sortMillis(rounds[0])<180000;
+ if(!activeBig||now>=Math.max(activeBig.at+activeBig.window,activeBig.generatedAt+60000)){activeBig=fresh?bigOpportunity(now):null;recordSignal('big',activeBig)}
+ renderModelFacts();renderSignals();
+}
+function renderModelFacts(){
+ const values=rounds.map(coefficient).filter(x=>x!==null),last50=values.slice(0,50),g=gapStats(rounds.filter(r=>!r.estimated),10);
+ if(!values.length){$('modelFacts').textContent='Ожидаю историю из нашей Supabase';return}
+ $('modelFacts').innerHTML=`<div class="facts-grid"><span>Выборка <b>${values.length} / ${MODEL_LIMIT}</b></span><span>Среднее <b>${mean(values).toFixed(2)}×</b></span><span>Медиана <b>${median(values).toFixed(2)}×</b></span><span>Геометрическое <b>${geo(values).toFixed(2)}×</b></span><span>EMA20 · α 0,25 <b>${ema(values.slice(0,20),.25).toFixed(2)}×</b></span><span>EMA50 · α 0,12 <b>${ema(last50,.12).toFixed(2)}×</b></span><span>MAD50 <b>${mad(last50).toFixed(2)}</b></span><span>σ50 <b>${deviation(last50).toFixed(2)}</b></span><span>Медианный интервал ≥10× <b>${(g.med/60000).toFixed(2)} мин</b></span><span>MAD интервалов ≥10× <b>${(g.mad/60000).toFixed(2)} мин</b></span></div><p class="signal-note">Расчёт: ${fmtTime(lastAnalysisAt)} · история: ${modelRefreshedAt?fmtTime(modelRefreshedAt):'ожидание'} · 8 секунд / 30 секунд. Проценты — оценки правил, не вероятность выигрыша.</p>`;
 }
 
-hydrateModel();connectLive();setInterval(checkForNewRound,1000);setInterval(renderSignals,1000);document.addEventListener('visibilitychange',()=>{if(!document.hidden){renderSignals();checkForNewRound();if(!liveSocket||liveSocket.readyState>1)connectLive()}});
+refreshModel();connectLive();setInterval(checkForNewRound,1000);setInterval(refreshModel,30000);setInterval(updateAnalysis,8000);setInterval(renderSignals,1000);document.addEventListener('visibilitychange',()=>{if(!document.hidden){updateAnalysis();renderSignals();checkForNewRound();refreshModel();if(!liveSocket||liveSocket.readyState>1)connectLive()}});
 
 </script>
 
