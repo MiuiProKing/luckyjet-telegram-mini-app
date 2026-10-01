@@ -97,7 +97,7 @@ function coefficient(r){const n=Number(r.topCoefficient??r.coefficient??r.multip
 function millis(v){let n=Number(v);if(!Number.isFinite(n))n=Date.parse(v);if(Number.isFinite(n)&&n>0)return n<1e11?n*1000:n;return null}
 
 function sortMillis(r){return millis(r.estimated?(r.storedAt??r.timestamp):r.timestamp)||0}
-function isDuplicateRound(candidate,list){const id=String(candidate.id??''),n=coefficient(candidate),t=millis(candidate.timestamp??candidate.round_timestamp);for(const other of list){const oid=String(other.id??''),ot=millis(other.timestamp??other.round_timestamp);if(id&&oid===id)return true;if(n===coefficient(other)&&t&&ot&&(t===ot||((candidate.estimated||other.estimated||id.startsWith('live-')||oid.startsWith('live-'))&&Math.abs(t-ot)<=2500)))return true}return false}
+function isDuplicateRound(candidate,list){const id=String(candidate.id??''),n=coefficient(candidate),t=millis(candidate.timestamp??candidate.round_timestamp);for(const other of list){const oid=String(other.id??''),ot=millis(other.timestamp??other.round_timestamp);if(id&&oid){if(id===oid)return true;continue}if(n===coefficient(other)&&t&&ot&&t===ot)return true}return false}
 function dedupeRounds(items){const sorted=[...items].filter(r=>coefficient(r)!==null).sort((a,b)=>sortMillis(b)-sortMillis(a)),unique=[];for(const row of sorted)if(!isDuplicateRound(row,unique))unique.push(row);return unique}
 
 function color(n){return n<2?'#0799ed':n<10?'#a02bf1':'#ff7900'}
