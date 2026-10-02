@@ -7,11 +7,17 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: mini-app-generated-pages
+  cancel-in-progress: false
+
 jobs:
   patch-pages:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: main
       - name: Install modules, restore Beta Classic and refresh cache
         run: |
           python - <<'PY'
@@ -69,7 +75,7 @@ jobs:
           for p in Path('.').glob('*.html'):
               # Do not rewrite pages with independent game credentials.
               independent_games = {'aviator.html', 'rocketqueen.html', 'pro-rocketqueen.html'}
-              if p.name == 'setup-server.html' or p.name in independent_games:
+              if p.name in {'setup-server.html', 'pro-luckyjet.html'} or p.name in independent_games:
                   continue
 
               s = p.read_text(encoding='utf-8')
