@@ -31,3 +31,7 @@ jobs:
           test -f analytics-client.js
           test -f app-center.js
           test -f admin.html
+      - name: Verify Lucky Jet audit scenarios
+        run: |
+          TZ=UTC node tests/pro-luckyjet-audit.test.mjs
+          TZ=Europe/Kyiv node tests/pro-luckyjet-audit.test.mjs

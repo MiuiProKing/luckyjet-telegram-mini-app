@@ -5,6 +5,9 @@ on:
   push:
     branches: [main]
     paths:
+      - 'pro-luckyjet.html'
+      - 'pro-luckyjet-app.js'
+      - 'pro-luckyjet-engine.js'
       - 'luckyjet-live/**'
       - '.github/workflows/deploy-luckyjet-live.yml'
 
