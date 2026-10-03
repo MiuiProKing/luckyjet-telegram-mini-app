@@ -1,0 +1,6 @@
+{
+  "api": "https://xrniwkvfrtchtxjrwwgd.supabase.co/functions/v1/v0xff3-live",
+  "pollMs": 1000,
+  "source": "User-provided beta.html",
+  "sourceSha256": "06ffd0d77885c68a6857b250b75d4fd256951c51c28cabcd3de16c5487a8bdc4"
+}

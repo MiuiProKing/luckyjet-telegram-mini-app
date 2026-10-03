@@ -1,0 +1,19 @@
+name: Verify Bog Hishchnik Lucky Jet
+on:
+  push:
+    branches: [bog-hishchnik-live-1s-20261003]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify all 24 scenarios in UTC and Kyiv
+        run: |
+          TZ=UTC node tests/bog-hishchnik-audit.test.mjs
+          TZ=Europe/Kyiv node tests/bog-hishchnik-audit.test.mjs
