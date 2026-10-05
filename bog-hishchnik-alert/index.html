@@ -9,8 +9,9 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 
 <meta name="theme-color" content="#08080f">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='12' fill='%238230e7'/%3E%3Ctext x='8' y='29' fill='white' font-size='27'%3E✈%3C/text%3E%3C/svg%3E">
 
-<title>БОГ ХИЩНИК — история и статистический прогноз</title>
+<title>БОГ ХИЩНИК ML — модели и проверка прогнозов</title>
 
 <style>
 
@@ -28,6 +29,8 @@
 .big-alert{border:1px solid #e28a25;border-radius:18px;padding:20px;margin-top:18px;background:linear-gradient(115deg,#442b20,#30213f);box-shadow:0 0 30px #ff790018}.big-title{font-size:19px;font-weight:800;color:#ffb14f}.big-main{margin-top:12px;font-size:16px;font-weight:700}.journal-row{display:grid;gap:6px;border-bottom:1px solid #353644;padding:14px 0;font-size:13px}.journal-row span{color:#b9bdc9}.archive-tools{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0}.archive-tools button,.archive-tools select{padding:10px;background:#191a24;color:white;border:1px solid #353644;border-radius:10px}.history-grid time{font-size:10px}.section details summary{cursor:pointer;font-weight:700}
 .facts-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:16px}.facts-grid span{border:1px solid #353644;border-radius:12px;padding:12px}.facts-grid b{display:block;color:#46bcff;font-size:18px;margin-top:5px}.archive-tools input{background:#191a24;color:white;border:1px solid #353644;border-radius:10px;padding:10px}a{color:#73caff}.analysis-head{display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:16px}.analysis-head h2{font-size:19px;margin:0 0 7px}.analysis-head p{font-size:12px;color:var(--muted);margin:0;line-height:1.5}.analysis-badge{font-size:11px;color:#63d888}.analysis-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.analysis-grid .signal-cell{min-width:0}.analysis-grid .signal-value{font-size:20px;overflow-wrap:anywhere}.score-track{height:5px;border-radius:6px;background:#242330;margin-top:12px;overflow:hidden}.score-track span{display:block;height:100%;background:linear-gradient(90deg,#04c2ff,#b02aff)}.ai-description{margin:0 0 17px;color:var(--muted);font-size:12px;line-height:1.6}.big-alert .signal-note{overflow-wrap:anywhere}.facts-grid span{min-width:0;overflow-wrap:anywhere}@media(max-width:680px){.analysis-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.analysis-grid .signal-value{font-size:19px}}@media(max-width:390px){.facts-grid{grid-template-columns:1fr}.analysis-head h2{font-size:17px}}
 [hidden]{display:none!important}@media(max-width:680px){.analysis-grid .signal-cell:first-child{grid-column:auto}.top,.section-head{flex-wrap:wrap}.status{white-space:normal;max-width:100%}}
+
+.ml-controls{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin:16px 0}.ml-controls label{font-size:12px;color:var(--muted)}.ml-controls select{display:block;margin-top:7px;background:#191a24;color:white;border:1px solid #414252;border-radius:10px;padding:10px;min-width:140px}.ml-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.ml-state{display:inline-block;border:1px solid #675029;color:#ffd28c;background:#2a2013;border-radius:10px;padding:10px 12px;line-height:1.5;font-size:12px}.ml-scroll{overflow-x:auto;margin:15px 0}.ml-table{width:100%;border-collapse:collapse;font-size:12px}.ml-table th,.ml-table td{text-align:left;padding:12px 8px;border-bottom:1px solid var(--border)}.ml-table th{color:var(--muted)}.ml-table td:first-child{white-space:nowrap}.ml-grid .signal-value{font-size:29px}.ml-grid .signal-cell{min-width:0}.ml-caption{font-size:11px;color:var(--muted);line-height:1.55}.ml-actions{display:flex;flex-wrap:wrap;gap:10px}.ml-actions button{padding:11px 13px;background:#191a24;color:white;border:1px solid #414252;border-radius:11px;cursor:pointer}.ml-actions button:disabled{opacity:.5}.ml-source{color:#8bd6ff;font-size:12px;line-height:1.55}@media(max-width:390px){.ml-grid{grid-template-columns:1fr}.ml-controls label{flex:1}.ml-controls select{width:100%;min-width:0}}
 </style>
 
 </head>
@@ -36,7 +39,7 @@
 
 <main class="app" id="overview">
 
-  <header class="top"><div class="brand"><div class="mark" aria-hidden="true">✈</div><div><h1>БОГ ХИЩНИК</h1><small>ИСТОРИЯ КОЭФФИЦИЕНТОВ</small></div></div><div class="status"><i class="dot" id="statusDot"></i><span id="statusText">Подключение…</span></div></header>
+  <header class="top"><div class="brand"><div class="mark" aria-hidden="true">✈</div><div><h1>БОГ ХИЩНИК</h1><small>LUCKY JET · МОДЕЛИ И ИСТОРИЯ</small></div></div><div class="status"><i class="dot" id="statusDot"></i><span id="statusText">Подключение…</span></div></header>
 
   <section class="metrics" aria-label="Статистика последних раундов">
 
@@ -50,7 +53,22 @@
 
   </section>
 
-  <section class="section card" id="forecast">
+  
+<section class="section card" id="mlLab" aria-label="Сравнение обученных моделей">
+ <div class="analysis-head"><div><h2>Модели Lucky Jet</h2><p>CatBoost · LightGBM · XGBoost · логистическая модель. Проверка на последующих данных.</p></div><a href="ML_REPORT.md" target="_blank" rel="noopener">Отчёт проверки ↗</a></div>
+ <div class="ml-state" id="mlState" role="status">Загружаются модели…</div>
+ <div class="ml-controls"><label>Целевой коэффициент<select id="mlTarget"><option value="1.5">От 1.5×</option><option value="2" selected>2x-ловля</option><option value="3">От 3×</option><option value="5">От 5×</option><option value="10">От 10×</option><option value="20">От 20×</option><option value="50">От 50×</option></select></label><label>Окно наблюдения<select id="mlHorizon"><option value="1">Следующий раунд</option><option value="3" selected>Следующие 3 раунда</option><option value="5">Следующие 5 раундов</option></select></label></div>
+ <p class="signal-note" id="mlEvent">Ожидание истории</p>
+ <div class="ml-grid"><div class="signal-cell"><div class="signal-label">Базовая частота в обучении</div><div class="signal-value blue" id="mlBaseline">—</div><p class="ml-caption">Сравнение для такой же цели и количества раундов.</p></div><div class="signal-cell"><div class="signal-label">Экспериментальная оценка модели</div><div class="signal-value violet" id="mlCandidate">—</div><p class="ml-caption" id="mlSelected">Ожидание данных</p></div></div>
+ <p class="signal-note" id="mlReasons">Преимущество должно быть подтверждено отдельно от расчёта.</p>
+ <details><summary>Сравнение на отложенной истории</summary><div class="ml-scroll"><table class="ml-table"><thead><tr><th>Модель</th><th>Brier ↓</th><th>Log loss ↓</th><th>AUC</th></tr></thead><tbody id="mlComparison"></tbody></table></div><p class="signal-note" id="mlEvaluation"></p><p class="signal-note" id="mlWalkForward"></p><p class="ml-caption">Обучение — 60%, выбор модели — 15%, калибровка — 10%, финальная проверка — 15%. На границах исключены пересекающиеся будущие метки. Проверено 20 000 записей; это не гарантия результата игры.</p></details>
+ <p class="ml-source" id="mlSource">Подключение истории…</p><p class="signal-note" id="mlStorage">Открывается постоянное хранилище…</p>
+ <div class="ml-actions"><button id="mlBackfill">Дочитать до 20 000 раундов</button><button id="mlResume" hidden>Продолжить 2x-наблюдение</button><button id="mlExport">Скачать историю и журнал JSON</button></div>
+ <details style="margin-top:18px"><summary>Новые наблюдения после открытия</summary><p class="signal-note" id="mlLiveStats"></p><div id="mlJournal"></div></details>
+ <p class="ml-caption"><a href="MAIN_REPORT.md" target="_blank" rel="noopener">MAIN · 2x</a> · <a href="BIG_REPORT.md" target="_blank" rel="noopener">BIG · большие X</a> · <a href="model-comparison.csv">Таблица CSV</a></p><p class="ml-caption">Веб-версия: сон устройства или закрытие браузера останавливает сбор. Локальный SQLite-сервер продолжает сбор при закрытой странице, пока сервер запущен и ПК работает. При возвращении история дочитывается; потерянные окна не считаются промахами или попаданиями. Точность игрового времени и полнота источника пока не подтверждены.</p>
+</section>
+
+<section class="section card" id="forecast">
 
     <div class="switcher" role="tablist" aria-label="Режим прогноза"><button class="active" id="normalTab" role="tab" aria-selected="true">Обычный прогноз</button><button id="vipTab" role="tab" aria-selected="false">VIP · крупные коэффициенты</button></div>
 
@@ -75,16 +93,18 @@
   </section>
 
   <section class="section card"><details><summary>История прогнозов · проверка в заданном окне</summary><p id="signalStats" class="signal-note"></p><p class="signal-note">Попадания и промахи относятся к проверенным окнам с точным временем. Наблюдения по времени ≈ и непроверенные окна считаются отдельно. После перезагрузки полнота окна неизвестна. Журнал хранится в этом браузере.</p><div id="signalJournal"></div></details></section>
-<section class="section card"><details><summary>Как рассчитан сигнал · показатели модели</summary><div id="modelFacts" class="signal-note">Ожидаю историю</div><p class="signal-note">Исходные правила: цикл ≥10× → 15 низких → ≥3 крупных за 30 → зона 5–9× → EMA с часовыми и минутными поправками. Для времени ≈ остаются правила по последовательности, часовые группы и циклы отключены. Большая цель: цикл ≥100×, кластер и Пуассон. Кластер требует не менее 6 результатов ≥20× и 3 результатов ≥50× за 80 раундов. Один кандидат требует балл ≥75; несколько дают +5 без проверки независимости. Пуассон описывает историческую паузу, а не шанс будущего выигрыша. Цель закреплена до конца окна.</p></details></section><section class="section card" id="archive"><h2>Архив раундов</h2><p class="signal-note">История нашей Supabase: загруженная часть до 10 000 раундов. Фильтр по дню использует часовой пояс устройства. Одинаковые коэффициенты разных ID сохраняются.</p><div class="archive-tools"><input type="date" id="archiveDate" aria-label="Дата раундов"><select id="archiveMin" aria-label="Минимальный коэффициент"><option value="1">Все результаты</option><option value="2">От 2×</option><option value="10">От 10×</option><option value="100">От 100×</option></select><button id="archiveMore">Загрузить ещё 500 раундов</button><button id="archiveCsv">Скачать загруженные раунды CSV</button></div><p id="archiveCount" class="signal-note">Архив ещё не загружен</p><div class="history-grid" id="archiveGrid"></div></section>
-<section class="section card about" id="about"><strong>Источник данных</strong><br>Локальная версия 4 · доставка раундов 03.10.2026. Выборка 2000 раундов, полное обновление каждые 30 секунд, пересчёт каждые 8 секунд. Обычная модель: исходные клиентские De/Ce, EMA20/50, геометрическое среднее, медиана и MAD. При приблизительном времени используется анализ последовательности. Предупреждение: цикл 100×, кластер и формула Пуассона. Проценты — оценки эвристик, а не измеренная точность. <a href="MODEL_AUDIT.md">Подробный разбор формул</a><br>Страница читает публичную историю из подключённой базы Supabase и обновляет её автоматически. Прогнозные значения являются статистическими оценками по истории и не гарантируют результат следующего раунда.</section>
+<section class="section card"><details><summary>Как рассчитан сигнал · показатели модели</summary><div id="modelFacts" class="signal-note">Ожидаю историю</div><p class="signal-note">Исходные правила: цикл ≥10× → 15 низких → ≥3 крупных за 30 → зона 5–9× → EMA с часовыми и минутными поправками. Для времени ≈ остаются правила по последовательности, часовые группы и циклы отключены. Большая цель: цикл ≥100×, кластер и Пуассон. Кластер требует не менее 6 результатов ≥20× и 3 результатов ≥50× за 80 раундов. Один кандидат требует балл ≥75; несколько дают +5 без проверки независимости. Пуассон описывает историческую паузу, а не шанс будущего выигрыша. Цель закреплена до конца окна.</p></details></section><section class="section card" id="archive"><h2>Архив раундов</h2><p class="signal-note">История нашей Supabase: загруженная часть до 10 000 раундов. Фильтр по дню использует Europe/Kyiv. Одинаковые коэффициенты разных ID сохраняются.</p><div class="archive-tools"><input type="date" id="archiveDate" aria-label="Дата раундов"><select id="archiveMin" aria-label="Минимальный коэффициент"><option value="1">Все результаты</option><option value="2">От 2×</option><option value="10">От 10×</option><option value="100">От 100×</option></select><button id="archiveMore">Загрузить ещё 500 раундов</button><button id="archiveCsv">Скачать загруженные раунды CSV</button></div><p id="archiveCount" class="signal-note">Архив ещё не загружен</p><div class="history-grid" id="archiveGrid"></div></section>
+<section class="section card about" id="about"><strong>Источник данных</strong><br>Новая ML-ветка · 05.10.2026. Получение коэффициентов — прежний публичный источник, каждую секунду. Обученные модели работают локально в браузере; исходные правила показаны отдельно. Выборка 2000 раундов, полное обновление каждые 30 секунд, пересчёт каждые 8 секунд. Обычная модель: исходные клиентские De/Ce, EMA20/50, геометрическое среднее, медиана и MAD. При приблизительном времени используется анализ последовательности. Предупреждение: цикл 100×, кластер и формула Пуассона. Проценты — оценки эвристик, а не измеренная точность. <a href="MODEL_AUDIT.md">Подробный разбор формул</a><br>Страница читает публичную историю из подключённой базы Supabase и обновляет её автоматически. Прогнозные значения являются статистическими оценками по истории и не гарантируют результат следующего раунда.</section>
 
   <div class="foot">БОГ ХИЩНИК · последние раунды каждую секунду · полная история каждые 30 секунд</div>
 
 </main>
 
-<nav class="bottom-nav" aria-label="Навигация"><a href="#overview"><b>⌂</b>Обзор</a><a href="#forecast"><b>✦</b>Прогноз</a><a href="#history"><b>▦</b>История</a><a href="#about"><b>ⓘ</b>О данных</a></nav>
+<nav class="bottom-nav" aria-label="Навигация"><a href="#overview"><b>⌂</b>Обзор</a><a href="#mlLab"><b>✦</b>Модели</a><a href="#forecast"><b>◈</b>Правила</a><a href="#history"><b>▦</b>История</a><a href="#about"><b>ⓘ</b>О данных</a></nav>
 
 
+<script src="runtime-config.js"></script>
+<script src="ml-core.js"></script>
 <script>
 
 (function(){
@@ -152,22 +172,22 @@ window.GodPreditor=Object.freeze({calculatePrediction,detectBigOpportunity,norma
 </script>
 <script>
 'use strict';
-const API='https://xrniwkvfrtchtxjrwwgd.supabase.co/functions/v1/v0xff3-live';
+const API=window.BOG_RUNTIME?.api||'https://xrniwkvfrtchtxjrwwgd.supabase.co/functions/v1/v0xff3-live';
 const ENGINE=window.GodPreditor,$=id=>document.getElementById(id);
 const LIMIT=100,MODEL_LIMIT=2000,POLL_MS=1000,FRESH_MS=180000,COVERAGE_MS=15000,GRACE_MS=15000;
-const JOURNAL_KEY='bog_hishchnik_alert_audit_v3',LEGACY_KEY='bog_hishchnik_alert_20261001';
+const JOURNAL_KEY='bog_hishchnik_ml_rules_v1',LEGACY_KEY='bog_hishchnik_ml_rules_legacy_v1';
 let rounds=[],mode='normal',activeNormal=null,activeVip=null,activeBig=null,signalJournal=[];
 let online=false,lastPollAt=0,syncPromise=null,initialized=false,lastAnalysisAt=0,modelRefreshedAt=0;
 let liveKnownTotal=0,invalidRows=0,conflictingRows=0,liveSocket=null,liveReconnectTimer=null,liveReconnectDelay=5000;
 let archiveRows=[],archiveOffset=0,archiveBusy=false,archiveDone=false;
-let feedSequence=0;
+let feedSequence=0;let retryUntil=0,retryErrors=0;
 let archiveRenderKey='';
 const coefficient=r=>ENGINE.numberValue(r?.coefficient??r?.topCoefficient??r?.multiplier);
 const millis=ENGINE.timeValue,sortMillis=r=>millis(r?.timestamp)||0;
 function escapeText(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-function fmtTime(t){const n=millis(t);return n?new Date(n).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit',second:'2-digit'}):'—'}
-function localDay(t){const d=new Date(t);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
-function zone(){return Intl.DateTimeFormat().resolvedOptions().timeZone}
+function fmtTime(t){const n=millis(t);return n?new Date(n).toLocaleTimeString('ru-RU',window.BogML?window.BogML.timeOptions({hour:'2-digit',minute:'2-digit',second:'2-digit'}):{hour:'2-digit',minute:'2-digit',second:'2-digit',timeZone:'Europe/Kiev'}):'—'}
+function localDay(t){return window.BogML?window.BogML.dateKey(t):new Date(t).toISOString().slice(0,10)}
+function zone(){return 'Europe/Kyiv'}
 function color(n){return n<2?'#0799ed':n<10?'#a02bf1':'#ff7900'}
 function compareFeed(a,b){return (b._sequence||0)-(a._sequence||0)||((b.timestamp||0)-(a.timestamp||0))||(String(a.id)<String(b.id)?1:String(a.id)>String(b.id)?-1:0)}
 // Coefficient validity and event-clock validity are separate. Never discard a
@@ -176,7 +196,7 @@ function normalizeFeed(input){
  const map=new Map();let invalid=0,conflicts=0;
  for(const raw of Array.isArray(input)?input:[]){
   const n=coefficient(raw),id=raw?.id==null?'':String(raw.id).trim();
-  if(!raw||typeof raw!=='object'||!id||id.length>200||n==null||n<1){invalid++;continue}
+  if(!raw||typeof raw!=='object'||!id||id.length>200||n==null||n<1||raw.completed===false||['running','pending','active'].includes(raw.status)){invalid++;continue}
   const timestamp=millis(raw.timestamp??raw.round_timestamp??raw.played_at),timeIssue=raw.timeIssue||(timestamp==null?'missing':timestamp>Date.now()+30000?'clock':'');
   const row={id,coefficient:n,timestamp,estimated:!!timeIssue||raw.estimated===true||raw.estimated===1||raw.estimated==='true',timeIssue,_observedAt:raw._observedAt||0,_sequence:raw._sequence||0};
   const old=map.get(id);if(old){if(old.coefficient!==n||old.timestamp!==timestamp)conflicts++;continue}map.set(id,row);
@@ -289,7 +309,7 @@ function signalMarkup(s,vip){
  if(!s)return '<div class="signal-empty">'+escapeText(emptyReason())+'</div>';
  const now=Date.now(),end=s.at+s.window,p=plan(s.target,s.score),waiting=now<s.at;
  const level=s.score>=82?'Высокий балл':s.score>=66?'Средний балл':'Низкий балл';
- return `<div class="analysis-head"><div><h2>${vip?'VIP · крупные цели':'Интеллектуальный анализ Lucky Jet'}</h2><p>${escapeText(s.pattern)} · ${s.estimated?'по последовательности':'по точным временным меткам'}</p></div><span class="analysis-badge">${now>end?'Окно завершено':online&&fresh()?'Сигнал закреплён':'Сигнал сохранён · источник недоступен'}</span></div><div class="analysis-grid ${vip?'vip':''}"><div class="signal-cell"><div class="signal-label">Ориентировочная цель</div><div class="signal-value signal-target">${s.target.toFixed(2)}×</div></div><div class="signal-cell"><div class="signal-label">Уровень оценки</div><div class="signal-value">${level}</div><div class="signal-note">Дополнительная цель: ${p.insurance.toFixed(2)}×</div></div><div class="signal-cell"><div class="signal-label">Оценка правил</div><div class="signal-value blue">${s.score} / 100</div><div class="score-track"><span style="width:${s.score}%"></span></div></div><div class="signal-cell"><div class="signal-label">${s.estimated?'Начало наблюдения ≈':'Расчётное начало окна'}</div><div class="signal-value signal-time">${fmtTime(s.at)}</div><div class="signal-note">${waiting?'До окна: '+durationLabel(s.at-now):now<=end?'До конца: '+durationLabel(end-now):'Ожидается новый расчёт'}</div></div></div><p class="signal-note">Окно наблюдения${s.estimated?' ≈':''}: <b>${fmtTime(s.at)} — ${fmtTime(end)}</b> · ${zone()} · ${rounds.length} раундов в текущей модели.<br>${escapeText(s.basis)}${vip?'<br>Частота цели в исходной выборке: '+s.hitRate+'% ('+s.hits+' / '+s.sampleSize+'); это не точность прогноза.':''}</p>`;
+ return `<div class="analysis-head"><div><h2>${vip?'VIP · крупные цели':'Исходные правила · Lucky Jet'}</h2><p>${escapeText(s.pattern)} · ${s.estimated?'по последовательности':'по точным временным меткам'}</p></div><span class="analysis-badge">${now>end?'Окно завершено':online&&fresh()?'Сигнал закреплён':'Сигнал сохранён · источник недоступен'}</span></div><div class="analysis-grid ${vip?'vip':''}"><div class="signal-cell"><div class="signal-label">Ориентировочная цель</div><div class="signal-value signal-target">${s.target.toFixed(2)}×</div></div><div class="signal-cell"><div class="signal-label">Уровень оценки</div><div class="signal-value">${level}</div><div class="signal-note">Дополнительная цель: ${p.insurance.toFixed(2)}×</div></div><div class="signal-cell"><div class="signal-label">Оценка правил</div><div class="signal-value blue">${s.score} / 100</div><div class="score-track"><span style="width:${s.score}%"></span></div></div><div class="signal-cell"><div class="signal-label">${s.estimated?'Начало наблюдения ≈':'Расчётное начало окна'}</div><div class="signal-value signal-time">${fmtTime(s.at)}</div><div class="signal-note">${waiting?'До окна: '+durationLabel(s.at-now):now<=end?'До конца: '+durationLabel(end-now):'Ожидается новый расчёт'}</div></div></div><p class="signal-note">Окно наблюдения${s.estimated?' ≈':''}: <b>${fmtTime(s.at)} — ${fmtTime(end)}</b> · ${zone()} · ${rounds.length} раундов в текущей модели.<br>${escapeText(s.basis)}${vip?'<br>Частота цели в исходной выборке: '+s.hitRate+'% ('+s.hits+' / '+s.sampleSize+'); это не точность прогноза.':''}</p>`;
 }
 function saveJournal(){try{localStorage.setItem(JOURNAL_KEY,JSON.stringify(signalJournal.slice(0,300)))}catch(_){}}
 function restoreJournal(){
@@ -378,7 +398,8 @@ function renderModelFacts(){
  const facts=[['Выборка',values.length+' / '+MODEL_LIMIT],['Среднее',mean(values).toFixed(2)+'×'],['Медиана',median(values).toFixed(2)+'×'],['Геометрическое',geo(values).toFixed(2)+'×'],['EMA20',ema(values.slice(0,20),.25).toFixed(2)+'×'],['EMA50',ema(last50,.12).toFixed(2)+'×'],['MAD50',mad(last50).toFixed(2)],['σ50',deviation(last50).toFixed(2)],['Интервал ≥10×',preciseModel()?(g.med/60000).toFixed(2)+' мин':'недоступен · время ≈'],['MAD интервалов',preciseModel()?(g.mad/60000).toFixed(2)+' мин':'недоступен · время ≈']];
  $('modelFacts').innerHTML='<div class="facts-grid">'+facts.map(([name,value])=>'<span>'+name+'<b>'+value+'</b></span>').join('')+'</div><p class="signal-note">Последний расчёт '+fmtTime(lastAnalysisAt)+' · полная история '+fmtTime(modelRefreshedAt)+' · исходная модель '+ENGINE.version+'.</p>';
 }
-async function page(limit,offset=0){const response=await fetch(API+'?limit='+limit+'&offset='+offset+'&t='+Date.now(),{cache:'no-store',headers:{Accept:'application/json'},signal:AbortSignal.timeout(10000)});if(!response.ok)throw Error('HTTP '+response.status);const body=await response.json();if(body.ok!==true||!Array.isArray(body.history))throw Error('Неверный ответ истории');const total=ENGINE.numberValue(body.total);return {rows:body.history,total:total!=null&&total>=0?total:null}}
+function timeoutSignal(ms){const c=new AbortController();setTimeout(()=>c.abort(),ms);return c.signal}
+async function page(limit,offset=0){const response=await fetch(API+'?limit='+limit+'&offset='+offset+'&t='+Date.now(),{cache:'no-store',headers:{Accept:'application/json'},signal:(typeof AbortSignal.timeout==='function'?AbortSignal.timeout(10000):timeoutSignal(10000))});if(!response.ok){const e=Error('HTTP '+response.status);e.status=response.status;const wait=response.headers.get('Retry-After');e.retryMs=wait?(Number.isFinite(Number(wait))?Number(wait)*1000:Date.parse(wait)-Date.now()):0;throw e;}const body=await response.json();if(body.ok!==true||!Array.isArray(body.history))throw Error('Неверный ответ истории');const total=ENGINE.numberValue(body.total);return {rows:body.history,total:total!=null&&total>=0?total:null}}
 async function modelPage(){
  const first=await page(MODEL_LIMIT);let rows=first.rows.slice(),offset=rows.length,pages=1,valid=normalizeFeed(rows).rows.length;
  while(offset>0&&valid<MODEL_LIMIT&&(first.total==null||offset<first.total)&&pages<4){const next=await page(Math.min(1000,MODEL_LIMIT-valid),offset);pages++;if(!next.rows.length)break;rows.push(...next.rows);offset+=next.rows.length;valid=normalizeFeed(rows).rows.length}
@@ -386,7 +407,7 @@ async function modelPage(){
  return {rows,total:first.total,nextOffset:offset};
 }
 function syncHistory(full=false){
- if(syncPromise)return syncPromise;
+ if(syncPromise)return syncPromise;if(Date.now()<retryUntil)return Promise.resolve();
  syncPromise=(async()=>{
   const anchor=rounds[0]?.id,startedAt=Date.now();
   try{
@@ -406,17 +427,20 @@ function syncHistory(full=false){
     for(const raw of result.rows){const id=String(raw?.id??''),t=millis(raw?.timestamp??raw?.round_timestamp);if(id&&!knownIds.has(id)&&t>pastHead&&t<=startedAt+30000&&startedAt-t<=FRESH_MS)arrivalIds.add(id)}
     if(!result.rows.some(r=>knownIds.has(String(r?.id))))arrivalIds.clear();
    }
-   const items=merge(result.rows,arrivalIds);lastPollAt=Date.now();online=true;
+   const transportGap=!!(wasInitialized&&lastPollAt&&startedAt-lastPollAt>COVERAGE_MS);
+   const anchorMissing=!!(anchor&&!result.rows.some(r=>String(r.id)===anchor));
+   const items=merge(result.rows,arrivalIds);lastPollAt=Date.now();online=true;retryUntil=0;retryErrors=0;
+   if(window.BogMLClient)window.BogMLClient.onFeed(rounds,{online:true,fresh:fresh(),pollAt:lastPollAt,gap:transportGap||anchorMissing});
    if(!initialized)archiveOffset=result.nextOffset??result.rows.length;
    initialized=true;if(full)modelRefreshedAt=lastPollAt;processNew(items);
    archiveRows=normalizeFeed([...rounds,...archiveRows]).rows.slice(0,10000);
    $('updated').textContent='Обновлено: '+fmtTime(lastPollAt);updateAnalysis();render();
-  }catch(e){online=false;gap('История не обновилась: '+e.message);$('updated').textContent='Ошибка: '+e.message;renderStatus();renderSignals()}
+  }catch(e){online=false;retryErrors++;const wait=e.status===403?120000:e.status===429?Math.max(5000,e.retryMs||30000):Math.min(60000,1000*2**Math.min(retryErrors,6));retryUntil=Date.now()+Math.min(300000,wait);if(window.BogMLClient)window.BogMLClient.onError();gap('История не обновилась: '+e.message);$('updated').textContent='Источник: '+e.message+' · повтор через '+Math.ceil((retryUntil-Date.now())/1000)+' с';renderStatus();renderSignals()}
   finally{syncPromise=null}
  })();return syncPromise;
 }
 const refreshModel=()=>syncHistory(true),checkForNewRound=()=>syncHistory(false);
-function applyLiveRound(raw){const items=merge([raw],new Set([String(raw?.id??'')]));if(items.length){online=true;lastPollAt=Date.now();archiveRows=normalizeFeed([...rounds,...archiveRows]).rows.slice(0,10000)}processNew(items);render();updateAnalysis()}
+function applyLiveRound(raw){const items=merge([raw],new Set([String(raw?.id??'')]));if(items.length){online=true;lastPollAt=Date.now();archiveRows=normalizeFeed([...rounds,...archiveRows]).rows.slice(0,10000)}processNew(items);if(window.BogMLClient)window.BogMLClient.onFeed(rounds,{online,fresh:fresh(),pollAt:lastPollAt,gap:false});render();updateAnalysis()}
 function connectLive(){
  // The server restricts WebSocket Origin to the published app; file:// uses
  // the same public GET transport as beta.html instead of futile reconnects.
@@ -430,7 +454,7 @@ function connectLive(){
 }
 function scheduleLiveReconnect(){if(liveReconnectTimer)return;const delay=liveReconnectDelay;liveReconnectDelay=Math.min(30000,Math.round(delay*1.7));liveReconnectTimer=setTimeout(()=>{liveReconnectTimer=null;connectLive()},delay)}
 function archiveSelection(){const min=Number($('archiveMin').value)||1,day=$('archiveDate').value;return archiveRows.filter(r=>r.coefficient>=min&&(!day||localDay(r.timestamp)===day))}
-function renderArchive(){const key=[archiveRows.length,archiveRows[0]?.id,archiveRows[0]?._sequence,$('archiveMin').value,$('archiveDate').value,archiveBusy,archiveDone].join('|');if(key===archiveRenderKey)return;archiveRenderKey=key;const chosen=archiveSelection();$('archiveGrid').innerHTML=chosen.map(r=>'<div class="coef" style="--coef:'+color(r.coefficient)+'"><strong>'+r.coefficient.toFixed(2)+'×</strong><time>'+(r.timestamp?new Date(r.timestamp).toLocaleDateString('ru-RU'):'Дата неизвестна')+'<br>'+fmtTime(r.timestamp)+(r.estimated?' ≈':'')+'</time></div>').join('')||'<div class="empty">В загруженной части истории нет раундов по фильтру.</div>';$('archiveCount').textContent='Загружено '+archiveRows.length+' · показано '+chosen.length+' · '+zone()+'. Фильтр и статистика относятся только к загруженной части.';$('archiveMore').disabled=archiveBusy||archiveDone||archiveRows.length>=10000}
+function renderArchive(){const key=[archiveRows.length,archiveRows[0]?.id,archiveRows[0]?._sequence,$('archiveMin').value,$('archiveDate').value,archiveBusy,archiveDone].join('|');if(key===archiveRenderKey)return;archiveRenderKey=key;const chosen=archiveSelection();$('archiveGrid').innerHTML=chosen.map(r=>'<div class="coef" style="--coef:'+color(r.coefficient)+'"><strong>'+r.coefficient.toFixed(2)+'×</strong><time>'+(r.timestamp?new Date(r.timestamp).toLocaleDateString('ru-RU',{timeZone:'Europe/Kiev'}):'Дата неизвестна')+'<br>'+fmtTime(r.timestamp)+(r.estimated?' ≈':'')+'</time></div>').join('')||'<div class="empty">В загруженной части истории нет раундов по фильтру.</div>';$('archiveCount').textContent='Загружено '+archiveRows.length+' · показано '+chosen.length+' · '+zone()+'. Фильтр и статистика относятся только к загруженной части.';$('archiveMore').disabled=archiveBusy||archiveDone||archiveRows.length>=10000}
 async function loadArchive(){if(archiveBusy||archiveDone||archiveRows.length>=10000)return;archiveBusy=true;renderArchive();try{const result=await page(500,archiveOffset);archiveOffset+=result.rows.length;archiveRows=normalizeFeed([...archiveRows,...result.rows]).rows.slice(0,10000);archiveDone=!result.rows.length||(result.total!=null&&archiveOffset>=result.total);renderArchive()}catch(e){$('archiveCount').textContent='Архив не обновился: '+e.message}finally{archiveBusy=false;$('archiveMore').disabled=archiveDone||archiveRows.length>=10000}}
 function csvCell(s){let v=String(s);if(/^[=+@-]/.test(v))v="'"+v;return '"'+v.replace(/"/g,'""')+'"'}
 $('archiveCsv').addEventListener('click',()=>{const csv='id,coefficient,timestamp,estimated,time_quality,observed_at\r\n'+archiveSelection().map(r=>[r.id,r.coefficient,r.timestamp?new Date(r.timestamp).toISOString():'',r.estimated,r.timeIssue||'source',r._observedAt?new Date(r._observedAt).toISOString():''].map(csvCell).join(',')).join('\r\n');const url=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'})),a=document.createElement('a');a.href=url;a.download='bog-hishchnik-rounds.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)});
@@ -439,5 +463,8 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden){checkForN
 restoreJournal();chooseMode('normal');render();refreshModel();connectLive();setInterval(checkForNewRound,POLL_MS);setInterval(refreshModel,30000);setInterval(updateAnalysis,8000);setInterval(renderSignals,1000);
 
 </script>
+<script src="ml-client.js"></script>
 </body>
 </html>
+
+

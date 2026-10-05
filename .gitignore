@@ -1,0 +1,9 @@
+.data/
+.tools/
+browser-profile/
+browser-sockets/
+publish-requests/
+__pycache__/
+*.sqlite3*
+*.png
+browser-*-validation.json

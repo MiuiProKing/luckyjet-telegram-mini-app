@@ -1,0 +1,27 @@
+from pathlib import Path
+ROOT=Path(__file__).resolve().parents[1]
+path=ROOT/'bog-hishchnik-alert/index.html'
+html=path.read_text(encoding='utf-8')
+html=html.replace('<option value="2">От 2×</option><option value="5" selected>От 5×</option><option value="10">От 10×</option><option value="20">От 20×</option>', '<option value="1.5">От 1.5×</option><option value="2" selected>2x-ловля</option><option value="3">От 3×</option><option value="5">От 5×</option><option value="10">От 10×</option><option value="20">От 20×</option><option value="50">От 50×</option>')
+html=html.replace('CatBoost · LightGBM · логистическая модель.','CatBoost · LightGBM · XGBoost · логистическая модель.')
+html=html.replace('<p class="signal-note" id="mlEvaluation"></p>', '<p class="signal-note" id="mlEvaluation"></p><p class="signal-note" id="mlWalkForward"></p>')
+html=html.replace('<button id="mlExport">', '<button id="mlResume" hidden>Продолжить 2x-наблюдение</button><button id="mlExport">')
+html=html.replace("const API='https://xrniwkvfrtchtxjrwwgd.supabase.co/functions/v1/v0xff3-live';", "const API=window.BOG_RUNTIME?.api||'https://xrniwkvfrtchtxjrwwgd.supabase.co/functions/v1/v0xff3-live';")
+html=html.replace('<script src="ml-core.js"></script>','<script src="runtime-config.js"></script>\n<script src="ml-core.js"></script>',1)
+html=html.replace('let feedSequence=0;', 'let feedSequence=0;let retryUntil=0,retryErrors=0;')
+html=html.replace("function zone(){return Intl.DateTimeFormat().resolvedOptions().timeZone}", "function zone(){return 'Europe/Kyiv'}")
+html=html.replace("return t", "return t", 1)
+old="function localDay(t){const d=new Date(t);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}"
+html=html.replace(old,"function localDay(t){return window.BogML?window.BogML.dateKey(t):new Date(t).toISOString().slice(0,10)}")
+html=html.replace("toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit',second:'2-digit'})", "toLocaleTimeString('ru-RU',window.BogML?window.BogML.timeOptions({hour:'2-digit',minute:'2-digit',second:'2-digit'}):{hour:'2-digit',minute:'2-digit',second:'2-digit',timeZone:'Europe/Kiev'})")
+html=html.replace("toLocaleDateString('ru-RU')", "toLocaleDateString('ru-RU',{timeZone:'Europe/Kiev'})")
+html=html.replace("if(!response.ok)throw Error('HTTP '+response.status);", "if(!response.ok){const e=Error('HTTP '+response.status);e.status=response.status;const wait=response.headers.get('Retry-After');e.retryMs=wait?(Number.isFinite(Number(wait))?Number(wait)*1000:Date.parse(wait)-Date.now()):0;throw e;}")
+html=html.replace('if(syncPromise)return syncPromise;', 'if(syncPromise)return syncPromise;if(Date.now()<retryUntil)return Promise.resolve();')
+html=html.replace('lastPollAt=Date.now();online=true;', 'lastPollAt=Date.now();online=true;retryUntil=0;retryErrors=0;',1)
+html=html.replace("}catch(e){online=false;if(window.BogMLClient)", "}catch(e){online=false;retryErrors++;const wait=e.status===403?120000:e.status===429?Math.max(5000,e.retryMs||30000):Math.min(60000,1000*2**Math.min(retryErrors,6));retryUntil=Date.now()+Math.min(300000,wait);if(window.BogMLClient)")
+html=html.replace("$('updated').textContent='Ошибка: '+e.message;", "$('updated').textContent='Источник: '+e.message+' · повтор через '+Math.ceil((retryUntil-Date.now())/1000)+' с';")
+html=html.replace('AbortSignal.timeout(10000)', "(typeof AbortSignal.timeout==='function'?AbortSignal.timeout(10000):timeoutSignal(10000))")
+html=html.replace('async function page(limit,offset=0)', "function timeoutSignal(ms){const c=new AbortController();setTimeout(()=>c.abort(),ms);return c.signal}\nasync function page(limit,offset=0)")
+path.write_text(html,encoding='utf-8');(path.parent/'FULL_HTML.txt').write_text(html,encoding='utf-8')
+(path.parent/'runtime-config.js').write_text("// Public deployment uses the original Supabase source. The optional local server replaces this file.\nwindow.BOG_RUNTIME=window.BOG_RUNTIME||{};\n",encoding='utf-8')
+print('2x-first UI, Kyiv time, retries and Safari fallback added')
