@@ -1,0 +1,22 @@
+name: Verify classic PC LIVE
+on:
+  push:
+    branches: [classic-pc-live-20261006]
+    paths:
+      - bog-hishchnik-alert/index.html
+      - bog-hishchnik-alert/pc-live.js
+      - tests/pc-live.test.cjs
+      - .github/workflows/classic-pc-live-checks.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --check bog-hishchnik-alert/pc-live.js
+      - run: TZ=Europe/Kyiv node tests/pc-live.test.cjs
