@@ -22,7 +22,7 @@
     rounds: load(STORE.rounds, []),
     predictions: load(STORE.predictions, []),
     settings: Object.assign({
-      auto: false,
+      auto: true,
       geminiKey: '',
       role: 'Ты аналитик LuckyJet. Объясняй расчёт кратко, по-русски, без обещаний гарантированного результата.',
       knowledge: 'Используй только переданные коэффициенты и статистику. Не выдумывай будущий исход.'
@@ -163,7 +163,7 @@
     state.predictions=state.predictions.slice(0,50);
     save(STORE.predictions,state.predictions);
     renderPrediction(p);
-    setMessage('Статистический прогноз сформирован. Это не гарантированный будущий результат.','ok');
+    setMessage('Статистическая оценка сформирована по завершённым раундам. Будущий серверный результат неизвестен.','ok');
     return p;
   }
 
@@ -225,23 +225,23 @@
     <div class="ljba-stat"><small>Оценка</small><b id="ljbaConf">—</b></div>
   </div>
   <div id="ljbaPrediction">
-    <div style="font-size:11px;opacity:.62;font-weight:900;letter-spacing:1px">РАСЧЁТНЫЙ СЛЕДУЮЩИЙ КОЭФФИЦИЕНТ</div>
+    <div style="font-size:11px;opacity:.62;font-weight:900;letter-spacing:1px">СТАТИСТИЧЕСКАЯ ОЦЕНКА ПО ИСТОРИИ</div>
     <div class="ljba-target" id="ljbaTarget">—</div>
     <div class="ljba-range" id="ljbaRange">Сначала собираю завершённые раунды</div>
     <div class="ljba-score" id="ljbaStats"></div>
   </div>
   <div id="ljbaRounds"></div>
   <div class="ljba-actions">
-    <button type="button" id="ljbaPredict">ПРОГНОЗ AI</button>
+    <button type="button" id="ljbaPredict">АНАЛИЗ AI</button>
     <button type="button" id="ljbaAuto" class="ljba-auto">АВТО: ВЫКЛ</button>
   </div>
   <div id="ljbaMessage">Долгое нажатие двумя пальцами в любом месте страницы снова открывает этот экран.</div>
   <details class="ljba-details">
     <summary>BeeAI • настройки ИИ</summary>
-    <div class="ljba-field"><label>Gemini API key (необязательно, хранится только в этом браузере)</label><input id="ljbaKey" type="password" autocomplete="off" placeholder="AIza…"></div>
+    <div class="ljba-field"><label>AI API key (хранится только в этом браузере)</label><input id="ljbaKey" type="password" autocomplete="off" placeholder="AIza…"></div>
     <div class="ljba-field"><label>Роль и стиль ИИ</label><textarea id="ljbaRole"></textarea></div>
     <div class="ljba-field"><label>База знаний</label><textarea id="ljbaKnowledge"></textarea></div>
-    <button type="button" id="ljbaAskGemini">ОБЪЯСНИТЬ ПРОГНОЗ ЧЕРЕЗ GEMINI</button>
+    <button type="button" id="ljbaAskGemini">AI АНАЛИЗ ИСТОРИИ</button>
     <div class="ljba-aianswer" id="ljbaAiAnswer" style="display:none"></div>
   </details>
   <div style="margin-top:12px;font-size:9px;opacity:.45;text-align:center">История коэффициентов не позволяет достоверно знать будущий серверный результат. Показана статистическая оценка.</div>
@@ -291,15 +291,15 @@
   async function askGemini(){
     const key=state.settings.geminiKey;
     const out=document.getElementById('ljbaAiAnswer');
-    if(!key){ setMessage('Добавь свой Gemini API key в настройках BeeAI.','warn'); return; }
+    if(!key){ setMessage('Добавь AI API key в настройках.','warn'); return; }
     const a=state.predictions[0]||createPrediction('gemini');
     if(!a) return;
     if(state.aiBusy)return; state.aiBusy=true;
     const btn=document.getElementById('ljbaAskGemini'); if(btn)btn.disabled=true;
-    if(out){out.style.display='block';out.textContent='Gemini анализирует статистику…';}
+    if(out){out.style.display='block';out.textContent='AI анализирует историю…';}
     try{
       const recent=state.rounds.slice(-20).map(r=>r.coef.toFixed(2)+'x').join(', ');
-      const prompt='Последние коэффициенты LuckyJet: '+recent+'\nРасчёт модели: '+a.target.toFixed(2)+'x, ориентир '+a.low.toFixed(2)+'–'+a.high.toFixed(2)+'x, оценка стабильности '+a.score+'/100.\n'+(state.settings.knowledge||'')+'\nОбъясни в 3–5 коротких предложениях, почему статистическая модель дала такой ориентир. Не утверждай, что будущий исход известен.';
+      const prompt='Последние коэффициенты LuckyJet: '+recent+'\nРасчёт модели: '+a.target.toFixed(2)+'x, ориентир '+a.low.toFixed(2)+'–'+a.high.toFixed(2)+'x, оценка стабильности '+a.score+'/100.\n'+(state.settings.knowledge||'')+'\nОбъясни в 3–5 коротких предложениях текущие тенденции, волатильность и статистический ориентир по истории. Не утверждай, что будущий исход известен и не давай команды на ставку.';
       const r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key='+encodeURIComponent(key),{
         method:'POST',headers:{'content-type':'application/json'},
         body:JSON.stringify({system_instruction:{parts:[{text:state.settings.role}]},contents:[{role:'user',parts:[{text:prompt}]}]})
@@ -308,7 +308,7 @@
       const data=await r.json();
       const text=data?.candidates?.[0]?.content?.parts?.map(x=>x.text||'').join('\n').trim()||'Нет ответа.';
       if(out)out.textContent=text;
-    }catch(e){ if(out)out.textContent='Ошибка Gemini: '+(e?.message||e); }
+    }catch(e){ if(out)out.textContent='Ошибка AI: '+(e?.message||e); }
     finally{state.aiBusy=false;if(btn)btn.disabled=false}
   }
 
