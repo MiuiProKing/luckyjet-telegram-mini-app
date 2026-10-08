@@ -1,9 +1,10 @@
 const LJ_API="https://crash-gateway-grm-cr.100hp.app/history";
 const LJ_CUSTOMER_ID="077dee8d-c923-4c02-9bee-757573662e69";
+const LJ_DEFAULT_SESSION_ID="ceab7738-1e49-4ed1-8d92-751b22e958cd";
 const MODE=(document.body.dataset.mode||"predictor").toLowerCase();
 let rounds=[],seen=new Set(),newestId=null,pending=null,wins=0,losses=0;
 const $=id=>document.getElementById(id);
-function sid(){let s=localStorage.getItem("LJ_SESSION_ID")||"";if(!s){s=(prompt("Введите LuckyJet session-id для LIVE подключения:")||"").trim();if(s)localStorage.setItem("LJ_SESSION_ID",s)}return s}
+function sid(){return (localStorage.getItem("LJ_SESSION_ID")||LJ_DEFAULT_SESSION_ID).trim()}
 function resetSid(){localStorage.removeItem("LJ_SESSION_ID");location.reload()}
 function norm(x){if(!x||typeof x!=="object")return null;let c=Number(x.topCoefficient);if(!Number.isFinite(c)||c<=0){const a=Array.isArray(x.finalValues)?x.finalValues.map(Number).filter(v=>Number.isFinite(v)&&v>0):[];if(a.length)c=a[a.length-1]}if(!Number.isFinite(c)||c<=0)return null;if(c===1)c=1.01;c=Math.round(c*100)/100;return{id:String(x.id||x.roundId||x.round_id||((x.hash||"round")+":"+c)),c}}
 function status(t,ok){$("apiBox").className="status "+(ok?"ok":"bad");$("apiText").textContent=t}
