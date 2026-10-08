@@ -27,9 +27,9 @@ jobs:
           import gzip
 
           version = "20260823-2"
-          lucky_api = "https://crash-gateway-grm-cr.100hp.app/state"
+          lucky_api = "https://crash-gateway-grm-cr.100hp.app/history"
           lucky_customer = "077dee8d-c923-4c02-9bee-757573662e69"
-          lucky_session = "783ee79a-dafc-479e-bf22-834336380cdf"
+          lucky_session = "ceab7738-1e49-4ed1-8d92-751b22e958cd"
 
           global_modules = [
               "app-config.js",
@@ -53,7 +53,7 @@ jobs:
                   return s
               if not any(token in lower for token in ("stopcoefficients", "currentcoefficients", "fetchstopcoefficient", "crash-gateway")):
                   return s
-              s = re.sub(r'https://crash-gateway[^\s"\'`<>]+/state', lucky_api, s, flags=re.I)
+              s = re.sub(r'https://crash-gateway[^\s"\'`<>]+/(?:state|history)', lucky_api, s, flags=re.I)
               s = re.sub(r'(["\']customer-id["\']\s*:\s*)["\'][^"\']*["\']', lambda m: m.group(1) + '"' + lucky_customer + '"', s, flags=re.I)
               s = re.sub(r'(["\']session-id["\']\s*:\s*)["\'][^"\']*["\']', lambda m: m.group(1) + '"' + lucky_session + '"', s, flags=re.I)
               return s
@@ -79,8 +79,16 @@ jobs:
                   continue
 
               s = p.read_text(encoding='utf-8')
-              if p.name != 'beta-classic.html':
-                  s = sync_luckyjet_connection(s)
+              s = sync_luckyjet_connection(s)
+              if p.name == 'beta-classic.html':
+                  s = s.replace(
+                      '        return data.stopCoefficients?.[0] ?? null;',
+                      '        const row = Array.isArray(data) ? data[0] : (Array.isArray(data?.history) ? data.history[0] : data);\n'
+                      '        if (!row) return null;\n'
+                      '        let value = row.coef ?? row.crash ?? row.value ?? row.topCoefficient ?? row.multiplier ?? row.coefficient;\n'
+                      '        if (value == null && Array.isArray(row.finalValues) && row.finalValues.length) value = row.finalValues[0];\n'
+                      '        return value ?? null;'
+                  )
 
               if p.name == 'index.html':
                   s = re.sub(r'<script src="telegram\.js(?:\?v=[^"]*)?"></script>', f'<script src="telegram.js?v={version}"></script>', s, flags=re.I)
