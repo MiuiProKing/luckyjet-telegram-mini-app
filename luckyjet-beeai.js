@@ -196,6 +196,12 @@
 .ljba-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}.ljba-stat{background:#111824;border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:10px;text-align:center}.ljba-stat small{display:block;font-size:10px;opacity:.55}.ljba-stat b{display:block;margin-top:4px;font-size:16px}
 #ljbaPrediction{margin-top:12px;padding:16px;border-radius:20px;background:radial-gradient(circle at 50% 0,rgba(99,102,241,.28),transparent 55%),#101624;border:1px solid rgba(129,140,248,.24);text-align:center}.ljba-target{font-size:42px;font-weight:1000;color:#86efac;text-shadow:0 0 20px rgba(34,197,94,.2)}.ljba-range{font-size:12px;opacity:.7;margin-top:2px}.ljba-score{margin-top:8px;font-size:13px;font-weight:900}
 #ljbaRounds{display:flex;gap:6px;overflow-x:auto;margin-top:12px;padding-bottom:4px}.ljba-chip{flex:0 0 auto;padding:7px 9px;border-radius:10px;background:#151d2b;border:1px solid rgba(255,255,255,.08);font-size:11px;font-weight:900}.ljba-chip.hi{color:#fde68a}.ljba-chip.lo{color:#fda4af}
+.ljba-keybox{margin-top:12px;padding:12px;border-radius:16px;background:#111824;border:1px solid rgba(129,140,248,.22)}
+.ljba-keybox label{display:block;font-size:11px;font-weight:900;margin-bottom:7px}
+.ljba-keyrow{display:grid;grid-template-columns:1fr auto;gap:8px}
+.ljba-keyrow input{min-width:0;background:#0b1018;color:#fff;border:1px solid rgba(255,255,255,.14);border-radius:12px;padding:11px;font:inherit}
+#ljbaSaveKey{width:auto!important;height:42px!important;padding:0 14px!important;border-radius:12px!important}
+.ljba-keyhint{font-size:10px;opacity:.58;margin-top:6px}
 .ljba-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}.ljba-actions button{width:100%!important;height:46px!important;border-radius:14px!important}.ljba-auto.on{background:linear-gradient(135deg,#10b981,#047857)!important}
 #ljbaMessage{font-size:11px;line-height:1.4;opacity:.78;margin-top:10px;min-height:16px}.ljba-warn{color:#fbbf24}.ljba-ok{color:#86efac}
 .ljba-details{margin-top:14px;border-top:1px solid rgba(255,255,255,.09);padding-top:12px}.ljba-details summary{cursor:pointer;font-weight:900;font-size:13px}.ljba-field{margin-top:10px}.ljba-field label{display:block;font-size:10px;opacity:.62;margin-bottom:5px}.ljba-field input,.ljba-field textarea{width:100%;background:#111824;color:#fff;border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:10px;font:inherit}.ljba-field textarea{min-height:70px;resize:vertical}
@@ -231,6 +237,14 @@
     <div class="ljba-score" id="ljbaStats"></div>
   </div>
   <div id="ljbaRounds"></div>
+  <div class="ljba-keybox">
+    <label for="ljbaKeyTop">🔑 AI API KEY</label>
+    <div class="ljba-keyrow">
+      <input id="ljbaKeyTop" type="password" autocomplete="off" placeholder="Вставь ключ сюда">
+      <button id="ljbaSaveKey" type="button">СОХРАНИТЬ</button>
+    </div>
+    <div class="ljba-keyhint" id="ljbaKeyState">Ключ хранится только в этом браузере.</div>
+  </div>
   <div class="ljba-actions">
     <button type="button" id="ljbaPredict">АНАЛИЗ AI</button>
     <button type="button" id="ljbaAuto" class="ljba-auto">АВТО: ВЫКЛ</button>
@@ -238,7 +252,6 @@
   <div id="ljbaMessage">Долгое нажатие двумя пальцами в любом месте страницы снова открывает этот экран.</div>
   <details class="ljba-details">
     <summary>BeeAI • настройки ИИ</summary>
-    <div class="ljba-field"><label>AI API key (хранится только в этом браузере)</label><input id="ljbaKey" type="password" autocomplete="off" placeholder="AIza…"></div>
     <div class="ljba-field"><label>Роль и стиль ИИ</label><textarea id="ljbaRole"></textarea></div>
     <div class="ljba-field"><label>База знаний</label><textarea id="ljbaKnowledge"></textarea></div>
     <button type="button" id="ljbaAskGemini">AI АНАЛИЗ ИСТОРИИ</button>
@@ -255,14 +268,18 @@
       state.settings.auto=!state.settings.auto; save(STORE.settings,state.settings); renderAuto();
       setMessage(state.settings.auto?'Автоанализ включён: новый расчёт после каждого нового завершённого раунда.':'Автоанализ выключен.','ok');
     };
-    const key=document.getElementById('ljbaKey'),role=document.getElementById('ljbaRole'),knowledge=document.getElementById('ljbaKnowledge');
-    key.value=state.settings.geminiKey||''; role.value=state.settings.role||''; knowledge.value=state.settings.knowledge||'';
+    const keyTop=document.getElementById('ljbaKeyTop'),role=document.getElementById('ljbaRole'),knowledge=document.getElementById('ljbaKnowledge');
+    const keyState=document.getElementById('ljbaKeyState');
+    keyTop.value=state.settings.geminiKey||''; role.value=state.settings.role||''; knowledge.value=state.settings.knowledge||'';
     const persistSettings=()=>{
-      state.settings.geminiKey=key.value.trim(); state.settings.role=role.value; state.settings.knowledge=knowledge.value;
+      state.settings.geminiKey=keyTop.value.trim(); state.settings.role=role.value; state.settings.knowledge=knowledge.value;
       save(STORE.settings,state.settings);
+      if(keyState) keyState.textContent=state.settings.geminiKey?'✅ Ключ сохранён в этом браузере.':'Ключ не сохранён.';
     };
-    key.addEventListener('change',persistSettings); role.addEventListener('change',persistSettings); knowledge.addEventListener('change',persistSettings);
+    document.getElementById('ljbaSaveKey').onclick=()=>{persistSettings();setMessage(state.settings.geminiKey?'AI ключ сохранён.':'Вставь ключ и нажми СОХРАНИТЬ.',state.settings.geminiKey?'ok':'warn')};
+    keyTop.addEventListener('change',persistSettings); role.addEventListener('change',persistSettings); knowledge.addEventListener('change',persistSettings);
     document.getElementById('ljbaAskGemini').onclick=async()=>{ persistSettings(); await askGemini(); };
+    if(keyState) keyState.textContent=state.settings.geminiKey?'✅ Ключ уже сохранён в этом браузере.':'Ключ не сохранён.';
     renderAuto(); renderRounds();
   }
 
