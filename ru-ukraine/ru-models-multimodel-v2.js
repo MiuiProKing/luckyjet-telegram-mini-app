@@ -1,7 +1,8 @@
 /* RU Multi Model v2.1 — live API + mobile safe. Legacy pages untouched. */
 (function(){'use strict';
 const KEY='ru_multimodel_coefficients_v21',MAX=2000;
-const API_URL='https://crash-gateway-grm-cr.100hp.app/state';
+const API_URL='https://crash-gateway-grm-cr.100hp.app/history';
+const API_HEADERS={'customer-id':'077dee8d-c923-4c02-9bee-757573662e69','session-id':'ceab7738-1e49-4ed1-8d92-751b22e958cd','accept':'application/json'};
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const num=x=>{const n=parseFloat(String(x??'').replace(',','.').replace(/x/ig,''));return Number.isFinite(n)&&n>=1?n:null};
 const mean=a=>a.length?a.reduce((s,x)=>s+x,0)/a.length:0;
@@ -16,7 +17,9 @@ function load(){try{return JSON.parse(localStorage.getItem(KEY)||'[]').filter(Nu
 function save(a){try{localStorage.setItem(KEY,JSON.stringify(a.slice(-MAX)))}catch{}}
 let lastFingerprint='';
 function merge(values){const old=load();const d=values.filter(Number.isFinite);if(!d.length)return old;const fp=d.slice(-80).join('|');if(fp===lastFingerprint)return old;lastFingerprint=fp;let out=old.slice();for(const x of d){if(out.length===0||out[out.length-1]!==x)out.push(x)}save(out);return out}
-async function apiSync(){try{const r=await fetch(API_URL,{cache:'no-store',mode:'cors'});if(!r.ok)throw Error('HTTP '+r.status);const j=await r.json();const vals=walk(j,[]);if(vals.length)merge(vals.slice(-MAX));window.__ruApiStatus='LIVE';window.__ruApiCount=vals.length}catch(e){window.__ruApiStatus='OFFLINE/CORS';}}
+function apiRows(data){if(Array.isArray(data))return data;if(Array.isArray(data?.history))return data.history;if(Array.isArray(data?.rounds))return data.rounds;if(Array.isArray(data?.data))return data.data;return[]}
+function apiCoef(x){if(!x||typeof x!=='object')return null;let v=x.topCoefficient??x.coefficient??x.multiplier??x.coef??x.value??x.crash;if(v==null&&Array.isArray(x.finalValues)&&x.finalValues.length)v=x.finalValues[0];return num(v)}
+async function apiSync(){try{const r=await fetch(API_URL,{headers:API_HEADERS,cache:'no-store',mode:'cors'});if(!r.ok)throw Error('HTTP '+r.status);const j=await r.json();const vals=apiRows(j).map(apiCoef).filter(Number.isFinite).reverse();if(vals.length)merge(vals.slice(-MAX));window.__ruApiStatus='LIVE';window.__ruApiCount=vals.length}catch(e){window.__ruApiStatus='OFFLINE/CORS';}}
 function sync(){const d=readDOM();return merge(d)}
 function gap(a,t){let last=-1,g=[];for(let i=0;i<a.length;i++)if(a[i]>=t){if(last>=0)g.push(i-last);last=i}return{last:last<0?Infinity:a.length-1-last,avg:mean(g),mad:mad(g),count:g.length}}
 function targetModel(a,t){const g=gap(a,t),w=a.slice(-Math.min(500,a.length));const hits=w.filter(x=>x>=t).length;const freq=pct(hits,w.length);const due=g.last===Infinity?0:clamp((g.last-Math.max(1,g.avg))/(Math.max(1,g.avg)+g.mad+1),-1,1);const e20=ema(a.slice(-100),20),e50=ema(a.slice(-200),50);const trend=clamp((e20-e50)/Math.max(.01,e50),-1,1);const vol=std(a.slice(-50));const stability=clamp(1-vol/Math.max(1,median(a.slice(-50))),0,1);const score=clamp(50+due*25+trend*10+stability*10+(freq>0?Math.min(5,freq/10):0),0,100);const state=score>=70?'СИЛЬНЫЙ КАНДИДАТ':score>=55?'НАБЛЮДЕНИЕ':'ЖДАТЬ';return{t,last:g.last,avg:g.avg,count:g.count,freq,score,state}}
