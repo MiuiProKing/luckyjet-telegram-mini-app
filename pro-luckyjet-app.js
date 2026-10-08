@@ -353,7 +353,7 @@ function vipPrediction(){
   analyzeAlert();
   if(autoMode&&!pending)generate();
  }
- window.addEventListener('liveCoefficient',event=>applyDirectLive(event.detail));
+ if(window&&typeof window.addEventListener==='function')window.addEventListener('liveCoefficient',event=>applyDirectLive(event.detail));
   document.addEventListener('visibilitychange',()=>{if(!document.hidden){checkLatest();tick()}});
  restore();selectMode(mode);if(pending)showSignal(pending);render();status('Загружаю историю…');
  refreshHistory();setInterval(checkLatest,2000);setInterval(refreshHistory,30000);setInterval(tick,1000);setInterval(analyzeAlert,8000);
