@@ -18,5 +18,5 @@ check('Probability reports are finite and guarded; unsupported models fail clear
 const client=await fs.readFile(new URL('ml-client.js',dir),'utf8');new vm.Script(client);
 const html=await fs.readFile(new URL('index.html',dir),'utf8');
 const full=await fs.readFile(new URL('FULL_HTML.txt',dir),'utf8');
-check('New page loads real model artifacts and original one-second data transport',()=>{assert(html.includes('src="ml-core.js"'));assert(html.includes('src="ml-client.js"'));assert(html.includes('POLL_MS=1000'));assert(html.includes('BogMLClient.onFeed'));assert(html.includes('id="mlBackfill"'));assert.equal(html,full)});
+check('Classic page keeps trained models and loads Supabase Realtime transport',()=>{assert(html.includes('src="ml-core.js"'));assert(html.includes('src="ml-client.js"'));assert(html.includes('POLL_MS=10000'));assert(html.includes('cloud-transport.js'));assert(html.includes('BogMLClient.onFeed'));assert(html.includes('id="mlBackfill"'));assert.equal(html,full)});
 console.log('PASS '+count+' ML checks');

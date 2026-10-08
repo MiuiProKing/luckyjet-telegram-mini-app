@@ -12,7 +12,7 @@ function transactionDone(tx){return new Promise((resolve,reject)=>{tx.oncomplete
 function requestValue(request){return new Promise((resolve,reject)=>{request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error)})}
 async function openStorage(){
  if(!window.indexedDB)throw Error('IndexedDB недоступна в этом браузере');
- const request=indexedDB.open('bog_hishchnik_ml_v1',1);
+ const request=indexedDB.open('bog_hishchnik_classic_cloud_20261009',1);
  request.onupgradeneeded=()=>{const db=request.result;const rounds=db.createObjectStore('rounds',{keyPath:'id'});rounds.createIndex('received','local_received_at');db.createObjectStore('predictions',{keyPath:'id'})};
  database=await requestValue(request);database.onversionchange=()=>{database.close();database=null;storageError='Хранилище обновлено в другой вкладке. Перезагрузите страницу.';render()};
  const keys=await requestValue(database.transaction('rounds').objectStore('rounds').getAllKeys());known=new Set(keys);storedCount=keys.length;
@@ -74,7 +74,7 @@ function onError(){return enqueue(async()=>{if(feed){feed.online=false;feed.fres
 function render(){
  if(!$('mlState'))return;
  $('mlStorage').textContent=storageError?'Не сохраняется: '+storageError:'Сохранено '+storedCount.toLocaleString('ru-RU')+' уникальных раундов · предел 100 000 · только в этом браузере';
- $('mlSource').textContent=(window.BOG_RUNTIME?.sqlite?'Локальный SQLite + ':'')+(feed?.online?'HTTP каждую секунду · '+(feed.fresh?'данные свежие':'последний раунд устарел'):'Ожидание подключения истории');
+ $('mlSource').textContent=(window.BOG_RUNTIME?.sqlite?'Локальный SQLite + ':'')+(feed?.online?'Supabase Realtime · '+(feed.fresh?'данные свежие':'последний раунд устарел'):'Ожидание подключения истории');
  if(artifactError){$('mlState').textContent='Модели не загружены: '+artifactError;return}
  if(!artifact){$('mlState').textContent='Загружаются обученные модели…';return}
  const task=chosenTask();if(!task)return;

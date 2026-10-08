@@ -1,0 +1,23 @@
+name: Classic Supabase checks
+on:
+  push:
+    branches: [classic-supabase-live-20261009]
+permissions:
+  contents: read
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: node tests/luckyjet-cloud-protocol.cjs
+      - run: node tests/luckyjet-cloud-transport.cjs
+      - run: node --check bog-hishchnik-alert/cloud-transport.js
+      - run: node --check bog-hishchnik-alert/ml-client.js
+      - run: node --check supabase/functions/luckyjet-collector/index.ts
+      - run: node tests/bog-hishchnik-audit.test.mjs
+        env:
+          TZ: Europe/Kyiv
+      - run: node tests/bog-hishchnik-ml.test.mjs
