@@ -353,7 +353,28 @@ function vipPrediction(){
   analyzeAlert();
   if(autoMode&&!pending)generate();
  }
- if(window&&typeof window.addEventListener==='function')window.addEventListener('liveCoefficient',event=>applyDirectLive(event.detail));
+ function attachDirectFeed(){
+  try{
+   if(!document||typeof document.createElement!=='function'||!document.body||typeof document.body.appendChild!=='function')return;
+   if(document.getElementById&&document.getElementById('proDirectFeedFrame'))return;
+   const frame=document.createElement('iframe');
+   frame.id='proDirectFeedFrame';
+   frame.src='pro-luckyjet-feed.html?v=20261008-1';
+   frame.setAttribute('aria-hidden','true');
+   frame.tabIndex=-1;
+   frame.style.cssText='position:fixed;width:1px;height:1px;opacity:0;pointer-events:none;border:0;left:-9999px;top:-9999px';
+   frame.addEventListener('load',()=>{
+    try{
+     if(frame.contentWindow&&typeof frame.contentWindow.addEventListener==='function'){
+      frame.contentWindow.addEventListener('liveCoefficient',event=>applyDirectLive(event.detail));
+     }
+    }catch(_){}
+   });
+   document.body.appendChild(frame);
+  }catch(_){}
+ }
+  if(window&&typeof window.addEventListener==='function')window.addEventListener('liveCoefficient',event=>applyDirectLive(event.detail));
+ attachDirectFeed();
   document.addEventListener('visibilitychange',()=>{if(!document.hidden){checkLatest();tick()}});
  restore();selectMode(mode);if(pending)showSignal(pending);render();status('Загружаю историю…');
  refreshHistory();setInterval(checkLatest,2000);setInterval(refreshHistory,30000);setInterval(tick,1000);setInterval(analyzeAlert,8000);
