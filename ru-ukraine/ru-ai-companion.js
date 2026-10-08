@@ -189,22 +189,30 @@
 
   function ensureHistoryUI(){
     const chips=document.getElementById('chipsContainer');
-    if(!chips||document.getElementById('ruAiHistoryTabs'))return;
+    if(!chips)return;
     const body=chips.parentElement;
     if(!body)return;
 
-    const tabs=document.createElement('div');
-    tabs.id='ruAiHistoryTabs';
-    tabs.className='ruai-history-tabs';
-    tabs.innerHTML='<button type="button" class="ruai-history-tab active" id="ruHistMainTab">ОСНОВНАЯ</button><button type="button" class="ruai-history-tab" id="ruHistAiTab">🤖 AI ИСТОРИЯ</button>';
-    body.insertBefore(tabs,chips);
+    let tabs=document.getElementById('ruAiHistoryTabs');
+    if(!tabs){
+      tabs=document.createElement('div');
+      tabs.id='ruAiHistoryTabs';
+      tabs.className='ruai-history-tabs';
+      tabs.innerHTML='<button type="button" class="ruai-history-tab active" id="ruHistMainTab">ОСНОВНАЯ</button><button type="button" class="ruai-history-tab" id="ruHistAiTab">🤖 AI ИСТОРИЯ</button>';
+      body.insertBefore(tabs,chips);
+    }
 
-    const ai=document.createElement('div');
-    ai.id='ruAiHistoryView';
-    body.insertBefore(ai,chips.nextSibling);
+    let ai=document.getElementById('ruAiHistoryView');
+    if(!ai){
+      ai=document.createElement('div');
+      ai.id='ruAiHistoryView';
+      body.insertBefore(ai,chips.nextSibling);
+    }
 
-    document.getElementById('ruHistMainTab').onclick=()=>selectHistoryTab('main');
-    document.getElementById('ruHistAiTab').onclick=()=>selectHistoryTab('ai');
+    const mainTab=document.getElementById('ruHistMainTab');
+    const aiTab=document.getElementById('ruHistAiTab');
+    if(mainTab)mainTab.onclick=()=>selectHistoryTab('main');
+    if(aiTab)aiTab.onclick=()=>selectHistoryTab('ai');
   }
 
   function selectHistoryTab(which){
