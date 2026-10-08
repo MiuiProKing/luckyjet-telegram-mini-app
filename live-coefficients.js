@@ -2,10 +2,10 @@
 (() => {
   'use strict';
 
-  const LUCKY_STATE_URL = 'https://crash-gateway-grm-cr.100hp.app/state';
+  const LUCKY_HISTORY_URL = 'https://crash-gateway-grm-cr.100hp.app/history';
   const ROCKET_HISTORY_URL = 'https://crash-gateway-grm-cr.100hp.app/history';
   const CUSTOMER_ID = '077dee8d-c923-4c02-9bee-757573662e69';
-  const LUCKY_SESSION = '783ee79a-dafc-479e-bf22-834336380cdf';
+  const LUCKY_SESSION = 'ceab7738-1e49-4ed1-8d92-751b22e958cd';
   const ROCKET_SESSION = '16273824-a9b4-4215-b182-7667d16483ca';
   const INTERVAL = 1800;
   const MAX_HISTORY = 200;
@@ -63,9 +63,20 @@
     return values.length ? values[values.length - 1] : null;
   }
 
+  function luckyRow(payload) {
+    if (Array.isArray(payload)) return payload[0] || null;
+    if (Array.isArray(payload?.history)) return payload.history[0] || null;
+    if (Array.isArray(payload?.rounds)) return payload.rounds[0] || null;
+    return payload && typeof payload === 'object' ? payload : null;
+  }
+
   function parseLucky(payload) {
-    const values = extract(payload, []);
-    return values.length ? values[values.length - 1] : null;
+    const row = luckyRow(payload);
+    if (!row) return null;
+    let value = row.topCoefficient ?? row.coefficient ?? row.multiplier ?? row.coef ?? row.value ?? row.crash;
+    if (value == null && Array.isArray(row.finalValues) && row.finalValues.length) value = row.finalValues[0];
+    const n = num(value);
+    return n != null && n >= 1 ? (n === 1 ? 1.01 : n) : null;
   }
 
   function historyRead() {
@@ -94,7 +105,7 @@
 
   async function poll() {
     const rocket = isRocket();
-    const url = rocket ? ROCKET_HISTORY_URL : LUCKY_STATE_URL;
+    const url = rocket ? ROCKET_HISTORY_URL : LUCKY_HISTORY_URL;
     const session = rocket ? ROCKET_SESSION : LUCKY_SESSION;
 
     try {
@@ -109,9 +120,10 @@
       if (coef == null) return;
 
       const h = historyRead();
+      const keyRow = rocket ? payload : (luckyRow(payload) || {});
       const key = String(
-        payload?.roundId ?? payload?.round_id ?? payload?.id ??
-        payload?.currentRoundId ?? payload?.timestamp ?? payload?.time ?? ''
+        keyRow?.roundId ?? keyRow?.round_id ?? keyRow?.id ??
+        keyRow?.currentRoundId ?? keyRow?.hash ?? keyRow?.timestamp ?? keyRow?.time ?? ''
       );
       const last = h[h.length - 1];
 
