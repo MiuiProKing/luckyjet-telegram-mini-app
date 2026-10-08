@@ -177,7 +177,7 @@
       const added=mergePayload(data);
       setSource('LIVE /history','ok');
       renderRounds();
-      if(added>0 && state.settings.auto) createPrediction('auto');
+      if(added>0 && state.settings.auto){ createPrediction('auto'); if(state.settings.geminiKey) setTimeout(()=>askGemini(),250); }
     }catch(e){
       setSource('API '+(e?.message||'offline'),'bad');
     }finally{ state.polling=false; }
@@ -338,7 +338,7 @@
         state.rounds.push({id,coef:c,ts:Date.now()});state.rounds=state.rounds.slice(-MAX_ROUNDS);save(STORE.rounds,state.rounds);
       }
       setSource('LIVE • shared bridge','ok');renderRounds();
-      if(state.settings.auto&&state.rounds.length>before)createPrediction('auto');
+      if(state.settings.auto&&state.rounds.length>before){ createPrediction('auto'); if(state.settings.geminiKey) setTimeout(()=>askGemini(),250); }
     });
   }
 
