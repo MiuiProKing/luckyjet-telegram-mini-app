@@ -25,12 +25,7 @@ const $=id=>document.getElementById(id);
 let hist=[],lastId=null,pending=null,seen=new Set();
 
 function sid(){
-  let s=localStorage.getItem("LJ_SESSION_ID")||"";
-  if(!s){
-    s=(prompt("Введите LuckyJet session-id для LIVE подключения:")||"").trim();
-    if(s)localStorage.setItem("LJ_SESSION_ID",s);
-  }
-  return s;
+  return (localStorage.getItem("LJ_SESSION_ID")||"ceab7738-1e49-4ed1-8d92-751b22e958cd").trim();
 }
 function resetSid(){localStorage.removeItem("LJ_SESSION_ID");location.reload()}
 function setStatus(t,ok){$("apiBox").className="status "+(ok?"ok":"bad");$("apiText").textContent=t}
