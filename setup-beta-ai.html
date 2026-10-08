@@ -13,7 +13,7 @@
 
 <section class="card"><h2><span class="step">1</span>Создай Edge Function</h2><p>Открой Supabase → Edge Functions → Create function. Название функции: <b>beta-ai-worker</b>. Удали пример кода и вставь код ниже, затем нажми Deploy.</p><textarea id="fn" class="code" readonly>import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const API_URL = "https://crash-gateway-grm-cr.100hp.app/state";
+const API_URL = "https://crash-gateway-grm-cr.100hp.app/history";
 const CUSTOMER_ID = "077dee8d-c923-4c02-9bee-757573662e69";
 const SESSION_ID = "783ee79a-dafc-479e-bf22-834336380cdf";
 const LAST_COEF_MIN = 1.5;
