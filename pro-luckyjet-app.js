@@ -4,7 +4,7 @@
  const MODEL_LIMIT=2000, FRESH_MS=180000, COVERAGE_MS=15000, GRACE_MS=15000;
  const KEY='pro_supabase_signals_v2', ENGINE=window.GodPreditor, $=id=>document.getElementById(id);
  let rounds=[],history=[],pending=null,mode='god',autoMode=false,online=false,initialized=false,total=0;
- let lastPollAt=0,syncPromise=null,activeBig=null,invalidRows=0,conflictingRows=0;
+ let lastPollAt=0,syncPromise=null,activeBig=null,invalidRows=0,conflictingRows=0,directLiveAt=0;
  let archiveRows=[],archiveOffset=0,archiveLoading=false,archiveDone=false;
  const coefficient=r=>ENGINE.numberValue(r?.coefficient??r?.topCoefficient??r?.multiplier);
  const millis=ENGINE.timeValue,sortMillis=r=>millis(r?.timestamp)||0;
@@ -224,8 +224,15 @@ function vipPrediction(){
     archiveRows=ENGINE.normalizeRounds([...archiveRows,...rounds]).rows.slice(0,10000);
     render();analyzeAlert();if(autoMode&&!pending)generate();
    }catch(error){
-    online=false;if(pending&&Date.now()>=pending.at&&Date.now()<=pending.at+pending.window+GRACE_MS)gap('Нет связи во время проверки');
-    status('История не обновилась: '+error.message,'ko');renderBadge();
+    const directOk=directLiveAt&&Date.now()-directLiveAt<12000;
+    if(directOk){
+     online=true;
+     status('DIRECT LIVE /history · резервная база: '+error.message,'');
+     renderBadge();
+    }else{
+     online=false;if(pending&&Date.now()>=pending.at&&Date.now()<=pending.at+pending.window+GRACE_MS)gap('Нет связи во время проверки');
+     status('История не обновилась: '+error.message,'ko');renderBadge();
+    }
    }finally{syncPromise=null}
   })();return syncPromise;
  }
@@ -313,22 +320,35 @@ function vipPrediction(){
  for(const kind of ['normal','vip','god'])$(kind+'Mode').onclick=()=>selectMode(kind);
  $('olderRounds').onclick=loadArchive;$('archiveDate').value=localDay(Date.now());$('archiveDate').onchange=renderArchive;
  function applyDirectLive(detail){
-  if(!detail||detail.game!=='lucky-jet'||!Number.isFinite(Number(detail.coef)))return;
+  if(!detail||detail.game!=='lucky-jet')return;
   const payload=detail.payload;
-  const raw=Array.isArray(payload)?payload[0]:
-   Array.isArray(payload?.history)?payload.history[0]:
-   Array.isArray(payload?.rounds)?payload.rounds[0]:
-   (payload&&typeof payload==='object'?payload:null);
-  const coef=Number(detail.coef);
-  const rawTime=raw&&(raw.timestamp??raw.round_timestamp??raw.played_at??raw.created_at??raw.createdAt??raw.time??raw.stateChangedAt??raw.endedAt??raw.ended_at??raw.updatedAt);
-  const exactTime=ENGINE.timeValue(rawTime);
-  const timestamp=exactTime??Date.now();
-  const id=String(raw&&(raw.id??raw.roundId??raw.round_id??raw.gameId??raw.game_id??raw.hash) || ('direct:'+timestamp+':'+coef));
-  const row={id,coefficient:coef,timestamp,estimated:exactTime==null};
-  const added=merge([row]);
-  pollSucceeded(Date.now());
+  const src=Array.isArray(payload)?payload:
+   Array.isArray(payload?.history)?payload.history:
+   Array.isArray(payload?.rounds)?payload.rounds:
+   Array.isArray(payload?.data)?payload.data:
+   (payload&&typeof payload==='object'?[payload]:[]);
+  const now=Date.now();
+  const incoming=src.map((raw,index)=>{
+   if(!raw||typeof raw!=='object')return null;
+   let value=raw.topCoefficient??raw.coefficient??raw.multiplier??raw.coef??raw.value??raw.crash;
+   if(value==null&&Array.isArray(raw.finalValues)&&raw.finalValues.length)value=raw.finalValues[0];
+   const coef=ENGINE.numberValue(value);
+   if(coef==null||coef<1)return null;
+   const rawTime=raw.timestamp??raw.round_timestamp??raw.played_at??raw.created_at??raw.createdAt??raw.time??raw.stateChangedAt??raw.endedAt??raw.ended_at??raw.updatedAt;
+   const exactTime=ENGINE.timeValue(rawTime);
+   const timestamp=exactTime??(now-index*12000);
+   const id=String(raw.id??raw.roundId??raw.round_id??raw.gameId??raw.game_id??raw.hash??('direct:'+timestamp+':'+coef+':'+index));
+   return {id,coefficient:coef,timestamp,estimated:exactTime==null};
+  }).filter(Boolean);
+  if(!incoming.length&&Number.isFinite(Number(detail.coef))){
+   incoming.push({id:'direct:'+now+':'+Number(detail.coef),coefficient:Number(detail.coef),timestamp:now,estimated:true});
+  }
+  if(!incoming.length)return;
+  const added=merge(incoming);
+  directLiveAt=Date.now();
+  pollSucceeded(directLiveAt);
   initialized=true;
-  processNew(added.length?added:[row]);
+  processNew(added);
   render();
   analyzeAlert();
   if(autoMode&&!pending)generate();
