@@ -358,6 +358,14 @@
     }
   }
 
+  function emitRuEvent(name, detail) {
+    try {
+      window.dispatchEvent(new CustomEvent('luckyjetru:' + name, { detail: detail || {} }));
+    } catch (error) {
+      // AI companion is optional; the main predictor must keep working without it.
+    }
+  }
+
   function saveActiveState() {
     if (!isCycleActive()) {
       storageRemove(ACTIVE_KEY);
@@ -1085,6 +1093,14 @@
     spin.classList.remove('ok', 'ko');
     updateMainButton();
     saveActiveState();
+    emitRuEvent('verification', {
+      target: currentPredicted,
+      confidence: currentConfidence,
+      signal: currentSignal,
+      startAt: scheduledStart,
+      displayAt: scheduledDisplayTime,
+      market: marketLevel
+    });
   }
 
   async function pollCoefficient() {
@@ -1120,6 +1136,12 @@
       pending.currentRound += 1;
       roundEl.textContent = pending.currentRound;
       saveActiveState();
+      emitRuEvent('round', {
+        coef: rounded,
+        round: pending.currentRound,
+        signature: latest.signature,
+        target: pending.predictedOdds
+      });
 
       if (rounded >= pending.predictedOdds) {
         finishResult(true);
@@ -1190,6 +1212,12 @@
       round: currentRound
     });
     renderHistory();
+    emitRuEvent('result', {
+      success: Boolean(success),
+      target: predicted,
+      round: currentRound,
+      finishedAt: Date.now()
+    });
     clearCycleState();
     if (autoMode) scheduleAuto(3000);
   }
@@ -1206,6 +1234,7 @@
     circle.classList.remove('verifying', 'ok', 'ko');
     spin.classList.remove('ok', 'ko');
     setStatus('Сигнал отменён. Можно получить новый', '');
+    emitRuEvent('cancel', { at: Date.now() });
   }
 
   async function generateSignal() {
@@ -1286,6 +1315,15 @@
         ''
       );
       saveActiveState();
+      emitRuEvent('signal', {
+        target: currentPredicted,
+        confidence: currentConfidence,
+        signal: currentSignal,
+        startAt: scheduledStart,
+        displayAt: scheduledDisplayTime,
+        market: marketLevel,
+        source: prediction.source || 'api'
+      });
       startCoefficientPolling();
       updateClockAndCountdown();
       return true;
@@ -1511,10 +1549,25 @@
     formatKyivTime: formatKyivTime,
     restoreActiveState: restoreActiveState,
     requestWakeLock: requestWakeLock,
-    disableWakeLock: disableWakeLock
+    disableWakeLock: disableWakeLock,
+    getRecentRows: fetchRecentCoefficientRows,
+    getState: function () {
+      return {
+        active: isCycleActive() || requestInFlight,
+        requestInFlight: requestInFlight,
+        verificationStarted: verificationStarted,
+        target: currentPredicted,
+        confidence: currentConfidence,
+        signal: currentSignal,
+        startAt: scheduledStart,
+        displayAt: scheduledDisplayTime,
+        market: marketLevel
+      };
+    }
   };
 })();
 </script>
 <script src="live-coefficients.js?v=20260912-2"></script>
+<script src="ru-ai-companion.js?v=20261008-1"></script>
 </body>
 </html>
