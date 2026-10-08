@@ -16,7 +16,7 @@ jobs:
       - run: node tests/luckyjet-cloud-transport.cjs
       - run: node --check bog-hishchnik-alert/cloud-transport.js
       - run: node --check bog-hishchnik-alert/ml-client.js
-      - run: node --check supabase/functions/luckyjet-collector/index.ts
+      - run: node --experimental-vm-modules tests/luckyjet-cloud-syntax.mjs
       - run: node tests/bog-hishchnik-audit.test.mjs
         env:
           TZ: Europe/Kyiv
