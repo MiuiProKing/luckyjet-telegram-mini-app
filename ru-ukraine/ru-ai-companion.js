@@ -117,6 +117,21 @@
 .ruai-reason{font-size:10px;opacity:.66;margin-top:8px;line-height:1.35}
 .ruai-key{margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.08)}.ruai-key label{display:block;font-size:10px;font-weight:900;margin-bottom:5px}.ruai-keyrow{display:grid;grid-template-columns:1fr auto;gap:6px}.ruai-key input{min-width:0;background:#020617;color:#fff;border:1px solid rgba(255,255,255,.14);border-radius:10px;padding:9px}.ruai-key button{width:auto!important;height:38px!important;padding:0 10px!important;border-radius:10px!important}.ruai-keyhint{font-size:9px;opacity:.55;margin-top:5px}
 .ruai-counts{display:flex;gap:12px;margin-top:8px;font-size:10px;opacity:.8}
+#ruAiOpenHistory{width:100%!important;height:38px!important;margin-top:8px!important;border-radius:10px!important;background:#0b1220!important;border:1px solid #2563eb!important}
+.ruai-history-tabs{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:10px}
+.ruai-history-tab{width:100%!important;height:38px!important;border-radius:10px!important;background:#111827!important;border:1px solid rgba(255,255,255,.12)!important;font-size:10px!important}
+.ruai-history-tab.active{background:#1d4ed8!important;border-color:#60a5fa!important}
+#ruAiHistoryView{display:none}
+.ruai-hstats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:8px}
+.ruai-hstat{padding:8px 5px;border-radius:10px;background:#111827;border:1px solid rgba(255,255,255,.08);text-align:center}
+.ruai-hstat small{display:block;font-size:9px;opacity:.58}.ruai-hstat b{display:block;font-size:15px;margin-top:2px}
+.ruai-round-dist{font-size:10px;line-height:1.5;padding:8px 9px;margin-bottom:8px;border-radius:10px;background:#0f172a;border:1px solid rgba(255,255,255,.08)}
+.ruai-history-list{display:grid;gap:8px}
+.ruai-hitem{padding:10px;border-radius:12px;background:#111827;border:1px solid rgba(255,255,255,.10)}
+.ruai-hitem.ok{border-color:rgba(16,185,129,.35)}.ruai-hitem.ko{border-color:rgba(239,68,68,.35)}
+.ruai-htop{display:flex;justify-content:space-between;gap:8px;font-size:11px;font-weight:1000}
+.ruai-hmain{margin-top:6px;font-size:12px;font-weight:900}.ruai-hsub{margin-top:4px;font-size:10px;opacity:.72;line-height:1.45}
+.ruai-mini-rounds{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}.ruai-mini{padding:5px 7px;border-radius:8px;background:#0b1220;border:1px solid rgba(255,255,255,.08);font-size:9px;font-weight:900}.ruai-mini.hit{background:#064e3b}.ruai-empty{opacity:.65;font-size:11px;padding:10px 2px}
 @media(max-width:380px){.ruai-main{grid-template-columns:1fr 1fr 1fr}.ruai-cell b{font-size:13px}#ruAiTarget{font-size:18px}}
 `;
     document.head.appendChild(s);
@@ -150,6 +165,7 @@
         <div id="ruAiKeyHint" class="ruai-keyhint">Ключ хранится только на этом устройстве в браузере.</div>
       </div>
       <div class="ruai-counts"><span>✅ AI: <b id="ruAiOk">0</b></span><span>❌ AI: <b id="ruAiKo">0</b></span></div>
+      <button id="ruAiOpenHistory" type="button">📊 ИСТОРИЯ AI</button>
     `;
     const recent=document.querySelector('.recent-feed');
     if(recent&&recent.parentNode)recent.parentNode.insertBefore(box,recent.nextSibling);
@@ -166,7 +182,94 @@
       if(!state.enabled){clearVerify();state.cycle=null;setStatus('AI выключен.','wait');}
       else setStatus('AI включён. Жду условия основной логики.','wait');
     };
-    renderToggle();renderKey();renderCounts();resetRounds();
+    document.getElementById('ruAiOpenHistory').onclick=()=>openAiHistory();
+    ensureHistoryUI();
+    renderToggle();renderKey();renderCounts();renderAiHistory();resetRounds();
+  }
+
+  function ensureHistoryUI(){
+    const chips=document.getElementById('chipsContainer');
+    if(!chips||document.getElementById('ruAiHistoryTabs'))return;
+    const body=chips.parentElement;
+    if(!body)return;
+
+    const tabs=document.createElement('div');
+    tabs.id='ruAiHistoryTabs';
+    tabs.className='ruai-history-tabs';
+    tabs.innerHTML='<button type="button" class="ruai-history-tab active" id="ruHistMainTab">ОСНОВНАЯ</button><button type="button" class="ruai-history-tab" id="ruHistAiTab">🤖 AI ИСТОРИЯ</button>';
+    body.insertBefore(tabs,chips);
+
+    const ai=document.createElement('div');
+    ai.id='ruAiHistoryView';
+    body.insertBefore(ai,chips.nextSibling);
+
+    document.getElementById('ruHistMainTab').onclick=()=>selectHistoryTab('main');
+    document.getElementById('ruHistAiTab').onclick=()=>selectHistoryTab('ai');
+  }
+
+  function selectHistoryTab(which){
+    ensureHistoryUI();
+    const chips=document.getElementById('chipsContainer');
+    const ai=document.getElementById('ruAiHistoryView');
+    const mainTab=document.getElementById('ruHistMainTab');
+    const aiTab=document.getElementById('ruHistAiTab');
+    const isAi=which==='ai';
+    if(chips)chips.style.display=isAi?'none':'grid';
+    if(ai)ai.style.display=isAi?'block':'none';
+    if(mainTab)mainTab.classList.toggle('active',!isAi);
+    if(aiTab)aiTab.classList.toggle('active',isAi);
+    if(isAi)renderAiHistory();
+  }
+
+  function openAiHistory(){
+    ensureHistoryUI();
+    const panel=document.getElementById('historyPanel');
+    if(panel){panel.classList.add('open');panel.setAttribute('aria-hidden','false')}
+    selectHistoryTab('ai');
+  }
+
+  function renderAiHistory(){
+    ensureHistoryUI();
+    const root=document.getElementById('ruAiHistoryView');
+    if(!root)return;
+    const items=Array.isArray(state.history)?state.history:[];
+    const ok=items.filter(x=>x&&x.success===true).length;
+    const ko=items.filter(x=>x&&x.success===false).length;
+    const byRound=[1,2,3].map(n=>items.filter(x=>x&&x.success===true&&Number(x.round)===n).length);
+    let html='<div class="ruai-hstats">'+
+      '<div class="ruai-hstat"><small>✅ Зашло AI</small><b>'+ok+'</b></div>'+
+      '<div class="ruai-hstat"><small>❌ Не зашло</small><b>'+ko+'</b></div>'+
+      '<div class="ruai-hstat"><small>Всего AI</small><b>'+(ok+ko)+'</b></div>'+
+      '</div>'+
+      '<div class="ruai-round-dist"><b>По раундам:</b> 1-й — '+byRound[0]+' · 2-й — '+byRound[1]+' · 3-й — '+byRound[2]+'</div>';
+    if(!items.length){
+      root.innerHTML=html+'<div class="ruai-empty">Проверенных AI-прогнозов пока нет.</div>';
+      return;
+    }
+    html+='<div class="ruai-history-list">';
+    for(const item of items){
+      if(!item)continue;
+      const success=item.success===true;
+      const target=Number(item.target);
+      const actual=Number(item.actual);
+      const rounds=Array.isArray(item.rounds)?item.rounds:[];
+      const maxActual=rounds.length?Math.max(...rounds.map(x=>Number(x.coef)).filter(Number.isFinite)):actual;
+      html+='<div class="ruai-hitem '+(success?'ok':'ko')+'">'+
+        '<div class="ruai-htop"><span>'+(success?'✅ AI ЗАШЛО':'❌ AI НЕ ЗАШЛО')+'</span><span>'+fmtKyiv(Number(item.at)||Date.now())+'</span></div>'+
+        '<div class="ruai-hmain">Прогноз: '+(Number.isFinite(target)?target.toFixed(2):'—')+'X → '+(success?'выпало '+(Number.isFinite(actual)?actual.toFixed(2):'—')+'X':'максимум '+(Number.isFinite(maxActual)?maxActual.toFixed(2):'—')+'X')+'</div>'+
+        '<div class="ruai-hsub">'+(success?'Зашло на раунде '+Number(item.round)+'/3':'Не зашло за 3 раунда')+(Number.isFinite(Number(item.confidence))?' · уверенность '+Math.round(Number(item.confidence))+'%':'')+'</div>';
+      if(rounds.length){
+        html+='<div class="ruai-mini-rounds">';
+        for(const rr of rounds){
+          const rn=Number(rr.round),cv=Number(rr.coef),hit=success&&rn===Number(item.round);
+          html+='<span class="ruai-mini '+(hit?'hit':'')+'">R'+rn+': '+(Number.isFinite(cv)?cv.toFixed(2):'—')+'X</span>';
+        }
+        html+='</div>';
+      }
+      html+='</div>';
+    }
+    html+='</div>';
+    root.innerHTML=html;
   }
 
   function renderToggle(){
@@ -259,7 +362,7 @@
         mainTarget:Number(detail?.target)||local.target,
         displayAt:Number(detail?.displayAt)||Number(detail?.startAt)||Date.now(),
         startAt:Number(detail?.startAt)||Date.now(),
-        frozen:false,active:false,checked:0,seen:[],source:'parallel'
+        frozen:false,active:false,checked:0,seen:[],roundValues:[],source:'parallel'
       };
       renderCycle();
       setStatus('AI готов. Условный вход по тому же окну: '+fmtKyiv(state.cycle.displayAt)+'.','wait');
@@ -269,7 +372,7 @@
 
   async function onVerification(detail){
     if(!state.enabled||!state.cycle)return;
-    state.cycle.frozen=true;state.cycle.active=true;state.cycle.checked=0;
+    state.cycle.frozen=true;state.cycle.active=true;state.cycle.checked=0;state.cycle.roundValues=[];
     if(Number(detail?.displayAt))state.cycle.displayAt=Number(detail.displayAt);
     renderCycle();resetRounds();
     setStatus('СЕЙЧАС — началась проверка AI. Следующие 3 завершённых раунда.','go');
@@ -293,6 +396,8 @@
         state.cycle.seen.push(r.id);
         state.cycle.checked+=1;
         const n=state.cycle.checked;
+        state.cycle.roundValues=Array.isArray(state.cycle.roundValues)?state.cycle.roundValues:[];
+        state.cycle.roundValues.push({round:n,coef:Number(r.coef.toFixed(2)),id:r.id});
         if(n>3)break;
         const hit=r.coef>=state.cycle.target;
         const el=document.getElementById('ruAiR'+n);
@@ -309,8 +414,16 @@
     state.counts=state.counts||{ok:0,ko:0};
     if(success)state.counts.ok=(state.counts.ok||0)+1;else state.counts.ko=(state.counts.ko||0)+1;
     state.history=Array.isArray(state.history)?state.history:[];
-    state.history.unshift({target:c.target,success,round,actual,at:Date.now()});
-    state.history=state.history.slice(0,50);save();renderCounts();
+    state.history.unshift({
+      target:Number(c.target),
+      confidence:Number(c.confidence),
+      success:Boolean(success),
+      round:Number(round),
+      actual:Number(actual),
+      rounds:Array.isArray(c.roundValues)?c.roundValues.slice(0,3):[],
+      at:Date.now()
+    });
+    state.history=state.history.slice(0,50);save();renderCounts();renderAiHistory();
     setStatus(success?'✅ AI цель '+c.target.toFixed(2)+'X достигнута на раунде '+round+'.':'❌ AI цель '+c.target.toFixed(2)+'X не достигнута за 3 раунда.',success?'go':'bad');
     setTimeout(()=>{if(state.cycle===c&&!c.active)state.cycle=null},6000);
   }
@@ -337,6 +450,7 @@
     window.addEventListener('luckyjetru:verification',e=>onVerification(e.detail||{}));
     window.addEventListener('luckyjetru:cancel',onCancel);
     window.addEventListener('luckyjetru:result',onMainResult);
+    document.getElementById('openHistory')?.addEventListener('click',()=>{ensureHistoryUI();renderAiHistory()});
     setInterval(autoScan,AUTO_SCAN_MS);
     renderCounts();
     setStatus(state.enabled?'AI включён. Жду условия основной логики страницы.':'AI выключен.','wait');
