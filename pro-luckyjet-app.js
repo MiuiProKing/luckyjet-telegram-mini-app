@@ -312,7 +312,29 @@ function vipPrediction(){
  $('autoButton').onclick=()=>{autoMode=!autoMode;$('autoButton').textContent=autoMode?'АВТО: ВКЛ':'АВТОМАТИЧЕСКИЙ';if(autoMode&&!pending)generate()};
  for(const kind of ['normal','vip','god'])$(kind+'Mode').onclick=()=>selectMode(kind);
  $('olderRounds').onclick=loadArchive;$('archiveDate').value=localDay(Date.now());$('archiveDate').onchange=renderArchive;
- document.addEventListener('visibilitychange',()=>{if(!document.hidden){checkLatest();tick()}});
+ function applyDirectLive(detail){
+  if(!detail||detail.game!=='lucky-jet'||!Number.isFinite(Number(detail.coef)))return;
+  const payload=detail.payload;
+  const raw=Array.isArray(payload)?payload[0]:
+   Array.isArray(payload?.history)?payload.history[0]:
+   Array.isArray(payload?.rounds)?payload.rounds[0]:
+   (payload&&typeof payload==='object'?payload:null);
+  const coef=Number(detail.coef);
+  const rawTime=raw&&(raw.timestamp??raw.round_timestamp??raw.played_at??raw.created_at??raw.createdAt??raw.time??raw.stateChangedAt??raw.endedAt??raw.ended_at??raw.updatedAt);
+  const exactTime=ENGINE.timeValue(rawTime);
+  const timestamp=exactTime??Date.now();
+  const id=String(raw&&(raw.id??raw.roundId??raw.round_id??raw.gameId??raw.game_id??raw.hash) || ('direct:'+timestamp+':'+coef));
+  const row={id,coefficient:coef,timestamp,estimated:exactTime==null};
+  const added=merge([row]);
+  pollSucceeded(Date.now());
+  initialized=true;
+  processNew(added.length?added:[row]);
+  render();
+  analyzeAlert();
+  if(autoMode&&!pending)generate();
+ }
+ window.addEventListener('liveCoefficient',event=>applyDirectLive(event.detail));
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden){checkLatest();tick()}});
  restore();selectMode(mode);if(pending)showSignal(pending);render();status('Загружаю историю…');
  refreshHistory();setInterval(checkLatest,2000);setInterval(refreshHistory,30000);setInterval(tick,1000);setInterval(analyzeAlert,8000);
 })();
