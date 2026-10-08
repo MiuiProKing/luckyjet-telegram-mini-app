@@ -592,10 +592,10 @@
   if (location.hash === "#pro") openPro();
 
   // === Exact browser port of analys.py decision flow ===
-  const apiURL = "https://crash-gateway-grm-cr.100hp.app/state";
+  const apiURL = "https://crash-gateway-grm-cr.100hp.app/history";
   const headers = {
     "customer-id": "077dee8d-c923-4c02-9bee-757573662e69",
-    "session-id": "783ee79a-dafc-479e-bf22-834336380cdf",
+    "session-id": "ceab7738-1e49-4ed1-8d92-751b22e958cd",
     "accept": "application/json"
   };
 
@@ -870,13 +870,32 @@
     });
   }
 
+  function firstHistoryRow(data){
+    if(Array.isArray(data)) return data[0] || null;
+    if(data && typeof data === "object"){
+      for(const key of ["history","rounds","data","items","results"]){
+        const value=data[key];
+        if(Array.isArray(value)) return value[0] || null;
+        if(value && typeof value === "object"){
+          for(const sub of ["history","rounds","items","results"]){
+            if(Array.isArray(value[sub])) return value[sub][0] || null;
+          }
+        }
+      }
+      return data;
+    }
+    return null;
+  }
+
   function parseRoundPayload(data){
-    const cfg = data && typeof data.roundConfig === "object" ? data.roundConfig : {};
-    const value = Array.isArray(data && data.stopCoefficients) ? data.stopCoefficients[0] : null;
+    const row = firstHistoryRow(data);
+    if(!row) return null;
+    let value = row.coef ?? row.crash ?? row.value ?? row.topCoefficient ?? row.multiplier ?? row.coefficient;
+    if(value == null && Array.isArray(row.finalValues) && row.finalValues.length) value = row.finalValues[0];
     const coef = normalizeCoef(value);
     if(coef == null) return null;
-    const id = cfg.id || data.roundId || data.id || data.currentRoundId || "";
-    const time = data.stateChangedAt || data.currentTime || data.updatedAt || "";
+    const id = row.id || row.roundId || row.round_id || row.gameId || row.game_id || row.hash || "";
+    const time = row.timestamp || row.played_at || row.created_at || row.createdAt || row.time || row.stateChangedAt || row.endedAt || row.updatedAt || "";
     const key = id ? "id:" + String(id) : (time ? "time:" + String(time) + ":" + coef.toFixed(2) : "coef:" + coef.toFixed(2));
     return { coef, key, id:String(id || ""), time:String(time || "") };
   }
