@@ -231,7 +231,14 @@
     <div class="ttl">ЛОКАЛЬНАЯ ИСТОРИЯ</div>
     <button type="button" class="panel-close" id="closeHistory" title="Закрыть" aria-label="Закрыть историю"><i></i></button>
   </div>
-  <div class="panel-body"><div class="chips" id="chipsContainer"></div></div>
+  <div class="panel-body">
+    <div id="ruAiHistoryTabs" class="ruai-history-tabs">
+      <button type="button" class="ruai-history-tab active" id="ruHistMainTab">ОСНОВНАЯ</button>
+      <button type="button" class="ruai-history-tab" id="ruHistAiTab">🤖 AI ИСТОРИЯ</button>
+    </div>
+    <div class="chips" id="chipsContainer"></div>
+    <div id="ruAiHistoryView"></div>
+  </div>
 </div>
 
 <!-- Панель настроек -->
@@ -1568,6 +1575,6 @@
 })();
 </script>
 <script src="live-coefficients.js?v=20260912-2"></script>
-<script src="ru-ai-companion.js?v=20261008-2"></script>
+<script src="ru-ai-companion.js?v=20261008-3"></script>
 </body>
 </html>
