@@ -44,10 +44,12 @@ function render(){
  const now=Date.now(),p=report?.predictions?.[0],state=C.evaluate(p,quality(now),rows,now,reportAt);
  renderRuleCard(now);
  const active=state.active&&report?.enabled===true&&report?.key_server_only===true&&!apiError;
- text('vipAiTarget',active?'≥'+p.target+'×':'Нет актуального сигнала');
+ const observing=!!report&&report.enabled===true&&report.key_server_only===true&&!!reportAt&&now-reportAt<=20000&&!apiError&&p?.status==='observe';
+ text('vipAiTarget',active?'≥'+p.target+'×':observing?'Наблюдение · без цели':'Нет актуального сигнала');
+ text('vipAiAnswerStatus',apiError?'Ответ Gemini не получен: '+apiError:!report?'Получаю последний ответ Gemini…':report.enabled===false?'ИИ на паузе':report.active?'Gemini сейчас анализирует раунды. Ниже — последний сохранённый ответ.':p?'Последний ответ Gemini: '+(labels[p.status]||p.status)+' · '+time(C.epoch(p.created_at))+' · ID '+p.id:'ИИ включён. Первый ответ ещё не зарегистрирован.');
  text('vipAiTime',p?time(C.epoch(p.created_at)):'—');
- text('vipAiRemaining',active?state.remaining+' из '+p.horizon+' осталось':'—');
- const explanation=p?.explanation?(active?p.explanation:'Последний ответ ИИ ('+time(C.epoch(p.created_at))+' · '+(p.target?'цель '+p.target+'×':'без цели')+' · '+(labels[p.status]||p.status)+'): '+p.explanation+'. Этот ответ не является актуальным сигналом VIP AI ≥10×.'):'Облачный Gemini может выбрать наблюдение, если оснований нет.';
+ text('vipAiRemaining',active?state.remaining+' из '+p.horizon+' осталось':observing?'Окно прогноза не открыто':'—');
+ const explanation=p?.explanation?(observing?'Gemini выбрал наблюдение без прогноза: '+p.explanation:active?p.explanation:'Последний ответ ИИ ('+time(C.epoch(p.created_at))+' · '+(p.target?'цель '+p.target+'×':'без цели')+' · '+(labels[p.status]||p.status)+'): '+p.explanation+'. Этот ответ не является актуальным сигналом VIP AI ≥10×.'):'Облачный Gemini может выбрать наблюдение, если оснований нет.';
  text('vipAiExplanation',explanation);
  text('vipAiStatus',sourceError||apiError||(report?.enabled===false?'ИИ на паузе':state.reason)+(report?.message?' · '+report.message:''));
  const basis=active?state.anchorRows:rows;
@@ -57,7 +59,7 @@ function render(){
  const rule=classic?.vip,end=rule?Number(rule.at)+Number(rule.window):0;
  text('vipAiWindow',rule&&end>now?'≈ '+time(Number(rule.at))+' – '+time(end):'Не подтверждено');
  text('vipAiClassic',rule?'Правила страницы: цель '+rule.target+'× · балл '+rule.score+' · '+(rule.estimated?'время оценочное':'время по архиву')+'. '+(rule.basis||''):'Расчёт правил пока недоступен.');
- text('vipAiInsurance',active?(C.insurance(p)?C.insurance(p).toFixed(2)+'× · выбор ИИ':'ИИ не выбрал'):'Нет актуальной меньшей цели');
+ text('vipAiInsurance',active?(C.insurance(p)?C.insurance(p).toFixed(2)+'× · выбор ИИ':'ИИ не выбрал'):observing?'Не выбрана при наблюдении':'Нет актуальной меньшей цели');
  const h=Number($('vipAiHorizon').value),target=Number($('vipAiModelTarget').value),task=VIP_AI_MODELS.tasks[target+'x_'+h],snapshot=scores?.[target+'x_'+h];
  $('vipAiModels').replaceChildren();
  for(const [name] of Object.entries(task.models)){

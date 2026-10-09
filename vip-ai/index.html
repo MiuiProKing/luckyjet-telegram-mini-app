@@ -80,6 +80,7 @@
   <p id="vipAiRuleBasis" class="signal-note"></p>
   <p class="signal-note">Выше — самостоятельный расчёт правил VIP. Дополнительная цель здесь вычислена формулой. Ниже — отдельный зарегистрированный ответ Gemini и меньшая цель, которую выбирает сам ИИ. Расчётное окно не является обещанием будущего коэффициента.</p>
   <h3>Ответ облачного ИИ</h3>
+  <p id="vipAiAnswerStatus" class="signal-note" role="status">Получаю последний ответ Gemini…</p>
   <div class="vip-ai-grid">
     <div class="vip-ai-cell"><span>Цель ИИ</span><strong id="vipAiTarget">—</strong></div>
     <div class="vip-ai-cell"><span>Зарегистрирован · Киев</span><strong id="vipAiTime">—</strong></div>
@@ -566,6 +567,6 @@ el('beeRefresh').addEventListener('click',refresh);el('beeToggle').addEventListe
 <script src="ml-core.js"></script>
 <script src="models.js"></script>
 <script src="vip-ai-core.js?v=20261010-sequence-fix"></script>
-<script src="vip-ai.js?v=20261010-vip-card"></script>
+<script src="vip-ai.js?v=20261010-ai-answer"></script>
 </body>
 </html>
