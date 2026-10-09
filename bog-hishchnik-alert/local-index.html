@@ -1,0 +1,513 @@
+<!doctype html>
+
+<html lang="ru">
+
+<head>
+
+<meta charset="utf-8">
+
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+
+<meta name="theme-color" content="#08080f">
+
+<title>БОГ ХИЩНИК — история и статистический прогноз</title>
+
+<style>
+
+:root{color-scheme:dark;--bg:#08080f;--panel:#12131b;--border:#282936;--muted:#a3a8b8;--text:#f5f6fb;--blue:#0799ed;--violet:#a02bf1;--orange:#ff7900;--green:#39c56a;--nav:#101019}
+
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:18px}body{margin:0;background:radial-gradient(ellipse at 50% -20%,#19182a 0,#08080f 58%);color:var(--text);font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;padding:20px 16px 116px}.app{width:min(920px,100%);margin:auto}.top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:4px 0 18px}.brand{display:flex;align-items:center;gap:11px}.mark{width:42px;height:42px;border-radius:14px;background:linear-gradient(145deg,#9e25f2,#087fea);display:grid;place-items:center;font-size:22px;box-shadow:0 0 26px #9228e944}.brand h1{font-size:18px;letter-spacing:.08em;margin:0}.brand small{display:block;font-size:11px;color:var(--muted);letter-spacing:.13em;margin-top:4px}.status{border:1px solid var(--border);border-radius:999px;padding:8px 12px;font-size:12px;color:var(--muted);white-space:nowrap}.dot{display:inline-block;width:8px;height:8px;background:#7d8392;border-radius:50%;margin-right:7px}.dot.ok{background:var(--green);box-shadow:0 0 11px #39c56a}.dot.err{background:#ff5c65}.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}.card{background:linear-gradient(155deg,#14151e,#101118);border:1px solid var(--border);border-radius:23px;padding:21px;box-shadow:0 15px 40px #0002}.metric-label{font-size:12px;letter-spacing:.17em;color:#a6abba;text-transform:uppercase;line-height:1.45;min-height:35px}.metric-value{font-size:clamp(27px,5vw,42px);line-height:1.1;font-weight:800;margin-top:9px;letter-spacing:-.04em;text-shadow:0 0 25px currentColor}.blue{color:var(--blue)}.violet{color:var(--violet)}.orange{color:var(--orange)}.green{color:var(--green)}.section{margin-top:18px}.history-card{padding:22px 22px 20px}.section-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:16px}.section-head h2{font-size:21px;margin:0 0 7px}.section-head p{color:var(--muted);line-height:1.5;font-size:14px;margin:0}.live-state{display:flex;gap:8px;align-items:center;color:#d5d9e5;font-size:12px;white-space:nowrap}.live-state .dot{margin:0}.history-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}.coef{min-height:74px;border-radius:23px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;box-shadow:0 0 24px color-mix(in srgb,var(--coef) 28%,transparent);border:1px solid #ffffff24;background:linear-gradient(145deg,color-mix(in srgb,var(--coef) 91%,white 6%),color-mix(in srgb,var(--coef) 72%,#5b1685));transition:transform .15s}.coef:hover{transform:translateY(-2px)}.coef strong{font-size:20px;letter-spacing:-.02em}.coef time{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:12px;color:#ffffffb8;margin-top:5px}.legend{display:flex;flex-wrap:wrap;gap:18px;margin-top:20px;color:#c0c4d0;font-size:13px}.legend span{display:flex;align-items:center;gap:8px}.swatch{width:14px;height:14px;border-radius:50%;background:var(--c);box-shadow:0 0 12px var(--c)}.warning{border-left:3px solid #f5a623;background:#211b12;color:#f0d7a7;border-radius:8px;padding:11px 13px;font-size:12px;line-height:1.5;margin-top:16px}.meta{display:flex;justify-content:space-between;gap:8px;color:#8f95a5;font-size:12px;margin-top:13px}.load{display:block;margin:17px auto 0;padding:11px 17px;border:1px solid #414252;border-radius:12px;background:#1b1c27;color:#fff;font-weight:700;cursor:pointer}.load:hover{border-color:#aa4cff}.load:disabled{opacity:.55;cursor:wait}.about{color:var(--muted);font-size:13px;line-height:1.65}.about strong{color:#f3f4fa}.empty{grid-column:1/-1;border:1px dashed #343543;border-radius:16px;padding:26px;text-align:center;color:var(--muted)}.bottom-nav{position:fixed;z-index:5;bottom:0;left:0;right:0;display:flex;justify-content:center;gap:clamp(18px,7vw,70px);padding:12px 14px calc(12px + env(safe-area-inset-bottom));background:#101019f2;border-top:1px solid #292a35;backdrop-filter:blur(14px)}.bottom-nav a{color:#9da2b2;text-decoration:none;font-size:11px;text-align:center;min-width:50px}.bottom-nav b{display:block;font-size:20px;font-weight:500;margin-bottom:3px}.bottom-nav a:hover{color:#fff}.foot{color:#757b8c;text-align:center;font-size:11px;margin-top:20px}
+
+.switcher{display:flex;gap:8px;margin:0 0 15px}.switcher button{flex:1;border:1px solid #353644;border-radius:12px;padding:11px;background:#191a24;color:#b9bdc9;font-weight:750;cursor:pointer}.switcher button.active{background:linear-gradient(110deg,#33204a,#1a2640);border-color:#9e35ea;color:#fff;box-shadow:0 0 20px #8f32e522}.signal-body{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:10px}.signal-cell{border:1px solid #292a36;border-radius:14px;background:#0d0e15;padding:13px}.signal-label{color:#9da2b1;text-transform:uppercase;letter-spacing:.1em;font-size:10px}.signal-value{font-size:24px;font-weight:800;margin-top:7px}.signal-note{font-size:12px;color:var(--muted);line-height:1.55;margin-top:13px}.signal-time{color:#fff}.signal-target{color:#bd68ff;text-shadow:0 0 20px #a02bf155}.vip .signal-target{color:#ff9a27;text-shadow:0 0 20px #ff790055}.signal-empty{border:1px dashed #3a3947;border-radius:14px;padding:16px;color:#b2b5c2;line-height:1.5}
+
+@media(max-width:680px){body{padding:16px 12px 105px}.metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.card{border-radius:20px;padding:17px}.metric-label{font-size:11px;min-height:29px}.metric-value{font-size:35px}.history-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.coef{min-height:68px;border-radius:20px}.coef strong{font-size:17px}.coef time{font-size:10px}.history-card{padding:17px 13px}.section-head h2{font-size:18px}.section-head p{font-size:12px}.live-state{font-size:11px}.signal-body{grid-template-columns:1fr 1fr}.signal-cell:first-child{grid-column:1/-1}.signal-value{font-size:22px}.bottom-nav{gap:clamp(8px,5vw,30px)}}
+
+@media(max-width:390px){.brand h1{font-size:15px}.status{padding:7px 9px;font-size:10px}.history-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.coef{min-height:64px}}
+
+
+.big-alert{border:1px solid #e28a25;border-radius:18px;padding:20px;margin-top:18px;background:linear-gradient(115deg,#442b20,#30213f);box-shadow:0 0 30px #ff790018}.big-title{font-size:19px;font-weight:800;color:#ffb14f}.big-main{margin-top:12px;font-size:16px;font-weight:700}.journal-row{display:grid;gap:6px;border-bottom:1px solid #353644;padding:14px 0;font-size:13px}.journal-row span{color:#b9bdc9}.archive-tools{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0}.archive-tools button,.archive-tools select{padding:10px;background:#191a24;color:white;border:1px solid #353644;border-radius:10px}.history-grid time{font-size:10px}.section details summary{cursor:pointer;font-weight:700}
+.facts-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:16px}.facts-grid span{border:1px solid #353644;border-radius:12px;padding:12px}.facts-grid b{display:block;color:#46bcff;font-size:18px;margin-top:5px}.archive-tools input{background:#191a24;color:white;border:1px solid #353644;border-radius:10px;padding:10px}a{color:#73caff}.analysis-head{display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:16px}.analysis-head h2{font-size:19px;margin:0 0 7px}.analysis-head p{font-size:12px;color:var(--muted);margin:0;line-height:1.5}.analysis-badge{font-size:11px;color:#63d888}.analysis-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.analysis-grid .signal-cell{min-width:0}.analysis-grid .signal-value{font-size:20px;overflow-wrap:anywhere}.score-track{height:5px;border-radius:6px;background:#242330;margin-top:12px;overflow:hidden}.score-track span{display:block;height:100%;background:linear-gradient(90deg,#04c2ff,#b02aff)}.ai-description{margin:0 0 17px;color:var(--muted);font-size:12px;line-height:1.6}.big-alert .signal-note{overflow-wrap:anywhere}.facts-grid span{min-width:0;overflow-wrap:anywhere}@media(max-width:680px){.analysis-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.analysis-grid .signal-value{font-size:19px}}@media(max-width:390px){.facts-grid{grid-template-columns:1fr}.analysis-head h2{font-size:17px}}
+[hidden]{display:none!important}@media(max-width:680px){.analysis-grid .signal-cell:first-child{grid-column:auto}.top,.section-head{flex-wrap:wrap}.status{white-space:normal;max-width:100%}}
+</style>
+
+</head>
+
+<body>
+
+<main class="app" id="overview">
+
+  <header class="top"><div class="brand"><div class="mark" aria-hidden="true">✈</div><div><h1>БОГ ХИЩНИК</h1><small>ИСТОРИЯ КОЭФФИЦИЕНТОВ</small></div></div><div class="status"><i class="dot" id="statusDot"></i><span id="statusText">Подключение…</span></div></header>
+
+  <section class="metrics" aria-label="Статистика последних раундов">
+
+    <article class="card"><div class="metric-label">Средний коэффициент</div><div class="metric-value blue" id="avg">—</div></article>
+
+    <article class="card"><div class="metric-label">Самый крупный</div><div class="metric-value orange" id="max">—</div></article>
+
+    <article class="card"><div class="metric-label">Раунды от 2×</div><div class="metric-value violet" id="rate2">—</div></article>
+
+    <article class="card"><div class="metric-label">Раунды от 10×</div><div class="metric-value orange" id="rate10">—</div></article>
+
+  </section>
+
+  <section class="section card" id="forecast">
+
+    <div class="switcher" role="tablist" aria-label="Режим прогноза"><button class="active" id="normalTab" role="tab" aria-selected="true">Обычный прогноз</button><button id="vipTab" role="tab" aria-selected="false">VIP · крупные коэффициенты</button></div>
+
+    <p class="ai-description">Локальная статистическая модель по формулам Lucky Jet. Панель показывает цель, уровень оценки, балл правил и окно наблюдения. Балл не является вероятностью выигрыша; Gemini анализирует данные в отдельном блоке BeeAI ниже.</p><div id="normalSignal"></div><div id="vipSignal" hidden></div><div class="big-alert" id="bigAlert" aria-live="polite"></div>
+
+  </section>
+
+  <section class="section card history-card" id="history">
+
+    <div class="section-head"><div><h2>Коэффициенты в эфире</h2><p id="subtitle">Последние результаты из нашей базы Supabase</p></div><div class="live-state"><i class="dot" id="liveDot"></i><span id="liveLabel">Ожидание</span></div></div>
+
+    <div class="history-grid" id="grid" aria-live="polite"><div class="empty">Загружаю историю…</div></div>
+
+    <div class="legend"><span><i class="swatch" style="--c:#0799ed"></i>меньше 2×</span><span><i class="swatch" style="--c:#a02bf1"></i>от 2× до 9,99×</span><span><i class="swatch" style="--c:#ff7900"></i>от 10×</span></div>
+
+    <p class="signal-note">Источник как в beta.html: наша Supabase · v0xff3-live. Последние раунды опрашиваются каждую секунду; полная модель обновляется раз в 30 секунд, HTTP GET, как в beta.html. WebSocket доступен только при разрешённом источником адресе страницы. Обрабатывается вся пачка, совпадающие коэффициенты разных ID сохраняются.</p><p id="sampleQuality" class="signal-note" aria-live="polite"></p><div class="warning" id="timeWarning">Внимание: время раундов в базе может быть примерным. Коэффициенты отображаются по сохранённой истории.</div>
+
+    <div class="meta"><span id="count">Раундов: —</span><span id="updated">Обновление: —</span></div>
+
+    <button class="load" id="more" type="button" hidden>Загрузить ещё</button>
+
+  </section>
+
+  <section class="section card"><details><summary>История прогнозов · проверка в заданном окне</summary><p id="signalStats" class="signal-note"></p><p class="signal-note">Попадания и промахи относятся к проверенным окнам с точным временем. Наблюдения по времени ≈ и непроверенные окна считаются отдельно. После перезагрузки полнота окна неизвестна. Журнал хранится в этом браузере.</p><div id="signalJournal"></div></details></section>
+<section class="section card"><details><summary>Как рассчитан сигнал · показатели модели</summary><div id="modelFacts" class="signal-note">Ожидаю историю</div><p class="signal-note">Исходные правила: цикл ≥10× → 15 низких → ≥3 крупных за 30 → зона 5–9× → EMA с часовыми и минутными поправками. Для времени ≈ остаются правила по последовательности, часовые группы и циклы отключены. Большая цель: цикл ≥100×, кластер и Пуассон. Кластер требует не менее 6 результатов ≥20× и 3 результатов ≥50× за 80 раундов. Один кандидат требует балл ≥75; несколько дают +5 без проверки независимости. Пуассон описывает историческую паузу, а не шанс будущего выигрыша. Цель закреплена до конца окна.</p></details></section><section class="section card" id="archive"><h2>Архив раундов</h2><p class="signal-note">История нашей Supabase: загруженная часть до 10 000 раундов. Фильтр по дню использует часовой пояс устройства. Одинаковые коэффициенты разных ID сохраняются.</p><div class="archive-tools"><input type="date" id="archiveDate" aria-label="Дата раундов"><select id="archiveMin" aria-label="Минимальный коэффициент"><option value="1">Все результаты</option><option value="2">От 2×</option><option value="10">От 10×</option><option value="100">От 100×</option></select><button id="archiveMore">Загрузить ещё 500 раундов</button><button id="archiveCsv">Скачать загруженные раунды CSV</button></div><p id="archiveCount" class="signal-note">Архив ещё не загружен</p><div class="history-grid" id="archiveGrid"></div></section>
+<section class="section card about" id="about"><strong>Источник данных</strong><br>Локальная версия 4 · доставка раундов 03.10.2026. Выборка 2000 раундов, полное обновление каждые 30 секунд, пересчёт каждые 8 секунд. Обычная модель: исходные клиентские De/Ce, EMA20/50, геометрическое среднее, медиана и MAD. При приблизительном времени используется анализ последовательности. Предупреждение: цикл 100×, кластер и формула Пуассона. Проценты — оценки эвристик, а не измеренная точность. <a href="MODEL_AUDIT.md">Подробный разбор формул</a><br>Страница читает публичную историю из подключённой базы Supabase и обновляет её автоматически. Прогнозные значения являются статистическими оценками по истории и не гарантируют результат следующего раунда.</section>
+
+  <div class="foot">БОГ ХИЩНИК · последние раунды каждую секунду · полная история каждые 30 секунд</div>
+
+<section class="section card"><p id="cloudConnection" role="status">Подключаю Supabase LIVE…</p><details><summary>Личный доступ к BeeAI</summary><p>Используйте персональную ссылку или код доступа. Ключ Gemini хранится в Supabase.</p><input id="beeAccess" type="password" autocomplete="off" aria-label="Код доступа к BeeAI"><button id="beeConnect" class="load">Подключить ИИ</button></details></section><section class="section card" id="beeai"><h2>BeeAI · отдельный анализ</h2><p id="beeStatus" aria-live="polite">Подключаю ИИ к Supabase…</p><div class="analysis-grid"><div class="signal-cell"><div class="signal-label">Дополнительная цель ИИ · оценка</div><div class="signal-value signal-target" id="beeTarget">—</div></div><div class="signal-cell"><div class="signal-label">Окно в новых раундах</div><div class="signal-value" id="beeWindow">—</div></div><div class="signal-cell"><div class="signal-label">Результат проверки</div><div class="signal-value" id="beeResult">—</div></div><div class="signal-cell"><div class="signal-label">Регистрация · Киев</div><div class="signal-value" id="beeTime">—</div></div></div><p id="beeReason" class="signal-note"></p><p class="signal-note">Это экспериментальная цель, а не известный будущий коэффициент. Преимущество ИИ не доказано; момент начала следующего игрового раунда не подтверждён. Источник: Lucky Jet → Supabase. Оценки сохраняются до результата; ошибки остаются в журнале.</p><button id="beeRefresh" class="load" style="display:inline-block">Проверить состояние</button><button id="beeToggle" class="load" style="display:inline-block">Пауза ИИ</button><details><summary>Роль и база знаний</summary><p>Расчётные функции классической версии передаются ИИ без переписывания. Эти поля задают только стиль и дополнительные факты.</p><label>Роль и стиль<textarea id="beePersona" maxlength="1000" rows="2" style="display:block;width:100%;box-sizing:border-box;background:#191a24;color:white"></textarea></label><label>База знаний<textarea id="beeKnowledge" maxlength="2000" rows="3" style="display:block;width:100%;box-sizing:border-box;background:#191a24;color:white"></textarea></label><button id="beeSave" class="load">Сохранить в Supabase</button></details><details><summary>Журнал ИИ и статистика</summary><p id="beeStats" class="signal-note"></p><div id="beeJournal"></div></details></section></main>
+
+<nav class="bottom-nav" aria-label="Навигация"><a href="#overview"><b>⌂</b>Обзор</a><a href="#forecast"><b>✦</b>Прогноз</a><a href="#history"><b>▦</b>История</a><a href="#about"><b>ⓘ</b>О данных</a></nav>
+
+
+<script data-bundled="runtime-config.js">
+window.BOG_CLOUD={"url": "https://zulsrqkjkatzjjhacowy.supabase.co", "anonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp1bHNycWtqa2F0empqaGFjb3d5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE1MzA4NTksImV4cCI6MjEwNzEwNjg1OX0.0MPkQgxa24gjHcXyQf7t-_tfe0g4kdDkC2SXJOxaOso"};
+
+</script><script data-bundled="cloud-transport.js">
+/* Classic calculation engine is unchanged. Cloud transport uses read-only REST and Realtime. */
+window.ClassicCloud=(()=>{
+ 'use strict';
+ const config=window.BOG_CLOUD,base=config.url,key=config.anonKey;
+ const headers={apikey:key,Authorization:'Bearer '+key,Accept:'application/json'};
+ let latestStatus=null,statusAt=0,joined=false,socket=null,callback=null,onReady=null,retry=1000,retryTimer=null,heartbeat=null,ref=0;
+ const convert=row=>({id:row.id,coefficient:Number(row.coefficient),topCoefficient:Number(row.coefficient),timestamp:row.round_timestamp?Date.parse(row.round_timestamp):null,round_timestamp:row.round_timestamp,estimated:row.estimated,source_seq:Number(row.source_seq),origin:row.origin});
+ async function getStatus(force=false){
+  if(!force&&latestStatus&&Date.now()-statusAt<10000)return latestStatus;
+  const response=await fetch(base+'/rest/v1/rpc/luckyjet_cloud_status',{method:'POST',headers:{...headers,'Content-Type':'application/json'},body:'{}',cache:'no-store',signal:AbortSignal.timeout(10000)});
+  if(!response.ok)throw Error('SUPABASE_STATUS_HTTP_'+response.status);
+  latestStatus=await response.json();statusAt=Date.now();
+  const banner=document.getElementById('cloudConnection');if(banner)banner.textContent=latestStatus.source_connected?'LIVE из Supabase · ПК не требуется'+(joined?' · Realtime подключён':' · обновление через API'):'Сборщик Supabase не подключён · '+(latestStatus.error||'проверка соединения');
+  return latestStatus;
+ }
+ async function page(limit,offset=0){
+  // Archive remains available during a source outage; a failed source must not count as LIVE.
+  const status=await getStatus();
+  const response=await fetch(base+'/rest/v1/luckyjet_classic_history?select=id,coefficient,round_timestamp,estimated,source_seq,origin&order=feed_order.desc&limit='+Math.min(1000,limit)+'&offset='+offset,{headers:{...headers,Prefer:'count=exact'},cache:'no-store',signal:AbortSignal.timeout(10000)});
+  if(!response.ok){const error=Error('SUPABASE_HTTP_'+response.status);error.status=response.status;throw error;}
+  const rows=await response.json(),range=response.headers.get('content-range')||'';
+  return {rows:rows.map(convert),total:Number(range.split('/')[1])||rows.length,sourceConnected:!!status.source_connected,cloudStatus:status};
+ }
+ function send(topic,event,payload){if(socket?.readyState===1)socket.send(JSON.stringify({topic,event,payload,ref:String(++ref),...(topic==='phoenix'?{}:{join_ref:'1'})}));}
+ function connect(onRound,afterConnect){
+  callback=onRound;
+  if(afterConnect)onReady=afterConnect;
+  if(socket&&socket.readyState<2)return;
+  socket=new WebSocket(base.replace('https:','wss:')+'/realtime/v1/websocket?apikey='+encodeURIComponent(key)+'&vsn=1.0.0');
+  socket.onopen=()=>{ref=0;send('realtime:classic-cloud','phx_join',{config:{broadcast:{self:false},presence:{enabled:false},postgres_changes:[{event:'INSERT',schema:'public',table:'luckyjet_rounds'}]},access_token:key});heartbeat=setInterval(()=>send('phoenix','heartbeat',{}),25000);};
+  socket.onmessage=event=>{
+   let frame;try{frame=JSON.parse(event.data);}catch{return;}
+   if(frame.event==='phx_reply'&&frame.topic==='realtime:classic-cloud'){
+    joined=frame.payload?.status==='ok';if(joined){retry=1000;getStatus(true).catch(()=>{});onReady?.();}else socket.close();
+   }
+   if(frame.event==='postgres_changes'){
+    const data=frame.payload?.data;if(data?.type==='INSERT'&&data.record?.origin==='live'&&data.record?.collection_backend==='cloud'){statusAt=0;callback?.(convert(data.record));}
+   }
+   if(frame.event==='system'&&frame.payload?.status==='error')socket.close();
+  };
+  socket.onerror=()=>socket.close();socket.onclose=()=>{joined=false;window.BogMLClient?.onError();clearInterval(heartbeat);socket=null;if(!retryTimer){retryTimer=setTimeout(()=>{retryTimer=null;connect(callback);},retry);retry=Math.min(30000,retry*2);}};
+ }
+ return {page,connect,getStatus,connected:()=>joined};
+})();
+
+</script><script data-bundled="bee-cloud-api.js">
+window.BeeCloud=(()=>{
+ 'use strict';const config=window.BOG_CLOUD,storage='luckyjet_bee_cloud_access_20261009';let access='';
+ const hash=new URLSearchParams(location.hash.slice(1)),provided=hash.get('access');
+ try{access=provided||sessionStorage.getItem(storage)||'';if(provided)sessionStorage.setItem(storage,provided);}catch{access=provided||'';}
+ if(provided)history.replaceState(null,'',location.pathname+location.search+'#overview');
+ async function request(method='GET',body=null){
+  if(!/^[A-Za-z0-9_-]{32,128}$/.test(access))throw Error('Для BeeAI нужна персональная ссылка или код доступа');
+  const response=await fetch(config.url+'/functions/v1/luckyjet-beeai',{method,headers:{apikey:config.anonKey,'x-bee-access':access,...(body?{'Content-Type':'application/json'}:{})},...(body?{body:JSON.stringify(body)}:{}),cache:'no-store',credentials:'omit',referrerPolicy:'no-referrer',signal:AbortSignal.timeout(15000)});
+  if(!response.ok)throw Error(response.status===403?'Код доступа к BeeAI не принят':'BeeAI Supabase: HTTP '+response.status);
+  return response.json();
+ }
+ function setAccess(value){access=String(value||'').trim();try{sessionStorage.setItem(storage,access)}catch{}window.dispatchEvent(new Event('bee-cloud-connect'));}
+ function setup(){document.getElementById('beeConnect')?.addEventListener('click',()=>{const input=document.getElementById('beeAccess');setAccess(input.value);input.value='';});}
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',setup);else setup();
+ return Object.freeze({request,setAccess});
+})();
+
+</script>
+<script>
+
+(function(){
+'use strict';
+// Extracted from a publicly served client asset at historique-luckyjet.shop.
+// Asset: PredictionPanel-BX01Z_sa.js. Retrieved 2026-10-02.
+// Pure calculation functions only; no account credentials or network calls.
+const l=6e4,ke=6e4,$=n=>n.length?n.reduce((s,e)=>s+e,0)/n.length:0,I=n=>{if(!n.length)return 0;const s=[...n].sort((o,a)=>o-a),e=Math.floor(s.length/2);return s.length%2?s[e]:(s[e-1]+s[e])/2},ee=n=>{if(n.length<2)return 0;const s=$(n);return Math.sqrt($(n.map(e=>(e-s)**2)))},V=(n,s)=>{if(!n.length)return 0;let e=n[n.length-1];for(let o=n.length-2;o>=0;o--)e=s*n[o]+(1-s)*e;return e},E=n=>{if(!n.length)return 0;const s=n.map(e=>Math.log(Math.max(e,1.001)));return Math.exp($(s))},te=n=>{let s=-1/0;for(const e of n)e>s&&(s=e);return s===-1/0?0:s},ne=n=>{if(n.length<2)return 0;const s=I(n);return I(n.map(e=>Math.abs(e-s)))},d=(n,s,e)=>Math.max(s,Math.min(e,n));function W(n,s){const e=new Map;for(const a of n){const i=s(a),f=e.get(i)??{coefs:[],g:0,mg:0};f.coefs.push(a.coefficient),a.coefficient>=10&&f.g++,a.coefficient>=100&&f.mg++,e.set(i,f)}const o=new Map;for(const[a,i]of e)o.set(a,{count:i.coefs.length,goldenCount:i.g,megaCount:i.mg,avg:E(i.coefs),max:te(i.coefs)});return o}function se(n,s){const e=n.filter(a=>a.coefficient>=s).sort((a,i)=>a.timestamp-i.timestamp);if(e.length<2)return{avgGap:0,medGap:0,stdGap:0,madGap:0,last:e[0]?.timestamp??null,count:e.length};const o=[];for(let a=1;a<e.length;a++)o.push(e[a].timestamp-e[a-1].timestamp);return{avgGap:$(o),medGap:I(o),stdGap:ee(o),madGap:ne(o),last:e[e.length-1].timestamp,count:e.length}}function Ce(n,s){const e=[...n].sort((g,u)=>g.timestamp-u.timestamp),o=[],a=se(e,100);if(a.count>=5&&a.last&&a.medGap>0){const g=a.last+a.medGap,u=g-s,h=d(a.madGap*1.4826||a.medGap*.35,2*l,12*l),p=s-a.last;if(a.madGap>0&&a.madGap<a.medGap*.5&&(Math.abs(u)<=h*.7||p>=a.medGap*.9)){const w=d(1-Math.abs(u)/Math.max(h,1),0,1),q=Math.min(10,a.count),R=d(55+q+w*12,55,82);o.push({expectedAt:u>0?g:s+Math.max(2*l,h*.4),windowMs:d(h,3*l,10*l),estimatedCoef:100,confidence:Math.round(R),reason:`Cycle 100x≈${(a.medGap/l).toFixed(1)}min — dernier il y a ${(p/l).toFixed(1)}min (${a.count} évts)`})}}const i=e.slice(-80);let f=0,m=0;for(const g of i)g.coefficient>=20&&f++,g.coefficient>=50&&m++;if(m>=3&&f>=6){const g=d(55+m*5+f,55,82);o.push({expectedAt:s+3*l,windowMs:6*l,estimatedCoef:120,confidence:Math.round(g),reason:`Cluster chaud : ${f}×≥20x + ${m}×≥50x sur 80 tours`})}const x=e.filter(g=>g.coefficient>=100);if(x.length>=4&&a.last&&e.length>=80){const g=s-a.last,u=e[e.length-1].timestamp-e[0].timestamp,h=u>0?x.length/u:0;if(h>0){const p=1-Math.exp(-h*g);if(p>=.75){const r=d(1/h,9e4,8*l),w=d(50+p*30,50,80);o.push({expectedAt:s+r,windowMs:d(r*.8,3*l,7*l),estimatedCoef:100,confidence:Math.round(w),reason:`Hazard Poisson : P(retard)=${(p*100).toFixed(0)}% (λ⁻¹≈${(1/h/l).toFixed(1)}min)`})}}}if(!o.length)return null;o.sort((g,u)=>u.confidence-g.confidence);const v=o[0];return o.length<2&&v.confidence<75?null:(o.length>=2&&(v.confidence=Math.min(92,v.confidence+5)),v)}function De(n,s){if(n.length<20)return null;const e=Date.now();if(s){const c=Math.max(s.estimatedAt+s.windowMs,s.generatedAt+ke);if(e<c)return s}const o=[...n].sort((c,b)=>b.timestamp-c.timestamp),a=o.map(c=>c.coefficient);$(a);const i=I(a),f=E(a),m=a.slice(0,20),x=a.slice(0,50);$(m);const v=$(x),g=V(m,.25),u=V(x,.12),h=ee(x),p=ne(x),r=se(o,10),w=r.last?e-r.last:1/0,q=W(o,c=>new Date(c.timestamp).getHours()),R=W(o,c=>new Date(c.timestamp).getMinutes()),C=new Date(e),j=q.get(C.getHours()),ae=(C.getMinutes()+2)%60,D=R.get(ae),U=a.slice(0,15),oe=U.length===15&&U.every(c=>c<2),N=o.slice(0,30).filter(c=>c.coefficient>=20),A=Ce(n,e);if(r.medGap>0&&r.last){const b=r.last+r.medGap-e,F=d(r.madGap*1.4826||r.medGap*.55,6e4,4*l),y=r.count>=8&&r.madGap>0&&r.madGap<r.medGap*.6,_=Math.abs(b)<=F*.6;if(y&&_){const Q=N.length,ge=Q>=3?2:Q>=1?3:4,pe=te(o.slice(0,80).map(we=>we.coefficient)),ue=d(pe/ge,2,20),he=d(60-Math.abs(b)/F*15,40,62),be=j&&j.avg>f?3:0,ve=d(r.count/20,0,4),J=Math.round(d(he+be+ve,40,68));return{estimatedCoef:+ue.toFixed(2),confidence:J>=66?"Moyen":"Faible",reliability:J,estimatedAt:b>0?e+Math.max(b,9e4):e+2*l,windowMs:d(r.medGap*.25,9e4,3*l),pattern:"Cycle des cotes d'or détecté",basis:`Cycle médian ${(r.medGap/l).toFixed(1)} min — dernier ${(w/l).toFixed(1)} min — MAD ${(r.madGap/l).toFixed(2)}min`,generatedAt:e,bigOpportunity:A}}}if(oe){const c=d(f*2.5+i,2.5,15),b=Math.round(d(70+Math.min(15,(e-o[14].timestamp)/6e4),65,92));return{estimatedCoef:+c.toFixed(2),confidence:b>=82?"Élevé":"Moyen",reliability:b,estimatedAt:e+9e4,windowMs:2*l,pattern:"Série basse — rebond statistique",basis:`15 tours <2x — moy géo ${f.toFixed(2)}x, médiane ${i.toFixed(2)}x`,generatedAt:e,bigOpportunity:A}}if(N.length>=3){const c=E(N.map(_=>_.coefficient)),b=N.length>=5?3:N.length>=4?4:5,F=d(c/b,2,12),y=Math.min(78,60+N.length*3);return{estimatedCoef:+F.toFixed(2),confidence:y>=72?"Élevé":"Moyen",reliability:y,estimatedAt:e+2*l,windowMs:2.5*l,pattern:`${N.length} cotes ≥20x récentes`,basis:`Moy. géo grosses cotes ${c.toFixed(2)}x ÷ ${b}`,generatedAt:e,bigOpportunity:A}}const P=o.slice(0,60),G=P.filter(c=>c.coefficient>=5&&c.coefficient<10),T=P.length?P.filter(c=>c.coefficient<2).length/P.length:0;if(G.length>=3){const c=E(G.map(_=>_.coefficient)),b=T>.55||h>v*1.4,F=b?d(c*.45,2,4.5):d(c*.7,3,7),y=Math.round(d(64+G.length*4+(b?-6:6),58,90));return{estimatedCoef:+F.toFixed(2),confidence:y>=82?"Élevé":y>=68?"Moyen":"Faible",reliability:y,estimatedAt:e+2*l,windowMs:2.5*l,pattern:b?`Phase mixte — ${G.length} cotes 5x-9x sur base fragile`:`Phase favorable — ${G.length} cotes 5x-9x récentes`,basis:`Zone 5x-9x géo ${c.toFixed(2)}x — <2x: ${(T*100).toFixed(0)}% — σ50 ${h.toFixed(2)}`,generatedAt:e,bigOpportunity:A}}const B=j&&j.count>=5?j.avg/Math.max(f,.1):1,ie=D&&D.count>=5?D.avg/Math.max(f,.1):1,re=g*.5+u*.3+v*.2;let S=d(re*B*.6+(D?.max??0)*.1+1.6,1.8,12);const Z=T>.6||h>v*1.6;Z?S=Math.min(S,3.2):T>.45&&(S=Math.min(S,5));const ce=d(n.length/25,0,28),le=d(Math.abs(B-1)*42,0,22),de=d(Math.abs(ie-1)*32,0,16),me=p>0&&p<v*.6?5:0,fe=Z?-8:0,z=Math.round(d(52+ce+le+de+me+fe,50,92)),xe=2*l+(60-C.getSeconds())*1e3%45e3;return{estimatedCoef:+S.toFixed(2),confidence:z>=82?"Élevé":z>=66?"Moyen":"Faible",reliability:z,estimatedAt:e+xe,windowMs:2.5*l,pattern:B>1.1?"Plage horaire favorable":B<.9?"Plage horaire faible":"Analyse multi-signaux",basis:`EMA20 ${g.toFixed(2)}x — H${C.getHours()}h: géo ${j?.avg.toFixed(2)??"—"}x (${j?.count??0}) — MAD ${p.toFixed(2)} — σ ${h.toFixed(2)} — ${n.length} tours`,generatedAt:e,bigOpportunity:A}}
+// De/Ce above are the unchanged public Lucky Jet formulas (PredictionPanel-BX01Z_sa.js).
+// This boundary validates data and fixes ordering; it does not calibrate rule scores.
+function numberValue(value){
+ if(value==null||typeof value==='boolean'||(typeof value==='string'&&!value.trim()))return null;
+ if(!['number','string'].includes(typeof value))return null;
+ const n=Number(value);return Number.isFinite(n)?n:null;
+}
+function timeValue(value){
+ if(value==null||typeof value==='boolean'||!['number','string'].includes(typeof value))return null;
+ const n=numberValue(value);const t=n==null?Date.parse(value):(n<1e11?n*1000:n);
+ return Number.isFinite(t)&&t>0&&t<=8640000000000000?t:null;
+}
+function compareRounds(a,b){
+ const time=b.timestamp-a.timestamp;if(time)return time;
+ const ai=String(a.id),bi=String(b.id);return ai===bi?0:ai<bi?1:-1;
+}
+function normalizeRounds(input,now=Date.now()){
+ const map=new Map();let invalid=0,duplicates=0,conflicts=0;
+ for(const raw of Array.isArray(input)?input:[]){
+  if(!raw||typeof raw!=='object'){invalid++;continue}
+  const coefficient=numberValue(raw.topCoefficient??raw.coefficient??raw.multiplier);
+  const timestamp=timeValue(raw.timestamp??raw.round_timestamp??raw.played_at);
+  const id=raw.id==null?'':String(raw.id).trim();
+  if(!id||id.length>200||coefficient==null||coefficient<1||timestamp==null||timestamp>now+30000){invalid++;continue}
+  const estimated=raw.estimated===true||raw.estimated===1||raw.estimated==='true';
+  const row={id,coefficient,timestamp,estimated};
+  const old=map.get(id);
+  if(old){
+   duplicates++;
+   if(old.coefficient!==coefficient||old.timestamp!==timestamp){conflicts++;continue}
+   if(old.estimated&&!estimated)map.set(id,row);
+  }else map.set(id,row);
+ }
+ return {rows:[...map.values()].sort(compareRounds),invalid,duplicates,conflicts};
+}
+function exactData(input){return normalizeRounds(input).rows.filter(r=>!r.estimated).slice(0,2000)}
+function finitePrediction(p,big=false){
+ if(!p)return null;
+ const score=big?p.confidence:p.reliability,at=big?p.expectedAt:p.estimatedAt;
+ return Number.isFinite(p.estimatedCoef)&&p.estimatedCoef>=1&&Number.isFinite(score)&&score>=0&&score<=100&&Number.isFinite(at)&&Number.isFinite(p.windowMs)&&p.windowMs>0?p:null;
+}
+function freshData(rows,now){return rows.length>=20&&rows[0].timestamp<=now+30000&&now-rows[0].timestamp<=180000}
+function calculatePrediction(input,previous=null){
+ const rows=exactData(input),now=Date.now();if(!freshData(rows,now))return null;
+ const previousValid=finitePrediction(previous)&&Number.isFinite(previous.generatedAt);
+ return finitePrediction(De(rows,previousValid?previous:null));
+}
+function detectBigOpportunity(input,now=Date.now()){
+ if(!Number.isFinite(now))return null;
+ const rows=exactData(input);return freshData(rows,now)?finitePrediction(Ce(rows,now),true):null;
+}
+window.GodPreditor=Object.freeze({calculatePrediction,detectBigOpportunity,normalizeRounds,compareRounds,numberValue,timeValue,version:'20261002-audit1',sourceSha256:'46f71171c554726c040a124679f7efb87e9fdded79ccb1f730a4b9caff2686e8'});
+
+
+})();
+
+</script>
+<script>
+'use strict';
+const API=window.BOG_CLOUD.url+'/rest/v1/luckyjet_classic_history';
+const ENGINE=window.GodPreditor,$=id=>document.getElementById(id);
+const LIMIT=100,MODEL_LIMIT=2000,POLL_MS=10000,FRESH_MS=180000,COVERAGE_MS=15000,GRACE_MS=15000;
+const JOURNAL_KEY='bog_hishchnik_archive_cloud_20261009',LEGACY_KEY='bog_hishchnik_alert_20261001';
+let rounds=[],mode='normal',activeNormal=null,activeVip=null,activeBig=null,signalJournal=[];
+let online=false,lastPollAt=0,syncPromise=null,initialized=false,lastAnalysisAt=0,modelRefreshedAt=0;
+let liveKnownTotal=0,invalidRows=0,conflictingRows=0,liveSocket=null,liveReconnectTimer=null,liveReconnectDelay=5000;
+let archiveRows=[],archiveOffset=0,archiveBusy=false,archiveDone=false;
+let feedSequence=0;
+let archiveRenderKey='';
+const coefficient=r=>ENGINE.numberValue(r?.coefficient??r?.topCoefficient??r?.multiplier);
+const millis=ENGINE.timeValue,sortMillis=r=>millis(r?.timestamp)||0;
+function escapeText(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function fmtTime(t){const n=millis(t);return n?new Date(n).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit',second:'2-digit'}):'—'}
+function localDay(t){const d=new Date(t);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+function zone(){return Intl.DateTimeFormat().resolvedOptions().timeZone}
+function color(n){return n<2?'#0799ed':n<10?'#a02bf1':'#ff7900'}
+function compareFeed(a,b){return (b._sequence||0)-(a._sequence||0)||((b.timestamp||0)-(a.timestamp||0))||(String(a.id)<String(b.id)?1:String(a.id)>String(b.id)?-1:0)}
+// Coefficient validity and event-clock validity are separate. Never discard a
+// valid result just because the provider's clock differs from this device.
+function normalizeFeed(input){
+ const map=new Map();let invalid=0,conflicts=0;
+ for(const raw of Array.isArray(input)?input:[]){
+  const n=coefficient(raw),id=raw?.id==null?'':String(raw.id).trim();
+  if(!raw||typeof raw!=='object'||!id||id.length>200||n==null||n<1){invalid++;continue}
+  const timestamp=millis(raw.timestamp??raw.round_timestamp??raw.played_at),timeIssue=raw.timeIssue||(timestamp==null?'missing':timestamp>Date.now()+30000?'clock':'');
+  const row={id,coefficient:n,timestamp,estimated:!!timeIssue||raw.estimated===true||raw.estimated===1||raw.estimated==='true',timeIssue,_observedAt:raw._observedAt||0,_sequence:raw._sequence||0};
+  const old=map.get(id);if(old){if(old.coefficient!==n||old.timestamp!==timestamp)conflicts++;continue}map.set(id,row);
+ }
+ return {rows:[...map.values()].sort(compareFeed),invalid,conflicts};
+}
+function fresh(now=Date.now()){const head=rounds[0];if(!head)return false;const t=head._observedAt||(!head.timeIssue?head.timestamp:0);return t>0&&now-t<=FRESH_MS&&t<=now+30000}
+function preciseModel(){return fresh()&&rounds.length>=20&&rounds.slice(0,20).every(r=>!r.estimated)}
+function exactRounds(){return rounds.filter(r=>!r.estimated)}
+function finiteSignal(s){return s&&Number.isFinite(s.target)&&s.target>=1&&Number.isFinite(s.score)&&s.score>=0&&s.score<=100&&Number.isFinite(s.at)&&s.at>0&&Number.isFinite(s.window)&&s.window>0&&s.window<=1800000&&Number.isFinite(s.generatedAt)}
+function patternName(s){const names={"Cycle des cotes d'or détecté":'Цикл коэффициентов от 10×','Série basse — rebond statistique':'15 раундов ниже 2×','Plage horaire favorable':'Часовая группа выше среднего','Plage horaire faible':'Часовая группа ниже среднего','Analyse multi-signaux':'Мультисигнальный анализ'};return names[s]||s}
+function fromGod(p,big=false){if(!p)return null;const s={target:p.estimatedCoef,score:big?p.confidence:p.reliability,at:big?p.expectedAt:p.estimatedAt,window:p.windowMs,pattern:big?'Крупная цель':patternName(p.pattern),basis:big?p.reason:p.basis,estimated:false,generatedAt:Date.now(),rules:big?[p.reason]:[],engine:ENGINE.version};return finiteSignal(s)?s:null}
+function clamp(x,a,b){return Math.max(a,Math.min(b,x))}function mean(a){return a.length?a.reduce((x,y)=>x+y,0)/a.length:0}function median(a){if(!a.length)return 0;const s=[...a].sort((x,y)=>x-y),m=s.length>>1;return s.length%2?s[m]:(s[m-1]+s[m])/2}function geo(a){if(!a.length)return 0;return Math.exp(mean(a.map(x=>Math.log(Math.max(x,1.001)))))}function deviation(a){const m=mean(a);return Math.sqrt(mean(a.map(x=>(x-m)**2)))}function mad(a){const m=median(a);return median(a.map(x=>Math.abs(x-m)))}function ema(a,alpha){if(!a.length)return 0;let x=a[a.length-1];for(let i=a.length-2;i>=0;i--)x=alpha*a[i]+(1-alpha)*x;return x}function round(x){return Math.floor(x+.5)}function label(score){return score>=82?'Высокая':score>=66?'Средняя':'Слабая'}
+
+function gapStats(rows,threshold){const e=rows.filter(r=>coefficient(r)>=threshold).sort((a,b)=>millis(a.timestamp)-millis(b.timestamp));if(e.length<2)return{count:e.length,last:e.length?millis(e[0].timestamp):null,med:0,mad:0};const gaps=e.slice(1).map((r,i)=>millis(r.timestamp)-millis(e[i].timestamp)).filter(x=>x>0);return{count:e.length,last:millis(e[e.length-1].timestamp),med:median(gaps),mad:mad(gaps)}}
+
+function plan(target,reliability){const main=Math.max(1.01,target);let insurance=main>=20?Math.min(5,Math.max(2,main*.12)):main>=10?Math.min(3,Math.max(1.8,main*.2)):main>=5?Math.min(2.2,Math.max(1.55,main*.35)):main>=2?Math.max(1.3,main*(reliability>=75?.6:.55)):Math.max(1.1,main*.8);insurance=Math.min(insurance,Math.max(1.01,main-.05));return{main,insurance,risk:main>=20||reliability<60?'Высокий':main>=5||reliability<75?'Средний':'Низкий'}}
+
+function ordinaryPrediction(forceOrder=false){const data=rounds.filter(r=>coefficient(r)!==null).slice(0,MODEL_LIMIT),n=data.length;if(n<20)return null;const desc=[...data].sort(compareFeed),c=desc.map(coefficient),medAll=median(c),geoAll=geo(c),last20=c.slice(0,20),last50=c.slice(0,50),avg50=mean(last50),ema20=ema(last20,.25),ema50=ema(last50,.12),sigma50=deviation(last50),mad50=mad(last50),lowRatio=c.slice(0,60).filter(x=>x<2).length/Math.min(60,n),recent20=desc.slice(0,30).filter(r=>coefficient(r)>=20),now=Date.now(),estimated=forceOrder||data.some(r=>r.estimated);let target,score,at,window,pattern,basis; const clock=new Date(now),hourRows=desc.filter(r=>new Date(millis(r.timestamp)).getHours()===clock.getHours()),minuteRows=desc.filter(r=>new Date(millis(r.timestamp)).getMinutes()===(clock.getMinutes()+2)%60),hourGeo=geo(hourRows.map(coefficient)),hourFactor=!estimated&&hourRows.length>=5?hourGeo/Math.max(geoAll,.1):1,minuteFactor=!estimated&&minuteRows.length>=5?geo(minuteRows.map(coefficient))/Math.max(geoAll,.1):1;
+
+ if(!estimated){const g=gapStats(desc,10);if(g.count>=8&&g.med>0&&g.mad>0&&g.mad<g.med*.6){const delta=g.last+g.med-now,width=clamp(g.mad*1.4826||g.med*.55,60000,240000);if(Math.abs(delta)<=width*.6){const peak=Math.max(...c.slice(0,80)),div=recent20.length>=3?2:recent20.length>=1?3:4;target=clamp(peak/div,2,20);score=round(clamp(60-Math.abs(delta)/width*15+(!estimated&&hourGeo>geoAll?3:0)+clamp(g.count/20,0,4),40,68));at=now+(delta>0?Math.max(delta,90000):120000);window=clamp(g.med*.25,90000,180000);pattern='Цикл коэффициентов от 10×';basis=`Медианный интервал ${(g.med/60000).toFixed(1)} мин`;return{target,score,at,window,pattern,basis,estimated}}}}
+
+ if(c.slice(0,15).length===15&&c.slice(0,15).every(x=>x<2)){target=clamp(geoAll*2.5+medAll,2.5,15);score=round(clamp(70+(estimated?0:clamp((now-millis(desc[14].timestamp))/60000,0,15)),65,92));at=now+90000;window=120000;pattern='Низкая серия — статистический отскок';basis=`15 раундов ниже 2× · геометрическое среднее ${geoAll.toFixed(2)}×`;return{target,score,at,window,pattern,basis,estimated}}
+
+ if(recent20.length>=3){const bg=geo(recent20.map(coefficient)),div=recent20.length>=5?3:recent20.length>=4?4:5;target=clamp(bg/div,2,12);score=Math.min(78,60+recent20.length*3);at=now+120000;window=150000;pattern=`${recent20.length} недавних раундов от 20×`;basis=`Геометрическое среднее крупных результатов ${bg.toFixed(2)}×`;return{target,score,at,window,pattern,basis,estimated}}
+
+ const last60=c.slice(0,60),zone=last60.filter(x=>x>=5&&x<10),fragile=lowRatio>.55||sigma50>avg50*1.4;if(zone.length>=3){const zg=geo(zone);target=fragile?clamp(zg*.45,2,4.5):clamp(zg*.7,3,7);score=round(clamp(64+zone.length*4+(fragile?-6:6),58,90));at=now+120000;window=150000;pattern=fragile?'Смешанная фаза 5–9×':'Фаза роста 5–9×';basis=`${zone.length} раундов в диапазоне 5–9×`;return{target,score,at,window,pattern,basis,estimated}}
+
+ const composite=ema20*.5+ema50*.3+avg50*.2;target=clamp(composite*hourFactor*.6+(!estimated&&minuteRows.length?Math.max(...minuteRows.map(coefficient))*.1:0)+1.6,1.8,12);const dangerous=lowRatio>.6||sigma50>avg50*1.6;if(dangerous)target=Math.min(target,3.2);else if(lowRatio>.45)target=Math.min(target,5);score=round(clamp(52+clamp(n/25,0,28)+clamp(Math.abs(hourFactor-1)*42,0,22)+clamp(Math.abs(minuteFactor-1)*32,0,16)+(mad50>0&&mad50<avg50*.6?5:0)+(dangerous?-8:0),50,92));const sec=new Date().getSeconds(),extra=((60-sec)*1000)%45000;at=now+120000+extra;window=150000;pattern=dangerous?'Повышенная нестабильность':'Мультисигнальный анализ';basis=`EMA20 ${ema20.toFixed(2)}× · EMA50 ${ema50.toFixed(2)}× · MAD ${mad50.toFixed(2)} · час ${clock.getHours()}: гео ${hourGeo.toFixed(2)}× (${hourRows.length}) · ${n} раундов${estimated?' · время раундов оценочное':''}`;return{target,score,at,window,pattern,basis,estimated}}
+
+function vipPrediction(){
+
+ const data=rounds.filter(r=>coefficient(r)!==null).slice(0,MODEL_LIMIT),now=Date.now();
+
+ if(!data.length)return null;
+
+ const recent=data.slice(0,80),values=recent.map(coefficient),n=values.length;
+
+ const n10=values.filter(x=>x>=10).length,n20=values.filter(x=>x>=20).length,n50=values.filter(x=>x>=50).length,n100=values.filter(x=>x>=100).length;
+
+ let target=10;
+
+ if(n20>=3)target=20;
+
+ if(n50>=2&&n20>=5)target=50;
+
+ if(n100>=2&&n50>=3&&n20>=5)target=100;
+
+ const hits=values.filter(x=>x>=target).length,hitRate=Math.round(hits*100/Math.max(n,1));
+
+ const estimated=data.some(r=>r.estimated);
+
+ let at=now+120000,window=180000,timeBasis='Вход назначен на ближайшее окно VIP-анализа';
+
+ if(!estimated){
+
+  const g=gapStats(data,target);
+
+  if(g.count>=4&&g.med>=60000&&g.med<=1200000&&g.mad<g.med*.8){
+
+   const expected=g.last+g.med,delta=expected-now;
+
+   if(delta>=60000&&delta<=1200000){
+
+    at=expected;
+
+    window=clamp(g.mad?g.mad*1.4826:g.med*.35,120000,360000);
+
+    timeBasis='Время оценено по медианному интервалу крупных результатов';
+
+   }
+
+  }
+
+ }
+
+ const score=round(clamp(55+Math.min(20,hits*3)+(n>=80?5:0),55,80));
+
+ return{target,score,hitRate,hits,sampleSize:n,at,window,pattern:'Автоматический VIP-анализ крупного коэффициента',basis:'За последние '+n+' раундов: ≥10× - '+n10+', ≥20× - '+n20+', ≥50× - '+n50+'. '+timeBasis+'.',estimated};
+
+}
+
+
+function ordinaryAnalysis(){
+ if(!online||!fresh()||rounds.length<20)return null;
+ if(preciseModel())return fromGod(ENGINE.calculatePrediction(exactRounds()));
+ const s=ordinaryPrediction(true);return s?{...s,target:Number(s.target.toFixed(2)),generatedAt:Date.now(),estimated:true,engine:'order-only-audit3',basis:'Анализ последовательности; временные циклы и часовые группы отключены. '+s.basis}:null;
+}
+function bigOpportunity(now=Date.now()){
+ if(!online||!fresh(now)||rounds.length<20)return null;
+ if(preciseModel())return fromGod(ENGINE.detectBigOpportunity(exactRounds(),now),true);
+ // A cluster uses coefficients and order; it does not require exact event times.
+ const recent=rounds.slice(0,80),c20=recent.filter(r=>r.coefficient>=20).length,c50=recent.filter(r=>r.coefficient>=50).length;
+ if(c20<6||c50<3)return null;
+ const score=Math.round(clamp(55+c50*5+c20,55,82));if(score<75)return null;
+ return {target:120,score,at:now+180000,window:360000,generatedAt:now,estimated:true,pattern:'Кластер крупных результатов',rules:['Кластер по порядку раундов'],basis:c20+' результатов ≥20× и '+c50+' результатов ≥50× за '+recent.length+' раундов. Окно ориентировочное, точное время игры неизвестно.',engine:'order-only-audit3'};
+}
+function lockedPrediction(kind){
+ const now=Date.now(),current=kind==='normal'?activeNormal:activeVip;
+ if(current&&now<Math.max(current.at+current.window,current.generatedAt+60000))return current;
+ const next=kind==='normal'?ordinaryAnalysis():online&&fresh()&&rounds.length>=20?vipPrediction():null;
+ if(next){next.generatedAt=now;next.estimated=!preciseModel()||next.estimated}
+ if(kind==='normal')activeNormal=next;else activeVip=next;
+ recordSignal(kind,next);return next;
+}
+function chooseMode(next){mode=next;const vip=next==='vip';$('normalTab').classList.toggle('active',!vip);$('vipTab').classList.toggle('active',vip);$('normalTab').setAttribute('aria-selected',String(!vip));$('vipTab').setAttribute('aria-selected',String(vip));$('normalSignal').hidden=vip;$('vipSignal').hidden=!vip}
+function durationLabel(ms){const s=Math.max(0,Math.ceil(ms/1000));return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')}
+function emptyReason(){if(!online)return 'Ожидаю успешного обновления базы.';if(!rounds.length)return 'В базе пока нет подходящих раундов.';if(!fresh())return 'Последний раунд устарел. Новый прогноз появится после обновления источника.';return 'Для расчёта нужны 20 раундов: получено '+rounds.length+'.'}
+function signalMarkup(s,vip){
+ if(!s)return '<div class="signal-empty">'+escapeText(emptyReason())+'</div>';
+ const now=Date.now(),end=s.at+s.window,p=plan(s.target,s.score),waiting=now<s.at;
+ const level=s.score>=82?'Высокий балл':s.score>=66?'Средний балл':'Низкий балл';
+ return `<div class="analysis-head"><div><h2>${vip?'VIP · крупные цели':'Интеллектуальный анализ Lucky Jet'}</h2><p>${escapeText(s.pattern)} · ${s.estimated?'по последовательности':'по точным временным меткам'}</p></div><span class="analysis-badge">${now>end?'Окно завершено':online&&fresh()?'Сигнал закреплён':'Сигнал сохранён · источник недоступен'}</span></div><div class="analysis-grid ${vip?'vip':''}"><div class="signal-cell"><div class="signal-label">Ориентировочная цель</div><div class="signal-value signal-target">${s.target.toFixed(2)}×</div></div><div class="signal-cell"><div class="signal-label">Уровень оценки</div><div class="signal-value">${level}</div><div class="signal-note">Дополнительная цель: ${p.insurance.toFixed(2)}×</div></div><div class="signal-cell"><div class="signal-label">Оценка правил</div><div class="signal-value blue">${s.score} / 100</div><div class="score-track"><span style="width:${s.score}%"></span></div></div><div class="signal-cell"><div class="signal-label">${s.estimated?'Начало наблюдения ≈':'Расчётное начало окна'}</div><div class="signal-value signal-time">${fmtTime(s.at)}</div><div class="signal-note">${waiting?'До окна: '+durationLabel(s.at-now):now<=end?'До конца: '+durationLabel(end-now):'Ожидается новый расчёт'}</div></div></div><p class="signal-note">Окно наблюдения${s.estimated?' ≈':''}: <b>${fmtTime(s.at)} — ${fmtTime(end)}</b> · ${zone()} · ${rounds.length} раундов в текущей модели.<br>${escapeText(s.basis)}${vip?'<br>Частота цели в исходной выборке: '+s.hitRate+'% ('+s.hits+' / '+s.sampleSize+'); это не точность прогноза.':''}</p>`;
+}
+function saveJournal(){try{localStorage.setItem(JOURNAL_KEY,JSON.stringify(signalJournal.slice(0,300)))}catch(_){}}
+function restoreJournal(){
+ try{
+  const saved=localStorage.getItem(JOURNAL_KEY),legacy=!saved,items=JSON.parse(saved||localStorage.getItem(LEGACY_KEY)||'[]');
+  if(Array.isArray(items))signalJournal=items.filter(s=>s&&['normal','vip','big'].includes(s.kind)&&finiteSignal(s.signal)).slice(0,300).map(s=>({...s,at:s.signal.at,window:s.signal.window,target:s.signal.target,ids:Array.isArray(s.ids)?s.ids.filter(id=>typeof id==='string').slice(0,2000):[],checked:0,approximate:!!s.signal.estimated,coverageGap:true,coverageReason:'Страница была закрыта или перезагружена',status:!legacy&&['hit','miss','observed','expired'].includes(s.status)?s.status:Date.now()<s.signal.at+s.signal.window?'pending':'expired',policy:'audit3'}));
+ }catch(_){signalJournal=[]}
+ for(const s of signalJournal){s.checked=s.ids.length;if(s.status==='pending'&&Date.now()<s.at+s.window){if(s.kind==='normal'&&!activeNormal)activeNormal=s.signal;if(s.kind==='vip'&&!activeVip)activeVip=s.signal;if(s.kind==='big'&&!activeBig)activeBig=s.signal}}
+ saveJournal();
+}
+function recordSignal(kind,s){if(!finiteSignal(s))return;const id=kind+':'+s.generatedAt;if(signalJournal.some(x=>x.id===id))return;signalJournal.unshift({id,kind,signal:s,at:s.at,window:s.window,target:s.target,status:'pending',ids:[],checked:0,approximate:!!s.estimated,coverageGap:false,policy:'audit3'});signalJournal=signalJournal.slice(0,300);saveJournal()}
+function gap(reason){for(const s of signalJournal){if(s.status!=='pending')continue;s.coverageGap=true;s.coverageReason=reason}saveJournal()}
+function merge(items,arrivalIds=new Set()){
+ const incoming=normalizeFeed(items),known=new Map(rounds.map(r=>[r.id,r])),accepted=[];
+ // API batches are newest first. Assign consecutive arrival ranks in reverse.
+ for(const row of [...incoming.rows].reverse())if(!known.has(row.id)&&arrivalIds.has(row.id)){row._observedAt=Date.now();row._sequence=++feedSequence}
+ const result=normalizeFeed([...rounds,...incoming.rows]);rounds=result.rows.slice(0,MODEL_LIMIT);
+ invalidRows+=incoming.invalid;conflictingRows+=incoming.conflicts+result.conflicts;
+ if(incoming.invalid||incoming.conflicts||result.conflicts)gap('Невалидные или конфликтующие записи истории');
+ const retained=new Map(rounds.map(r=>[r.id,r]));
+ for(const r of incoming.rows){const value=retained.get(r.id);if(value&&value.coefficient===r.coefficient&&value.timestamp===r.timestamp)accepted.push(value)}
+ return accepted;
+}
+function processNew(items){
+ for(const s of signalJournal){
+  if(s.status!=='pending')continue;const end=s.at+s.window;
+  for(const r of items){
+   const eventAt=r.timeIssue?r._observedAt:r.timestamp;
+   if(!eventAt||eventAt<s.at||eventAt>end||s.ids.includes(r.id))continue;
+   s.ids.push(r.id);s.checked++;s.approximate ||= r.estimated;
+   if(r.coefficient>=s.target){s.actual=r.coefficient;s.actualAt=eventAt;s.status=s.approximate?'observed':'hit';s.finishedAt=Date.now();break}
+  }
+ }
+ saveJournal();
+}
+function evaluateJournal(now=Date.now()){
+ for(const s of signalJournal){
+  if(s.status!=='pending')continue;const end=s.at+s.window;
+  if(lastPollAt&&now-lastPollAt>COVERAGE_MS&&now>=s.at&&lastPollAt<end){s.coverageGap=true;s.coverageReason='Пропуск обновлений внутри окна'}
+  if(now<=end+GRACE_MS||syncPromise&&now<end+30000)continue;
+  const covered=s.checked>0&&!s.approximate&&!s.coverageGap&&online&&fresh(now)&&!rounds[0].estimated&&rounds[0].timestamp>=end&&lastPollAt>=end+GRACE_MS&&now-lastPollAt<COVERAGE_MS;
+  if(!covered&&online&&now<end+30000)continue;
+  s.status=covered?'miss':'expired';s.finishedAt=now;if(!covered&&!s.coverageReason)s.coverageReason=s.approximate?'Время раундов приблизительное':'Нет полной проверки окна';
+ }
+ saveJournal();
+}
+function bigDiagnostics(){
+ if(!online)return 'Ожидаю соединения с базой. Новое предупреждение сейчас не создаётся.';
+ if(!fresh())return 'Ожидаю свежий раунд: последние данные старше трёх минут.';
+ if(rounds.length<20)return 'Недостаточно данных: '+rounds.length+' / 20 раундов.';
+ const exact=exactRounds(),recent=(preciseModel()?exact:rounds).slice(0,80),c20=recent.filter(r=>r.coefficient>=20).length,c50=recent.filter(r=>r.coefficient>=50).length;
+ const clock=preciseModel()?'Цикл ≥100× и Пуассон проверены по '+exact.length+' точным меткам; самостоятельному кандидату нужен балл ≥75.':'Цикл ≥100× и Пуассон отключены: среди последних 20 раундов есть время ≈. Кластер по коэффициентам доступен.';
+ return 'Кластер за '+recent.length+' последних раундов: ≥20× — '+c20+' (нужно 6), ≥50× — '+c50+' (нужно 3). '+clock;
+}
+function renderExtras(){
+ const now=Date.now(),s=activeBig;
+ $('bigAlert').innerHTML=s?`<div class="big-title">🔥 Крупная цель ${s.target.toFixed(0)}× · ${s.estimated?'окно ≈':'точные метки'}</div><div class="big-main">${fmtTime(s.at)} — ${fmtTime(s.at+s.window)}</div><div class="signal-note">${escapeText(s.basis)}<br>Оценка условий: ${s.score} / 100. Цель закреплена до конца окна.</div>`:`<div class="big-title">Крупные коэффициенты · наблюдение</div><div class="signal-note">${escapeText(bigDiagnostics())}</div>`;
+ evaluateJournal();
+ const names={normal:'Обычный анализ',vip:'VIP',big:'Крупная цель'},labels={pending:'Ожидание окна',hit:'Цель достигнута в окне',miss:'Цель не достигнута за проверенное окно',observed:'Цель наблюдалась · время ≈',expired:'Результат не проверен'};
+ $('signalJournal').innerHTML=signalJournal.slice(0,50).map(x=>`<div class="journal-row"><b>${names[x.kind]} · ${x.target.toFixed(2)}×</b><span>${fmtTime(x.at)} — ${fmtTime(x.at+x.window)}</span><span>${x.status==='pending'&&now>=x.at?'Проверка окна':labels[x.status]}${Number.isFinite(x.actual)?' · '+x.actual.toFixed(2)+'×':''}${x.status==='expired'?' · '+escapeText(x.coverageReason||'Недостаточно данных'):''}</span></div>`).join('')||'<p class="signal-note">Здесь появятся результаты новых сигналов.</p>';
+ const hit=signalJournal.filter(x=>x.status==='hit').length,miss=signalJournal.filter(x=>x.status==='miss').length,n=hit+miss;
+ $('signalStats').textContent='Проверено: '+n+' · попадания: '+hit+' · промахи: '+miss+' · '+(n?'доля попаданий '+Math.round(hit/n*100)+'%':'доля попаданий ещё не рассчитана')+' · время ≈: '+signalJournal.filter(x=>x.status==='observed').length+' · не проверено: '+signalJournal.filter(x=>x.status==='expired').length;
+}
+function renderSignals(){ $('normalSignal').innerHTML=signalMarkup(activeNormal,false);$('vipSignal').innerHTML=signalMarkup(activeVip,true);renderExtras();renderStatus() }
+function renderStatus(){const head=rounds[0],at=head?head._observedAt||(!head.timeIssue?head.timestamp:0):0,age=at?Math.max(0,Math.round((Date.now()-at)/1000)):null,ok=online&&fresh();$('statusDot').className='dot '+(ok?'ok':'err');$('liveDot').className='dot '+(ok?'ok':'err');$('statusText').textContent=(online?'База доступна':'Нет связи')+(age==null?head?.timeIssue?' · часы источника требуют проверки':'':' · '+(head._observedAt?'новый результат получен ':'раунд ')+age+' с назад');$('liveLabel').textContent=ok?'Свежие данные':online?'Ожидание нового результата':'Нет связи'}
+function render(){
+ const sample=rounds.slice(0,LIMIT),nums=sample.map(coefficient),grid=$('grid');grid.replaceChildren();
+ if(!nums.length)grid.innerHTML='<div class="empty">Ожидаю данные из нашей базы.</div>';
+ else{ $('avg').textContent=mean(nums).toFixed(2)+'×';$('max').textContent=Math.max(...nums).toFixed(2)+'×';$('rate2').textContent=Math.round(nums.filter(x=>x>=2).length*100/nums.length)+'%';$('rate10').textContent=Math.round(nums.filter(x=>x>=10).length*100/nums.length)+'%';
+  for(const r of sample){const item=document.createElement('div');item.className='coef';item.dataset&&(item.dataset.roundId=r.id);item.style.setProperty('--coef',color(r.coefficient));const strong=document.createElement('strong'),time=document.createElement('time');strong.textContent=r.coefficient.toFixed(2)+'×';time.textContent=fmtTime(r.timestamp)+(r.estimated?' ≈':'');item.title=r.timeIssue?'Время источника не подтверждено'+(r._observedAt?' · получено '+fmtTime(r._observedAt):''):'ID '+r.id;item.append(strong,time);grid.appendChild(item)}
+ }
+ const exact=exactRounds().length;
+ $('sampleQuality').textContent='В модели '+rounds.length+' / '+MODEL_LIMIT+' · точное время: '+exact+' · время ≈: '+(rounds.length-exact)+' · непроверенные часы: '+rounds.filter(r=>r.timeIssue).length+' · '+zone()+(invalidRows?' · некорректных ID/коэффициентов в ответах: '+invalidRows:'')+(conflictingRows?' · конфликтов ID: '+conflictingRows:'');
+ $('timeWarning').textContent=preciseModel()?'Обычный анализ использует исходные формулы по точным меткам времени. Балл правил не равен вероятности выигрыша.':'Время части раундов приблизительное: доступны последовательность и кластеры, временные циклы и часовые группы отключены. Показанное окно — расписание наблюдения.';
+ $('count').textContent='Показано '+sample.length+' · в модели '+rounds.length;$('subtitle').textContent='Последние результаты · всего в базе '+liveKnownTotal.toLocaleString('ru-RU');renderSignals();renderModelFacts();renderArchive();
+}
+function updateAnalysis(force=false){
+ const now=Date.now();if(!force&&lastAnalysisAt&&now-lastAnalysisAt<8000)return;lastAnalysisAt=now;
+ lockedPrediction('normal');lockedPrediction('vip');
+ if(!activeBig||now>=Math.max(activeBig.at+activeBig.window,activeBig.generatedAt+60000)){activeBig=bigOpportunity(now);recordSignal('big',activeBig)}
+ renderSignals();renderModelFacts();
+}
+function renderModelFacts(){
+ const values=rounds.map(coefficient),last50=values.slice(0,50),g=gapStats(exactRounds(),10);
+ if(!values.length){$('modelFacts').textContent='Ожидаю историю';return}
+ const facts=[['Выборка',values.length+' / '+MODEL_LIMIT],['Среднее',mean(values).toFixed(2)+'×'],['Медиана',median(values).toFixed(2)+'×'],['Геометрическое',geo(values).toFixed(2)+'×'],['EMA20',ema(values.slice(0,20),.25).toFixed(2)+'×'],['EMA50',ema(last50,.12).toFixed(2)+'×'],['MAD50',mad(last50).toFixed(2)],['σ50',deviation(last50).toFixed(2)],['Интервал ≥10×',preciseModel()?(g.med/60000).toFixed(2)+' мин':'недоступен · время ≈'],['MAD интервалов',preciseModel()?(g.mad/60000).toFixed(2)+' мин':'недоступен · время ≈']];
+ $('modelFacts').innerHTML='<div class="facts-grid">'+facts.map(([name,value])=>'<span>'+name+'<b>'+value+'</b></span>').join('')+'</div><p class="signal-note">Последний расчёт '+fmtTime(lastAnalysisAt)+' · полная история '+fmtTime(modelRefreshedAt)+' · исходная модель '+ENGINE.version+'.</p>';
+}
+async function page(limit,offset=0){return window.ClassicCloud.page(limit,offset)}
+async function modelPage(){
+ const first=await page(MODEL_LIMIT);let rows=first.rows.slice(),offset=rows.length,pages=1,valid=normalizeFeed(rows).rows.length;
+ while(offset>0&&valid<MODEL_LIMIT&&(first.total==null||offset<first.total)&&pages<4){const next=await page(Math.min(1000,MODEL_LIMIT-valid),offset);pages++;if(!next.rows.length)break;rows.push(...next.rows);offset+=next.rows.length;valid=normalizeFeed(rows).rows.length}
+ if(pages>1){const head=await page(100),id=first.rows[0]?.id;if(id!=null&&!head.rows.some(r=>String(r.id)===String(id)))gap('История изменилась во время загрузки');rows=[...head.rows,...rows]}
+ return {rows,total:first.total,nextOffset:offset};
+}
+function syncHistory(full=false){
+ if(syncPromise)return syncPromise;
+ syncPromise=(async()=>{
+  const anchor=rounds[0]?.id,startedAt=Date.now();
+  try{
+   const knownIds=new Set(rounds.map(r=>r.id)),wasInitialized=initialized;
+   // Include rows behind the future-clock block as well as the apparent head.
+   const pollLimit=Math.min(1000,100+rounds.filter(r=>r.timeIssue==='clock').length);
+   let result=full||!initialized?await modelPage():await page(pollLimit);
+   const validHead=normalizeFeed(result.rows).rows;
+   if(anchor&&validHead.length&&!validHead.some(r=>r.id===anchor)){if(!full)result=await modelPage();if(!result.rows.some(r=>String(r.id)===anchor))gap('Прежняя граница истории не найдена')}
+   for(const s of signalJournal){if(s.status==='pending'&&lastPollAt&&startedAt-lastPollAt>COVERAGE_MS&&startedAt>=s.at&&lastPollAt<s.at+s.window){s.coverageGap=true;s.coverageReason='Пропуск обновлений в окне'}}
+   if(result.total!=null)liveKnownTotal=result.total;
+   const arrivalIds=new Set();
+   if(wasInitialized){
+    for(const raw of result.rows){const id=String(raw?.id??'');if(knownIds.has(id))break;if(id)arrivalIds.add(id)}
+    const pastHead=Math.max(0,...rounds.filter(r=>r.timestamp&&r.timestamp<=startedAt+30000).map(r=>r.timestamp));
+    // Correct-clock rows can be inserted below older future-clock rows.
+    for(const raw of result.rows){const id=String(raw?.id??''),t=millis(raw?.timestamp??raw?.round_timestamp);if(id&&!knownIds.has(id)&&t>pastHead&&t<=startedAt+30000&&startedAt-t<=FRESH_MS)arrivalIds.add(id)}
+    if(!result.rows.some(r=>knownIds.has(String(r?.id))))arrivalIds.clear();
+   }
+   const items=merge(result.rows,arrivalIds);lastPollAt=Date.now();online=true;
+   if(!initialized)archiveOffset=result.nextOffset??result.rows.length;
+   initialized=true;if(full)modelRefreshedAt=lastPollAt;processNew(items);
+   archiveRows=normalizeFeed([...rounds,...archiveRows]).rows.slice(0,10000);
+   $('updated').textContent='Обновлено: '+fmtTime(lastPollAt);updateAnalysis();render();
+  }catch(e){online=false;gap('История не обновилась: '+e.message);$('updated').textContent='Ошибка: '+e.message;renderStatus();renderSignals()}
+  finally{syncPromise=null}
+ })();return syncPromise;
+}
+const refreshModel=()=>syncHistory(true),checkForNewRound=()=>syncHistory(false);
+function applyLiveRound(raw){const items=merge([raw],new Set([String(raw?.id??'')]));if(items.length){online=true;lastPollAt=Date.now();archiveRows=normalizeFeed([...rounds,...archiveRows]).rows.slice(0,10000)}processNew(items);render();updateAnalysis()}
+function connectLive(){window.ClassicCloud.connect(applyLiveRound,checkForNewRound)}
+function scheduleLiveReconnect(){if(liveReconnectTimer)return;const delay=liveReconnectDelay;liveReconnectDelay=Math.min(30000,Math.round(delay*1.7));liveReconnectTimer=setTimeout(()=>{liveReconnectTimer=null;connectLive()},delay)}
+function archiveSelection(){const min=Number($('archiveMin').value)||1,day=$('archiveDate').value;return archiveRows.filter(r=>r.coefficient>=min&&(!day||localDay(r.timestamp)===day))}
+function renderArchive(){const key=[archiveRows.length,archiveRows[0]?.id,archiveRows[0]?._sequence,$('archiveMin').value,$('archiveDate').value,archiveBusy,archiveDone].join('|');if(key===archiveRenderKey)return;archiveRenderKey=key;const chosen=archiveSelection();$('archiveGrid').innerHTML=chosen.map(r=>'<div class="coef" style="--coef:'+color(r.coefficient)+'"><strong>'+r.coefficient.toFixed(2)+'×</strong><time>'+(r.timestamp?new Date(r.timestamp).toLocaleDateString('ru-RU'):'Дата неизвестна')+'<br>'+fmtTime(r.timestamp)+(r.estimated?' ≈':'')+'</time></div>').join('')||'<div class="empty">В загруженной части истории нет раундов по фильтру.</div>';$('archiveCount').textContent='Загружено '+archiveRows.length+' · показано '+chosen.length+' · '+zone()+'. Фильтр и статистика относятся только к загруженной части.';$('archiveMore').disabled=archiveBusy||archiveDone||archiveRows.length>=10000}
+async function loadArchive(){if(archiveBusy||archiveDone||archiveRows.length>=10000)return;archiveBusy=true;renderArchive();try{const result=await page(500,archiveOffset);archiveOffset+=result.rows.length;archiveRows=normalizeFeed([...archiveRows,...result.rows]).rows.slice(0,10000);archiveDone=!result.rows.length||(result.total!=null&&archiveOffset>=result.total);renderArchive()}catch(e){$('archiveCount').textContent='Архив не обновился: '+e.message}finally{archiveBusy=false;$('archiveMore').disabled=archiveDone||archiveRows.length>=10000}}
+function csvCell(s){let v=String(s);if(/^[=+@-]/.test(v))v="'"+v;return '"'+v.replace(/"/g,'""')+'"'}
+$('archiveCsv').addEventListener('click',()=>{const csv='id,coefficient,timestamp,estimated,time_quality,observed_at\r\n'+archiveSelection().map(r=>[r.id,r.coefficient,r.timestamp?new Date(r.timestamp).toISOString():'',r.estimated,r.timeIssue||'source',r._observedAt?new Date(r._observedAt).toISOString():''].map(csvCell).join(',')).join('\r\n');const url=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'})),a=document.createElement('a');a.href=url;a.download='bog-hishchnik-rounds.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)});
+$('archiveMore').addEventListener('click',loadArchive);$('archiveMin').addEventListener('change',renderArchive);$('archiveDate').addEventListener('change',renderArchive);$('normalTab').addEventListener('click',()=>chooseMode('normal'));$('vipTab').addEventListener('click',()=>chooseMode('vip'));
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){checkForNewRound();renderSignals();connectLive()}});
+restoreJournal();chooseMode('normal');render();refreshModel();connectLive();setInterval(()=>{if(!window.ClassicCloud.connected())checkForNewRound();else window.ClassicCloud.getStatus(true).then(status=>{online=!!status.source_connected&&!!status.fresh;lastPollAt=Date.now();if(!online)gap('Источник Supabase отключён');renderStatus();renderSignals()}).catch(()=>{online=false;gap('Проверка Supabase недоступна');renderStatus();renderSignals()})},POLL_MS);setInterval(refreshModel,300000);setInterval(updateAnalysis,8000);setInterval(renderSignals,1000);
+
+</script>
+<script data-bundled="beeai.js">
+(()=>{'use strict';
+const el=id=>document.getElementById(id),labels={pending:'Проверяется',hit:'Попадание',miss:'Промах',unknown:'Не проверено',late:'Ответ опоздал',observe:'Наблюдение',error:'Ошибка ИИ'};
+let busy=false,last=null,settingsLoaded=false;
+const time=t=>t?new Date(t*1000).toLocaleTimeString('ru-RU',{timeZone:'Europe/Kyiv',hour:'2-digit',minute:'2-digit',second:'2-digit'}):'—';
+function render(d){last=d;el('beeStatus').textContent=d.message+' · '+(d.model||'модель не выбрана');const p=d.predictions?.[0];el('beeTarget').textContent=p?.target?p.target.toFixed(2)+'×':'Нет цели';el('beeWindow').textContent=p?.target?(p.status==='pending'?Math.max(0,p.horizon-(p.observed||0))+' из '+p.horizon+' осталось':p.horizon+' раундов · окно закрыто'):'—';el('beeResult').textContent=labels[p?.status]||'Ожидание';el('beeTime').textContent=time(p?.created_at);el('beeReason').textContent=p?.explanation||'Ожидаю достаточные свежие данные облачного сборщика Supabase.';el('beeToggle').textContent=d.enabled?'Пауза ИИ':'Включить ИИ';if(!settingsLoaded){el('beePersona').value=d.persona||'';el('beeKnowledge').value=d.knowledge||'';settingsLoaded=true;}el('beeStats').textContent=(d.stats||[]).map(s=>'≥'+s.target+'× / '+s.horizon+' раундов: '+s.hits+' попаданий, '+s.misses+' промахов, '+s.unknown+' не проверено').join(' · ')||'Проверенных прогнозов пока нет.';el('beeStats').textContent+=' · Облачный период; прежний журнал сохранён: '+(d.legacy_count||0)+' записей · Ошибки среди последних 100 запросов: '+(d.recent_errors||0);el('beeJournal').replaceChildren();for(const p of (d.predictions||[]).slice(0,25)){const row=document.createElement('p');row.className='signal-note';row.textContent=time(p.created_at)+' · '+(p.target?'≥'+p.target+'× / '+p.horizon+' раунда':'Без цели')+' · '+(labels[p.status]||p.status)+(p.actual?' · факт '+p.actual+'×':'')+' · ID '+p.id;el('beeJournal').append(row)}}
+async function refresh(){if(busy)return;busy=true;try{render(await BeeCloud.request())}catch(e){el('beeStatus').textContent=e.message;el('beeTarget').textContent='—';el('beeResult').textContent='Связь не подтверждена'}finally{busy=false}}
+async function change(body){try{render(await BeeCloud.request('POST',body))}catch(e){el('beeStatus').textContent=e.message}}
+el('beeRefresh').addEventListener('click',refresh);el('beeToggle').addEventListener('click',()=>change({enabled:!last?.enabled}));el('beeSave').addEventListener('click',()=>change({persona:el('beePersona').value,knowledge:el('beeKnowledge').value}));window.addEventListener('bee-cloud-connect',refresh);document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh()});refresh();setInterval(refresh,5000);
+})();
+
+
+</script></body>
+</html>
