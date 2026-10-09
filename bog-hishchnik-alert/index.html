@@ -99,13 +99,13 @@
 
   <div class="foot">БОГ ХИЩНИК · Supabase Realtime · облачный сбор без ПК</div>
 
-</main>
+<section class="section card"><details><summary>Личный доступ к BeeAI</summary><p>Используйте персональную ссылку или код доступа. Ключ Gemini хранится в Supabase.</p><input id="beeAccess" type="password" autocomplete="off" aria-label="Код доступа к BeeAI"><button id="beeConnect" class="load">Подключить ИИ</button></details></section><section class="section card" id="beeai"><h2>BeeAI · отдельный анализ</h2><p id="beeStatus" aria-live="polite">Подключаю ИИ к Supabase…</p><div class="analysis-grid"><div class="signal-cell"><div class="signal-label">Дополнительная цель ИИ · оценка</div><div class="signal-value signal-target" id="beeTarget">—</div></div><div class="signal-cell"><div class="signal-label">Окно в новых раундах</div><div class="signal-value" id="beeWindow">—</div></div><div class="signal-cell"><div class="signal-label">Результат проверки</div><div class="signal-value" id="beeResult">—</div></div><div class="signal-cell"><div class="signal-label">Регистрация · Киев</div><div class="signal-value" id="beeTime">—</div></div></div><p id="beeReason" class="signal-note"></p><p class="signal-note">Это экспериментальная цель, а не известный будущий коэффициент. Преимущество ИИ не доказано; момент начала следующего игрового раунда не подтверждён. Источник: Lucky Jet → Supabase. Оценки сохраняются до результата; ошибки остаются в журнале.</p><button id="beeRefresh" class="load" style="display:inline-block">Проверить состояние</button><button id="beeToggle" class="load" style="display:inline-block">Пауза ИИ</button><details><summary>Роль и база знаний</summary><p>Расчётные функции классической версии передаются ИИ без переписывания. Эти поля задают только стиль и дополнительные факты.</p><label>Роль и стиль<textarea id="beePersona" maxlength="1000" rows="2" style="display:block;width:100%;box-sizing:border-box;background:#191a24;color:white"></textarea></label><label>База знаний<textarea id="beeKnowledge" maxlength="2000" rows="3" style="display:block;width:100%;box-sizing:border-box;background:#191a24;color:white"></textarea></label><button id="beeSave" class="load">Сохранить в Supabase</button></details><details><summary>Журнал ИИ и статистика</summary><p id="beeStats" class="signal-note"></p><div id="beeJournal"></div></details></section></main>
 
 <nav class="bottom-nav" aria-label="Навигация"><a href="#overview"><b>⌂</b>Обзор</a><a href="#mlLab"><b>✦</b>Модели</a><a href="#forecast"><b>◈</b>Правила</a><a href="#history"><b>▦</b>История</a><a href="#about"><b>ⓘ</b>О данных</a></nav>
 
 
 <script src="runtime-config.js"></script>
-<script src="cloud-transport.js"></script>
+<script src="cloud-transport.js"></script><script src="bee-cloud-api.js"></script>
 <script src="ml-core.js"></script>
 <script>
 
@@ -456,7 +456,7 @@ restoreJournal();chooseMode('normal');render();refreshModel();connectLive();setI
 
 </script>
 <script src="ml-client.js"></script>
-</body>
+<script src="beeai.js"></script></body>
 </html>
 
 
