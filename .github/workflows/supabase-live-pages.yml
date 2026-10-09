@@ -1,0 +1,25 @@
+name: Verify Supabase page (main)
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'luckyjet-live/**'
+      - 'tests/supabase-page*'
+      - '.github/workflows/supabase-live-pages.yml'
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: node tests/supabase-page.test.mjs
+        env:
+          PAGE_DIRECTORY: luckyjet-live
+          TZ: Europe/Kyiv
+      - run: node tests/supabase-page-transport.cjs
+      - run: node tests/supabase-page-bee-api.cjs
+      - run: node --check luckyjet-live/cloud-transport.js && node --check luckyjet-live/beeai.js && node --check luckyjet-live/bee-cloud-api.js

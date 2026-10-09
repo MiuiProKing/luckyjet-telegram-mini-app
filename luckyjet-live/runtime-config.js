@@ -1,0 +1,1 @@
+window.BOG_CLOUD={"url": "https://zulsrqkjkatzjjhacowy.supabase.co", "anonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp1bHNycWtqa2F0empqaGFjb3d5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE1MzA4NTksImV4cCI6MjEwNzEwNjg1OX0.0MPkQgxa24gjHcXyQf7t-_tfe0g4kdDkC2SXJOxaOso"};
