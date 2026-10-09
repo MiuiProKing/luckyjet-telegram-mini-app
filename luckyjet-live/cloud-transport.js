@@ -4,7 +4,8 @@ window.ClassicCloud=(()=>{
  const config=window.BOG_CLOUD,base=config.url,key=config.anonKey;
  const headers={apikey:key,Authorization:'Bearer '+key,Accept:'application/json'};
  let latestStatus=null,statusAt=0,joined=false,socket=null,callback=null,onReady=null,retry=1000,retryTimer=null,heartbeat=null,ref=0;
- const convert=row=>({id:row.id,coefficient:Number(row.coefficient),topCoefficient:Number(row.coefficient),timestamp:row.round_timestamp?Date.parse(row.round_timestamp):null,round_timestamp:row.round_timestamp,estimated:row.estimated,source_seq:Number(row.source_seq),feed_order:Number(row.feed_order),origin:row.origin});
+ // Realtime emits the physical table row, without the view's feed_order column.
+ const convert=row=>({id:row.id,coefficient:Number(row.coefficient),topCoefficient:Number(row.coefficient),timestamp:row.round_timestamp?Date.parse(row.round_timestamp):null,round_timestamp:row.round_timestamp,estimated:row.estimated,source_seq:Number(row.source_seq),feed_order:Number(row.feed_order??(1e12+Number(row.source_seq))),origin:row.origin});
  async function getStatus(force=false){
   if(!force&&latestStatus&&Date.now()-statusAt<10000)return latestStatus;
   const response=await fetch(base+'/rest/v1/rpc/luckyjet_cloud_status',{method:'POST',headers:{...headers,'Content-Type':'application/json'},body:'{}',cache:'no-store',signal:AbortSignal.timeout(10000)});
