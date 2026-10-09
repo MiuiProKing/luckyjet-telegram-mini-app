@@ -2,7 +2,7 @@ name: VIP AI checks
 on:
   push:
     branches: [vip-ai-supabase-20261009]
-    paths: ['vip-ai/**', '.github/workflows/vip-ai-checks.yml']
+    paths: ['vip-ai/**', 'supabase/functions/luckyjet-beeai/**', 'supabase/migrations/20261010_beeai_models.sql', '.github/workflows/vip-ai-checks.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -15,4 +15,10 @@ jobs:
         with:
           node-version: '22'
       - run: node vip-ai/tests/vip-ai.test.cjs
+      - run: node vip-ai/tests/server-models.test.mjs
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - run: deno check supabase/functions/luckyjet-beeai/index.ts
+      - run: deno test --allow-env vip-ai/tests/cloud-ai.test.ts
       - run: node vip-ai/tests/cloud-read.cjs

@@ -55,7 +55,14 @@ function mergeKnowledge(previous,block){const prior=String(previous||'');let res
  // Remove our instruction prefix together with the marked block, keep other knowledge.
  let start=a;const instruction=prior.lastIndexOf('VIP AI: используй этот снимок',a);if(instruction>=0)start=instruction;rest=(prior.slice(0,start)+prior.slice(b+END.length)).trim();}
  const merged=[rest,block].filter(Boolean).join('\n');if(merged.length>2000)throw Error('База знаний заполнена: для контекста моделей нужно освободить место (настройки BeeAI ниже)');return merged;}
-function insurance(p){const m=String(p?.explanation||'').match(/Страховка\s*:\s*(1[.,]5|2|3|5)\s*[×xх]/i);if(!m)return null;const n=Number(m[1].replace(',','.'));return n<Number(p.target)?n:null}
+function insurance(p){if(p&&Object.hasOwn(p,'insurance_target')){const n=p.insurance_target;return typeof n==='number'&&[1.5,2,3,5].includes(n)&&n<Number(p.target)?n:null}const m=String(p?.explanation||'').match(/Страховка\s*:\s*(1[.,]5|2|3|5)\s*[×xх]/i);if(!m)return null;const n=Number(m[1].replace(',','.'));return n<Number(p.target)?n:null}
+function diagnostic(d,now=Date.now()){
+ const reasons={paused:'ИИ на паузе',waiting_schedule:'Ожидаю следующую серверную проверку',analyzing:'Gemini анализирует раунды',waiting_result:'Проверяется зарегистрированное окно',pending_window:'Прогноз зарегистрирован; проверяются будущие раунды',observing_no_basis:'Gemini выбрал наблюдение: оснований для цели нет',response_late:'Ответ ИИ опоздал и не является будущим сигналом',source_disconnected:'Облачный сборщик не подключён',source_stale:'Источник устарел',source_gap:'Источник сообщает ошибку или разрыв',source_invalid:'LIVE данные не прошли проверку',warmup:'Разогрев: нужны 200 подтверждённых LIVE раундов',worker_stale:'Сервер ИИ давно не обновлялся',rate_limited:'Лимит Gemini: ожидаю повторную проверку',provider_auth:'Gemini отклонил доступ',database_error:'Сервер не получил данные базы',analysis_error:'Ответ ИИ не прошёл проверку',duplicate_anchor:'Этот опорный раунд уже обработан'};
+ const reason=d?.diagnostics?.reason||d?.status_reason;
+ const label=reasons[reason]||'';
+ const retry=epoch(d?.diagnostics?.retry_at);
+ return label+(retry&&retry>now?' · повтор не раньше '+new Date(retry).toLocaleTimeString('ru-RU',{timeZone:'Europe/Kyiv',hour:'2-digit',minute:'2-digit',second:'2-digit'}):'');
+}
 function removeContext(previous){const a=String(previous||'');if(!a.includes(START))return a;return mergeKnowledge(a,'')}
-root.VipAICore=Object.freeze({epoch,clean,liveRows,sourceReason,evaluate,modelScores,context,mergeKnowledge,removeContext,insurance});
+root.VipAICore=Object.freeze({epoch,clean,liveRows,sourceReason,evaluate,modelScores,context,mergeKnowledge,removeContext,insurance,diagnostic});
 })(typeof window==='undefined'?globalThis:window);

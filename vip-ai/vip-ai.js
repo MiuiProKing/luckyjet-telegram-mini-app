@@ -3,7 +3,7 @@
 'use strict';
 const C=VipAICore,$=id=>document.getElementById(id),names={logistic:'Логистическая',catboost:'CatBoost',lightgbm:'LightGBM',xgboost:'XGBoost'};
 const labels={pending:'Проверяется',hit:'Попадание',miss:'Промах',unknown:'Не проверено',late:'Ответ опоздал',observe:'Наблюдение',error:'Ошибка ИИ'};
-let report=null,reportAt=0,status=null,rows=[],sourceAt=0,sourceError='',apiError='',busy=false,syncBusy=false,autoSync=false,lastAnchor='',lastSync=0,lastSyncMessage='',scores=null,classic=null,anchorId='',selected=true,ruleCard=null;
+let report=null,reportAt=0,status=null,rows=[],sourceAt=0,sourceError='',apiError='',busy=false,syncBusy=false,lastSyncMessage='',scores=null,classic=null,anchorId='',selected=true,ruleCard=null;
 const time=t=>Number.isFinite(t)?BogML.displayTime(t):'—',fmt=p=>(p*100).toFixed(1)+'%';
 function text(id,value){$(id).textContent=String(value??'—')}
 function choose(active){selected=active;$('vipAiSignal').hidden=!active;$('vipAiTab').classList.toggle('active',active);$('vipAiTab').setAttribute('aria-selected',String(active));if(active){for(const id of ['normalTab','vipTab']){$(id).classList.remove('active');$(id).setAttribute('aria-selected','false')}$('normalSignal').hidden=true;$('vipSignal').hidden=true;render();}}
@@ -43,6 +43,7 @@ function renderRuleCard(now){
 function render(){
  const now=Date.now(),p=report?.predictions?.[0],state=C.evaluate(p,quality(now),rows,now,reportAt);
  renderRuleCard(now);
+ const diagnostic=C.diagnostic(report,now);
  const active=state.active&&report?.enabled===true&&report?.key_server_only===true&&!apiError;
  const observing=!!report&&report.enabled===true&&report.key_server_only===true&&!!reportAt&&now-reportAt<=20000&&!apiError&&p?.status==='observe';
  text('vipAiTarget',active?'≥'+p.target+'×':observing?'Наблюдение · без цели':'Нет актуального сигнала');
@@ -51,7 +52,8 @@ function render(){
  text('vipAiRemaining',active?state.remaining+' из '+p.horizon+' осталось':observing?'Окно прогноза не открыто':'—');
  const explanation=p?.explanation?(observing?'Gemini выбрал наблюдение без прогноза: '+p.explanation:active?p.explanation:'Последний ответ ИИ ('+time(C.epoch(p.created_at))+' · '+(p.target?'цель '+p.target+'×':'без цели')+' · '+(labels[p.status]||p.status)+'): '+p.explanation+'. Этот ответ не является актуальным сигналом VIP AI ≥10×.'):'Облачный Gemini может выбрать наблюдение, если оснований нет.';
  text('vipAiExplanation',explanation);
- text('vipAiStatus',sourceError||apiError||(report?.enabled===false?'ИИ на паузе':state.reason)+(report?.message?' · '+report.message:''));
+ text('vipAiStatus',sourceError||apiError||(report?.enabled===false?'ИИ на паузе':state.reason)+(diagnostic?' · '+diagnostic:report?.message?' · '+report.message:''));
+ text('vipAiDiagnostic',diagnostic||'Получаю состояние серверного ИИ…');
  const basis=active?state.anchorRows:rows;
  const key=(basis[0]?.id||'')+'|'+(active?state.created:'current');
  if(C.sourceReason(quality(now),rows)){scores=null;classic=null;anchorId='';}
@@ -69,7 +71,7 @@ function render(){
  text('vipAiStats',(report?.stats||[]).filter(s=>Number(s.target)>=10).map(s=>'≥'+s.target+'× / '+s.horizon+' раундов: '+s.hits+' попаданий, '+s.misses+' промахов, '+s.unknown+' unknown').join(' · ')||'Проверенных прогнозов ≥10× пока нет.');
  $('vipAiJournal').replaceChildren();
  const seen=new Set();for(const item of (report?.predictions||[]).filter(p=>Number(p.target)>=10)){if(seen.has(String(item.id)))continue;seen.add(String(item.id));const el=document.createElement('p');el.className='signal-note';el.textContent=time(C.epoch(item.created_at))+' · ID '+item.id+' · ≥'+item.target+'× · '+item.horizon+' раунда · '+(labels[item.status]||item.status)+(item.actual!=null?' · факт '+item.actual+'×':'')+(item.result_id?' · раунд '+item.result_id:'');$('vipAiJournal').append(el);}
- text('vipAiSyncState',lastSyncMessage||'Ключ Gemini хранится на сервере. Включение передаёт ИИ точные расчёты и оценки 4 моделей, сохраняя вашу базу знаний.');
+ text('vipAiSyncState',lastSyncMessage||'Gemini получает правила и оценки 4 моделей непосредственно в Supabase. Открытая страница и ПК для расчёта моделей не нужны.');
  $('vipAiEnable').disabled=syncBusy;$('vipAiSync').disabled=syncBusy;$('vipAiPause').disabled=syncBusy;
 }
 async function liveQuery(full){
@@ -87,28 +89,24 @@ async function refreshSource(){
  try{
   status=await ClassicCloud.getStatus();await liveQuery(!rows.length||!!sourceError);sourceAt=Date.now();sourceError='';
   render();
-  if(autoSync&&!document.hidden&&selected&&Date.now()-lastSync>=30000&&rows[0]?.id!==lastAnchor)await synchronize(false);
  }catch(e){sourceError=e.message;sourceAt=0;scores=null;classic=null;render()}finally{busy=false}
 }
 async function synchronize(enable){
  if(syncBusy)return;syncBusy=true;render();
  try{
-  const now=Date.now(),reason=C.sourceReason(quality(now),rows);if(reason)throw Error(reason);
-  const computed=calculation(rows,now),block=C.context(rows,quality(now),computed.classic,computed.scores,now);
-  // Read current settings immediately before mutation so other pages' knowledge is retained.
-  const current=await BeeCloud.request(),knowledge=C.mergeKnowledge(current.knowledge,block);
-  const next=await BeeCloud.request('POST',{knowledge,...(enable?{enabled:true}:{})});receive(next);
-  if($('beeKnowledge'))$('beeKnowledge').value=next.knowledge||knowledge;
-  autoSync=true;lastAnchor=rows[0].id;lastSync=Date.now();
-  lastSyncMessage='Расчёты переданы '+time(lastSync)+' · ID '+lastAnchor+'. Gemini использует снимок только при совпадении опорного раунда. Ответ появится после серверной проверки.';
- }catch(e){autoSync=false;lastSyncMessage=e.message;}finally{syncBusy=false;render()}
+  if(enable){const reason=C.sourceReason(quality(Date.now()),rows);if(reason)throw Error(reason);}
+  const next=await BeeCloud.request(enable?'POST':undefined,enable?{enabled:true}:undefined);receive(next);
+  if(next.revision!=='20261010-server-ml-v1')throw Error('Облачный сервер ещё не обновлён. Модели на сервере пока не подтверждены.');
+  const snapshot=next.model_snapshot;
+  lastSyncMessage='Модели считаются на сервере из 200 завершённых раундов.'+(snapshot?' Последний снимок: ID '+snapshot.anchor_id+' · '+snapshot.sample_size+' раундов.':' Первый серверный снимок появится после проверки Gemini.');
+ }catch(e){lastSyncMessage=e.message;}finally{syncBusy=false;render()}
 }
 $('vipAiEnable').addEventListener('click',()=>synchronize(true));
 $('vipAiSync').addEventListener('click',()=>synchronize(false));
 $('vipAiPause').addEventListener('click',async()=>{
- autoSync=false;syncBusy=true;render();try{receive(await BeeCloud.request('POST',{enabled:false}));lastSyncMessage='Облачный ИИ поставлен на паузу.'}catch(e){lastSyncMessage=e.message}finally{syncBusy=false;render()}
+ syncBusy=true;render();try{receive(await BeeCloud.request('POST',{enabled:false}));lastSyncMessage='Облачный ИИ поставлен на паузу.'}catch(e){lastSyncMessage=e.message}finally{syncBusy=false;render()}
 });
 $('vipAiHorizon').addEventListener('change',render);$('vipAiModelTarget').addEventListener('change',render);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshSource();else render()});
-choose(true);refreshSource();setInterval(()=>{render();if(selected||autoSync)refreshSource()},10000);
+choose(true);refreshSource();setInterval(()=>{render();if(selected)refreshSource()},10000);
 })();

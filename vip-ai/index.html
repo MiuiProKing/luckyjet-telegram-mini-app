@@ -81,6 +81,7 @@
   <p class="signal-note">Выше — самостоятельный расчёт правил VIP. Дополнительная цель здесь вычислена формулой. Ниже — отдельный зарегистрированный ответ Gemini и меньшая цель, которую выбирает сам ИИ. Расчётное окно не является обещанием будущего коэффициента.</p>
   <h3>Ответ облачного ИИ</h3>
   <p id="vipAiAnswerStatus" class="signal-note" role="status">Получаю последний ответ Gemini…</p>
+<p class="signal-note" id="vipAiDiagnostic" role="status">Получаю состояние серверного ИИ…</p>
   <div class="vip-ai-grid">
     <div class="vip-ai-cell"><span>Цель ИИ</span><strong id="vipAiTarget">—</strong></div>
     <div class="vip-ai-cell"><span>Зарегистрирован · Киев</span><strong id="vipAiTime">—</strong></div>
@@ -93,7 +94,7 @@
   <div class="vip-ai-actions">
     <button id="vipAiEnable" type="button">Включить VIP AI · ≥10×</button>
     <button id="vipAiPause" type="button">Пауза ИИ</button>
-    <button id="vipAiSync" type="button">Передать расчёты ИИ</button>
+    <button id="vipAiSync" type="button">Обновить ответ ИИ</button>
   </div>
   <p id="vipAiSyncState" class="signal-note">Ключ Gemini хранится на сервере Supabase. При запросе доступа используй персональную ссылку или поле BeeAI ниже.</p>
   <p class="signal-note">Сервис ИИ общий с BeeAI ниже. После включения сервер сам анализирует LIVE без ПК. Снимки четырёх моделей обновляются, пока эта страница открыта; фоновые проверки могут запаздывать.</p>
@@ -566,7 +567,7 @@ el('beeRefresh').addEventListener('click',refresh);el('beeToggle').addEventListe
 </script><script src="classic.js"></script>
 <script src="ml-core.js"></script>
 <script src="models.js"></script>
-<script src="vip-ai-core.js?v=20261010-sequence-fix"></script>
-<script src="vip-ai.js?v=20261010-ai-answer"></script>
+<script src="vip-ai-core.js?v=20261010-server-models"></script>
+<script src="vip-ai.js?v=20261010-server-models"></script>
 </body>
 </html>
