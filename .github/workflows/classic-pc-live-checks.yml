@@ -1,22 +1,25 @@
-name: Verify classic PC LIVE
+name: Verify Supabase page (classic)
 on:
   push:
     branches: [classic-pc-live-20261006]
     paths:
-      - bog-hishchnik-alert/index.html
-      - bog-hishchnik-alert/pc-live.js
-      - tests/pc-live.test.cjs
-      - .github/workflows/classic-pc-live-checks.yml
-  workflow_dispatch:
+      - 'bog-hishchnik-alert/**'
+      - 'tests/supabase-page*'
+      - '.github/workflows/classic-pc-live-checks.yml'
 permissions:
   contents: read
 jobs:
-  verify:
+  check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '22'
-      - run: node --check bog-hishchnik-alert/pc-live.js
-      - run: TZ=Europe/Kyiv node tests/pc-live.test.cjs
+          node-version: '24'
+      - run: node tests/supabase-page.test.mjs
+        env:
+          PAGE_DIRECTORY: bog-hishchnik-alert
+          TZ: Europe/Kyiv
+      - run: node tests/supabase-page-transport.cjs
+      - run: node tests/supabase-page-bee-api.cjs
+      - run: node --check bog-hishchnik-alert/cloud-transport.js && node --check bog-hishchnik-alert/beeai.js && node --check bog-hishchnik-alert/bee-cloud-api.js

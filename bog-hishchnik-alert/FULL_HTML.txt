@@ -9,8 +9,9 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 
 <meta name="theme-color" content="#08080f">
+<meta name="referrer" content="no-referrer">
 
-<title>БОГ ХИЩНИК — история и статистический прогноз</title>
+<title>Lucky Jet CLASSIC + BeeAI · Supabase</title>
 
 <style>
 
@@ -32,7 +33,7 @@
 
 </head>
 
-<body>
+<body><section class="card" style="max-width:920px;margin:0 auto 18px"><h2>Классическая версия + BeeAI · Supabase LIVE</h2><p id="cloudConnection" aria-live="polite">Подключаю Supabase…</p><details><summary>Доступ к BeeAI</summary><p>Коэффициенты доступны без ПК. Для личных настроек ИИ используйте персональную ссылку или код доступа.</p><input id="beeAccess" type="password" autocomplete="off" aria-label="Код доступа к BeeAI"><button id="beeConnect" class="load" style="display:inline-block">Подключить ИИ</button></details></section><script src="runtime-config.js"></script><script src="cloud-transport.js"></script><script src="bee-cloud-api.js"></script>
 
 <main class="app" id="overview">
 
@@ -54,7 +55,7 @@
 
     <div class="switcher" role="tablist" aria-label="Режим прогноза"><button class="active" id="normalTab" role="tab" aria-selected="true">Обычный прогноз</button><button id="vipTab" role="tab" aria-selected="false">VIP · крупные коэффициенты</button></div>
 
-    <p class="ai-description">Локальная статистическая модель по формулам Lucky Jet. Панель показывает цель, уровень оценки, балл правил и окно наблюдения. Балл не является вероятностью выигрыша; отдельная нейросеть не подключена.</p><div id="normalSignal"></div><div id="vipSignal" hidden></div><div class="big-alert" id="bigAlert" aria-live="polite"></div>
+    <p class="ai-description">Локальная статистическая модель по формулам Lucky Jet. Панель показывает цель, уровень оценки, балл правил и окно наблюдения. Балл не является вероятностью выигрыша; Gemini подключён отдельным блоком BeeAI ниже.</p><div id="normalSignal"></div><div id="vipSignal" hidden></div><div class="big-alert" id="bigAlert" aria-live="polite"></div>
 
   </section>
 
@@ -66,7 +67,7 @@
 
     <div class="legend"><span><i class="swatch" style="--c:#0799ed"></i>меньше 2×</span><span><i class="swatch" style="--c:#a02bf1"></i>от 2× до 9,99×</span><span><i class="swatch" style="--c:#ff7900"></i>от 10×</span></div>
 
-    <p class="signal-note">Источник как в beta.html: наша Supabase · v0xff3-live. Последние раунды опрашиваются каждую секунду; полная модель обновляется раз в 30 секунд, HTTP GET, как в beta.html. WebSocket доступен только при разрешённом источником адресе страницы. Обрабатывается вся пачка, совпадающие коэффициенты разных ID сохраняются.</p><p id="sampleQuality" class="signal-note" aria-live="polite"></p><div class="warning" id="timeWarning">Внимание: время раундов в базе может быть примерным. Коэффициенты отображаются по сохранённой истории.</div>
+    <p class="signal-note">Наш общий сборщик: игра → SQLite на ПК → эта страница. Обновление каждую секунду, полная выборка раз в 30 секунд. Второе подключение к игре не создаётся. Supabase не используется; совпадающие коэффициенты разных ID сохраняются.</p><p id="sampleQuality" class="signal-note" aria-live="polite"></p><div class="warning" id="timeWarning">Внимание: время раундов в базе может быть примерным. Коэффициенты отображаются по сохранённой истории.</div>
 
     <div class="meta"><span id="count">Раундов: —</span><span id="updated">Обновление: —</span></div>
 
@@ -75,14 +76,14 @@
   </section>
 
   <section class="section card"><details><summary>История прогнозов · проверка в заданном окне</summary><p id="signalStats" class="signal-note"></p><p class="signal-note">Попадания и промахи относятся к проверенным окнам с точным временем. Наблюдения по времени ≈ и непроверенные окна считаются отдельно. После перезагрузки полнота окна неизвестна. Журнал хранится в этом браузере.</p><div id="signalJournal"></div></details></section>
-<section class="section card"><details><summary>Как рассчитан сигнал · показатели модели</summary><div id="modelFacts" class="signal-note">Ожидаю историю</div><p class="signal-note">Исходные правила: цикл ≥10× → 15 низких → ≥3 крупных за 30 → зона 5–9× → EMA с часовыми и минутными поправками. Для времени ≈ остаются правила по последовательности, часовые группы и циклы отключены. Большая цель: цикл ≥100×, кластер и Пуассон. Кластер требует не менее 6 результатов ≥20× и 3 результатов ≥50× за 80 раундов. Один кандидат требует балл ≥75; несколько дают +5 без проверки независимости. Пуассон описывает историческую паузу, а не шанс будущего выигрыша. Цель закреплена до конца окна.</p></details></section><section class="section card" id="archive"><h2>Архив раундов</h2><p class="signal-note">История нашей Supabase: загруженная часть до 10 000 раундов. Фильтр по дню использует часовой пояс устройства. Одинаковые коэффициенты разных ID сохраняются.</p><div class="archive-tools"><input type="date" id="archiveDate" aria-label="Дата раундов"><select id="archiveMin" aria-label="Минимальный коэффициент"><option value="1">Все результаты</option><option value="2">От 2×</option><option value="10">От 10×</option><option value="100">От 100×</option></select><button id="archiveMore">Загрузить ещё 500 раундов</button><button id="archiveCsv">Скачать загруженные раунды CSV</button></div><p id="archiveCount" class="signal-note">Архив ещё не загружен</p><div class="history-grid" id="archiveGrid"></div></section>
-<section class="section card about" id="about"><strong>Источник данных</strong><br>Локальная версия 4 · доставка раундов 03.10.2026. Выборка 2000 раундов, полное обновление каждые 30 секунд, пересчёт каждые 8 секунд. Обычная модель: исходные клиентские De/Ce, EMA20/50, геометрическое среднее, медиана и MAD. При приблизительном времени используется анализ последовательности. Предупреждение: цикл 100×, кластер и формула Пуассона. Проценты — оценки эвристик, а не измеренная точность. <a href="MODEL_AUDIT.md">Подробный разбор формул</a><br>Страница читает публичную историю из подключённой базы Supabase и обновляет её автоматически. Прогнозные значения являются статистическими оценками по истории и не гарантируют результат следующего раунда.</section>
+<section class="section card"><details><summary>Как рассчитан сигнал · показатели модели</summary><div id="modelFacts" class="signal-note">Ожидаю историю</div><p class="signal-note">Исходные правила: цикл ≥10× → 15 низких → ≥3 крупных за 30 → зона 5–9× → EMA с часовыми и минутными поправками. Для времени ≈ остаются правила по последовательности, часовые группы и циклы отключены. Большая цель: цикл ≥100×, кластер и Пуассон. Кластер требует не менее 6 результатов ≥20× и 3 результатов ≥50× за 80 раундов. Один кандидат требует балл ≥75; несколько дают +5 без проверки независимости. Пуассон описывает историческую паузу, а не шанс будущего выигрыша. Цель закреплена до конца окна.</p></details></section><section class="section card" id="beeai"><h2>BeeAI · отдельный анализ</h2><p id="beeStatus" aria-live="polite">Подключаю ИИ к Supabase…</p><div class="analysis-grid"><div class="signal-cell"><div class="signal-label">Дополнительная цель ИИ · оценка</div><div class="signal-value signal-target" id="beeTarget">—</div></div><div class="signal-cell"><div class="signal-label">Окно в новых раундах</div><div class="signal-value" id="beeWindow">—</div></div><div class="signal-cell"><div class="signal-label">Результат проверки</div><div class="signal-value" id="beeResult">—</div></div><div class="signal-cell"><div class="signal-label">Регистрация · Киев</div><div class="signal-value" id="beeTime">—</div></div></div><p id="beeReason" class="signal-note"></p><p class="signal-note">Это экспериментальная цель, а не известный будущий коэффициент. Преимущество ИИ не доказано; момент начала следующего игрового раунда не подтверждён. Источник: Lucky Jet → Supabase. Оценки сохраняются до результата; ошибки остаются в журнале.</p><button id="beeRefresh" class="load" style="display:inline-block">Проверить состояние</button><button id="beeToggle" class="load" style="display:inline-block">Пауза ИИ</button><details><summary>Роль и база знаний</summary><p>Расчётные функции классической версии передаются ИИ без переписывания. Эти поля задают только стиль и дополнительные факты.</p><label>Роль и стиль<textarea id="beePersona" maxlength="1000" rows="2" style="display:block;width:100%;box-sizing:border-box;background:#191a24;color:white"></textarea></label><label>База знаний<textarea id="beeKnowledge" maxlength="2000" rows="3" style="display:block;width:100%;box-sizing:border-box;background:#191a24;color:white"></textarea></label><button id="beeSave" class="load">Сохранить в Supabase</button></details><details><summary>Журнал ИИ и статистика</summary><p id="beeStats" class="signal-note"></p><div id="beeJournal"></div></details></section><section class="section card" id="archive"><h2>Архив раундов</h2><p class="signal-note">История Supabase: загруженная часть до 10 000 раундов. Фильтр по дню использует часовой пояс устройства. Одинаковые коэффициенты разных ID сохраняются.</p><div class="archive-tools"><input type="date" id="archiveDate" aria-label="Дата раундов"><select id="archiveMin" aria-label="Минимальный коэффициент"><option value="1">Все результаты</option><option value="2">От 2×</option><option value="10">От 10×</option><option value="100">От 100×</option></select><button id="archiveMore">Загрузить ещё 500 раундов</button><button id="archiveCsv">Скачать загруженные раунды CSV</button></div><p id="archiveCount" class="signal-note">Архив ещё не загружен</p><div class="history-grid" id="archiveGrid"></div></section>
+<section class="section card about" id="about"><strong>Источник данных</strong><br>Локальная версия 4 · доставка раундов 03.10.2026. Выборка 2000 раундов, полное обновление каждые 5 минут, пересчёт каждые 8 секунд. Обычная модель: исходные клиентские De/Ce, EMA20/50, геометрическое среднее, медиана и MAD. При приблизительном времени используется анализ последовательности. Предупреждение: цикл 100×, кластер и формула Пуассона. Проценты — оценки эвристик, а не измеренная точность. <a href="MODEL_AUDIT.md">Подробный разбор формул</a><br>Страница получает историю и LIVE из Supabase без ПК. Gemini анализирует эти данные в отдельном блоке BeeAI. Прогнозные значения являются статистическими оценками по истории и не гарантируют результат следующего раунда.</section>
 
   <div class="foot">БОГ ХИЩНИК · последние раунды каждую секунду · полная история каждые 30 секунд</div>
 
 </main>
 
-<nav class="bottom-nav" aria-label="Навигация"><a href="#overview"><b>⌂</b>Обзор</a><a href="#forecast"><b>✦</b>Прогноз</a><a href="#history"><b>▦</b>История</a><a href="#about"><b>ⓘ</b>О данных</a></nav>
+<nav class="bottom-nav" aria-label="Навигация"><a href="#overview"><b>⌂</b>Обзор</a><a href="#forecast"><b>✦</b>Прогноз</a><a href="#history"><b>▦</b>История</a><a href="#about"><b>ⓘ</b>О данных</a><a href="#beeai">✧ BeeAI</a></nav>
 
 
 <script>
@@ -152,10 +153,11 @@ window.GodPreditor=Object.freeze({calculatePrediction,detectBigOpportunity,norma
 </script>
 <script>
 'use strict';
-const API='https://xrniwkvfrtchtxjrwwgd.supabase.co/functions/v1/v0xff3-live';
+const API=window.BOG_CLOUD.url+'/rest/v1/luckyjet_classic_history';
+let collectorStatus=null;
 const ENGINE=window.GodPreditor,$=id=>document.getElementById(id);
-const LIMIT=100,MODEL_LIMIT=2000,POLL_MS=1000,FRESH_MS=180000,COVERAGE_MS=15000,GRACE_MS=15000;
-const JOURNAL_KEY='bog_hishchnik_alert_audit_v3',LEGACY_KEY='bog_hishchnik_alert_20261001';
+const LIMIT=100,MODEL_LIMIT=2000,POLL_MS=10000,FRESH_MS=180000,COVERAGE_MS=15000,GRACE_MS=15000;
+const JOURNAL_KEY='github_classic_beeai_cloud_rules_20261009',LEGACY_KEY='github_classic_pc_rules_none';
 let rounds=[],mode='normal',activeNormal=null,activeVip=null,activeBig=null,signalJournal=[];
 let online=false,lastPollAt=0,syncPromise=null,initialized=false,lastAnalysisAt=0,modelRefreshedAt=0;
 let liveKnownTotal=0,invalidRows=0,conflictingRows=0,liveSocket=null,liveReconnectTimer=null,liveReconnectDelay=5000;
@@ -183,7 +185,7 @@ function normalizeFeed(input){
  }
  return {rows:[...map.values()].sort(compareFeed),invalid,conflicts};
 }
-function fresh(now=Date.now()){const head=rounds[0];if(!head)return false;const t=head._observedAt||(!head.timeIssue?head.timestamp:0);return t>0&&now-t<=FRESH_MS&&t<=now+30000}
+function fresh(now=Date.now()){if(collectorStatus)return !!collectorStatus.fresh&&now-lastPollAt<=COVERAGE_MS;const head=rounds[0];if(!head)return false;const t=head._observedAt||(!head.timeIssue?head.timestamp:0);return t>0&&now-t<=FRESH_MS&&t<=now+30000}
 function preciseModel(){return fresh()&&rounds.length>=20&&rounds.slice(0,20).every(r=>!r.estimated)}
 function exactRounds(){return rounds.filter(r=>!r.estimated)}
 function finiteSignal(s){return s&&Number.isFinite(s.target)&&s.target>=1&&Number.isFinite(s.score)&&s.score>=0&&s.score<=100&&Number.isFinite(s.at)&&s.at>0&&Number.isFinite(s.window)&&s.window>0&&s.window<=1800000&&Number.isFinite(s.generatedAt)}
@@ -284,7 +286,7 @@ function lockedPrediction(kind){
 }
 function chooseMode(next){mode=next;const vip=next==='vip';$('normalTab').classList.toggle('active',!vip);$('vipTab').classList.toggle('active',vip);$('normalTab').setAttribute('aria-selected',String(!vip));$('vipTab').setAttribute('aria-selected',String(vip));$('normalSignal').hidden=vip;$('vipSignal').hidden=!vip}
 function durationLabel(ms){const s=Math.max(0,Math.ceil(ms/1000));return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')}
-function emptyReason(){if(!online)return 'Ожидаю успешного обновления базы.';if(!rounds.length)return 'В базе пока нет подходящих раундов.';if(!fresh())return 'Последний раунд устарел. Новый прогноз появится после обновления источника.';return 'Для расчёта нужны 20 раундов: получено '+rounds.length+'.'}
+function emptyReason(){if(collectorStatus&&!collectorStatus.fresh)return collectorStatus.source_connected?'Собираются новые раунды: '+collectorStatus.session_rounds+'/'+collectorStatus.warmup_required+'. История доступна.':'Наш сборщик ожидает подключения к игре.';if(!online)return 'Ожидаю успешного обновления базы.';if(!rounds.length)return 'В базе пока нет подходящих раундов.';if(!fresh())return 'Последний раунд устарел. Новый прогноз появится после обновления источника.';return 'Для расчёта нужны 20 раундов: получено '+rounds.length+'.'}
 function signalMarkup(s,vip){
  if(!s)return '<div class="signal-empty">'+escapeText(emptyReason())+'</div>';
  const now=Date.now(),end=s.at+s.window,p=plan(s.target,s.score),waiting=now<s.at;
@@ -338,7 +340,7 @@ function evaluateJournal(now=Date.now()){
 }
 function bigDiagnostics(){
  if(!online)return 'Ожидаю соединения с базой. Новое предупреждение сейчас не создаётся.';
- if(!fresh())return 'Ожидаю свежий раунд: последние данные старше трёх минут.';
+ if(collectorStatus&&!collectorStatus.fresh)return emptyReason();if(!fresh())return 'Ожидаю свежий раунд: последние данные старше трёх минут.';
  if(rounds.length<20)return 'Недостаточно данных: '+rounds.length+' / 20 раундов.';
  const exact=exactRounds(),recent=(preciseModel()?exact:rounds).slice(0,80),c20=recent.filter(r=>r.coefficient>=20).length,c50=recent.filter(r=>r.coefficient>=50).length;
  const clock=preciseModel()?'Цикл ≥100× и Пуассон проверены по '+exact.length+' точным меткам; самостоятельному кандидату нужен балл ≥75.':'Цикл ≥100× и Пуассон отключены: среди последних 20 раундов есть время ≈. Кластер по коэффициентам доступен.';
@@ -354,7 +356,7 @@ function renderExtras(){
  $('signalStats').textContent='Проверено: '+n+' · попадания: '+hit+' · промахи: '+miss+' · '+(n?'доля попаданий '+Math.round(hit/n*100)+'%':'доля попаданий ещё не рассчитана')+' · время ≈: '+signalJournal.filter(x=>x.status==='observed').length+' · не проверено: '+signalJournal.filter(x=>x.status==='expired').length;
 }
 function renderSignals(){ $('normalSignal').innerHTML=signalMarkup(activeNormal,false);$('vipSignal').innerHTML=signalMarkup(activeVip,true);renderExtras();renderStatus() }
-function renderStatus(){const head=rounds[0],at=head?head._observedAt||(!head.timeIssue?head.timestamp:0):0,age=at?Math.max(0,Math.round((Date.now()-at)/1000)):null,ok=online&&fresh();$('statusDot').className='dot '+(ok?'ok':'err');$('liveDot').className='dot '+(ok?'ok':'err');$('statusText').textContent=(online?'База доступна':'Нет связи')+(age==null?head?.timeIssue?' · часы источника требуют проверки':'':' · '+(head._observedAt?'новый результат получен ':'раунд ')+age+' с назад');$('liveLabel').textContent=ok?'Свежие данные':online?'Ожидание нового результата':'Нет связи'}
+function renderStatus(){if(collectorStatus){const ok=fresh();$('statusDot').className='dot '+(ok?'ok':'err');$('liveDot').className='dot '+(ok?'ok':'err');$('statusText').textContent='Supabase · '+collectorStatus.live_count+' раундов';$('liveLabel').textContent=ok?'Свежие данные':collectorStatus.source_connected?'Сбор '+collectorStatus.session_rounds+'/'+collectorStatus.warmup_required:'Источник отключён';return}const head=rounds[0],at=head?head._observedAt||(!head.timeIssue?head.timestamp:0):0,age=at?Math.max(0,Math.round((Date.now()-at)/1000)):null,ok=online&&fresh();$('statusDot').className='dot '+(ok?'ok':'err');$('liveDot').className='dot '+(ok?'ok':'err');$('statusText').textContent=(online?'База доступна':'Нет связи')+(age==null?head?.timeIssue?' · часы источника требуют проверки':'':' · '+(head._observedAt?'новый результат получен ':'раунд ')+age+' с назад');$('liveLabel').textContent=ok?'Свежие данные':online?'Ожидание нового результата':'Нет связи'}
 function render(){
  const sample=rounds.slice(0,LIMIT),nums=sample.map(coefficient),grid=$('grid');grid.replaceChildren();
  if(!nums.length)grid.innerHTML='<div class="empty">Ожидаю данные из нашей базы.</div>';
@@ -378,12 +380,13 @@ function renderModelFacts(){
  const facts=[['Выборка',values.length+' / '+MODEL_LIMIT],['Среднее',mean(values).toFixed(2)+'×'],['Медиана',median(values).toFixed(2)+'×'],['Геометрическое',geo(values).toFixed(2)+'×'],['EMA20',ema(values.slice(0,20),.25).toFixed(2)+'×'],['EMA50',ema(last50,.12).toFixed(2)+'×'],['MAD50',mad(last50).toFixed(2)],['σ50',deviation(last50).toFixed(2)],['Интервал ≥10×',preciseModel()?(g.med/60000).toFixed(2)+' мин':'недоступен · время ≈'],['MAD интервалов',preciseModel()?(g.mad/60000).toFixed(2)+' мин':'недоступен · время ≈']];
  $('modelFacts').innerHTML='<div class="facts-grid">'+facts.map(([name,value])=>'<span>'+name+'<b>'+value+'</b></span>').join('')+'</div><p class="signal-note">Последний расчёт '+fmtTime(lastAnalysisAt)+' · полная история '+fmtTime(modelRefreshedAt)+' · исходная модель '+ENGINE.version+'.</p>';
 }
-async function page(limit,offset=0){const response=await fetch(API+'?limit='+limit+'&offset='+offset+'&t='+Date.now(),{cache:'no-store',headers:{Accept:'application/json'},signal:AbortSignal.timeout(10000)});if(!response.ok)throw Error('HTTP '+response.status);const body=await response.json();if(body.ok!==true||!Array.isArray(body.history))throw Error('Неверный ответ истории');const total=ENGINE.numberValue(body.total);return {rows:body.history,total:total!=null&&total>=0?total:null}}
+function timeoutSignal(ms){const c=new AbortController();setTimeout(()=>c.abort(),ms);return c.signal}
+async function page(limit,offset=0){const result=await window.ClassicCloud.page(limit,offset);return {...result,collector:{source_connected:result.sourceConnected,fresh:!!result.cloudStatus.fresh,error:result.cloudStatus.error,session_rounds:result.total,warmup_required:20,live_count:result.total}}}
 async function modelPage(){
  const first=await page(MODEL_LIMIT);let rows=first.rows.slice(),offset=rows.length,pages=1,valid=normalizeFeed(rows).rows.length;
  while(offset>0&&valid<MODEL_LIMIT&&(first.total==null||offset<first.total)&&pages<4){const next=await page(Math.min(1000,MODEL_LIMIT-valid),offset);pages++;if(!next.rows.length)break;rows.push(...next.rows);offset+=next.rows.length;valid=normalizeFeed(rows).rows.length}
  if(pages>1){const head=await page(100),id=first.rows[0]?.id;if(id!=null&&!head.rows.some(r=>String(r.id)===String(id)))gap('История изменилась во время загрузки');rows=[...head.rows,...rows]}
- return {rows,total:first.total,nextOffset:offset};
+ return {rows,total:first.total,nextOffset:offset,collector:first.collector};
 }
 function syncHistory(full=false){
  if(syncPromise)return syncPromise;
@@ -406,28 +409,18 @@ function syncHistory(full=false){
     for(const raw of result.rows){const id=String(raw?.id??''),t=millis(raw?.timestamp??raw?.round_timestamp);if(id&&!knownIds.has(id)&&t>pastHead&&t<=startedAt+30000&&startedAt-t<=FRESH_MS)arrivalIds.add(id)}
     if(!result.rows.some(r=>knownIds.has(String(r?.id))))arrivalIds.clear();
    }
-   const items=merge(result.rows,arrivalIds);lastPollAt=Date.now();online=true;
+   collectorStatus=result.collector||null;window.BOG_SOURCE_STATUS=collectorStatus;const items=merge(result.rows,arrivalIds);lastPollAt=Date.now();online=!!collectorStatus?.source_connected;if(collectorStatus?.gap)gap("Разрыв игрового потока; непроверяемое окно");
    if(!initialized)archiveOffset=result.nextOffset??result.rows.length;
-   initialized=true;if(full)modelRefreshedAt=lastPollAt;processNew(items);
+   initialized=true;if(full)modelRefreshedAt=lastPollAt;if(fresh())processNew(items);
    archiveRows=normalizeFeed([...rounds,...archiveRows]).rows.slice(0,10000);
    $('updated').textContent='Обновлено: '+fmtTime(lastPollAt);updateAnalysis();render();
-  }catch(e){online=false;gap('История не обновилась: '+e.message);$('updated').textContent='Ошибка: '+e.message;renderStatus();renderSignals()}
+  }catch(e){online=false;if(collectorStatus)collectorStatus={...collectorStatus,fresh:false};gap('История не обновилась: '+e.message);$('updated').textContent='Ошибка: '+e.message;renderStatus();renderSignals()}
   finally{syncPromise=null}
  })();return syncPromise;
 }
 const refreshModel=()=>syncHistory(true),checkForNewRound=()=>syncHistory(false);
 function applyLiveRound(raw){const items=merge([raw],new Set([String(raw?.id??'')]));if(items.length){online=true;lastPollAt=Date.now();archiveRows=normalizeFeed([...rounds,...archiveRows]).rows.slice(0,10000)}processNew(items);render();updateAnalysis()}
-function connectLive(){
- // The server restricts WebSocket Origin to the published app; file:// uses
- // the same public GET transport as beta.html instead of futile reconnects.
- if(typeof location!=='undefined'&&location.origin!=='https://miuiproking.github.io')return;
- if(liveSocket&&liveSocket.readyState<2)return;
- try{const socket=new WebSocket(API.replace(/^https:/,'wss:')+'?mode=live');liveSocket=socket;
-  socket.onopen=()=>{liveReconnectDelay=5000};
-  socket.onmessage=event=>{try{const message=JSON.parse(event.data);if(message.type==='round')applyLiveRound(message.round)}catch(_){}};
-  socket.onerror=()=>socket.close();socket.onclose=()=>{if(liveSocket===socket)liveSocket=null;scheduleLiveReconnect()};
- }catch(_){scheduleLiveReconnect()}
-}
+function connectLive(){window.ClassicCloud.connect(applyLiveRound,checkForNewRound)}
 function scheduleLiveReconnect(){if(liveReconnectTimer)return;const delay=liveReconnectDelay;liveReconnectDelay=Math.min(30000,Math.round(delay*1.7));liveReconnectTimer=setTimeout(()=>{liveReconnectTimer=null;connectLive()},delay)}
 function archiveSelection(){const min=Number($('archiveMin').value)||1,day=$('archiveDate').value;return archiveRows.filter(r=>r.coefficient>=min&&(!day||localDay(r.timestamp)===day))}
 function renderArchive(){const key=[archiveRows.length,archiveRows[0]?.id,archiveRows[0]?._sequence,$('archiveMin').value,$('archiveDate').value,archiveBusy,archiveDone].join('|');if(key===archiveRenderKey)return;archiveRenderKey=key;const chosen=archiveSelection();$('archiveGrid').innerHTML=chosen.map(r=>'<div class="coef" style="--coef:'+color(r.coefficient)+'"><strong>'+r.coefficient.toFixed(2)+'×</strong><time>'+(r.timestamp?new Date(r.timestamp).toLocaleDateString('ru-RU'):'Дата неизвестна')+'<br>'+fmtTime(r.timestamp)+(r.estimated?' ≈':'')+'</time></div>').join('')||'<div class="empty">В загруженной части истории нет раундов по фильтру.</div>';$('archiveCount').textContent='Загружено '+archiveRows.length+' · показано '+chosen.length+' · '+zone()+'. Фильтр и статистика относятся только к загруженной части.';$('archiveMore').disabled=archiveBusy||archiveDone||archiveRows.length>=10000}
@@ -436,8 +429,9 @@ function csvCell(s){let v=String(s);if(/^[=+@-]/.test(v))v="'"+v;return '"'+v.re
 $('archiveCsv').addEventListener('click',()=>{const csv='id,coefficient,timestamp,estimated,time_quality,observed_at\r\n'+archiveSelection().map(r=>[r.id,r.coefficient,r.timestamp?new Date(r.timestamp).toISOString():'',r.estimated,r.timeIssue||'source',r._observedAt?new Date(r._observedAt).toISOString():''].map(csvCell).join(',')).join('\r\n');const url=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'})),a=document.createElement('a');a.href=url;a.download='bog-hishchnik-rounds.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)});
 $('archiveMore').addEventListener('click',loadArchive);$('archiveMin').addEventListener('change',renderArchive);$('archiveDate').addEventListener('change',renderArchive);$('normalTab').addEventListener('click',()=>chooseMode('normal'));$('vipTab').addEventListener('click',()=>chooseMode('vip'));
 document.addEventListener('visibilitychange',()=>{if(!document.hidden){checkForNewRound();renderSignals();connectLive()}});
-restoreJournal();chooseMode('normal');render();refreshModel();connectLive();setInterval(checkForNewRound,POLL_MS);setInterval(refreshModel,30000);setInterval(updateAnalysis,8000);setInterval(renderSignals,1000);
+window.addEventListener('bee-cloud-connect',()=>refreshModel());document.addEventListener('visibilitychange',()=>{if(!document.hidden){gap('Страница была в фоне: непрерывность окна не подтверждена');refreshModel()}});restoreJournal();chooseMode('normal');render();refreshModel();connectLive();setInterval(()=>{if(!window.ClassicCloud.connected())checkForNewRound();else window.ClassicCloud.getStatus(true).then(status=>{collectorStatus={...(collectorStatus||{}),source_connected:status.source_connected,fresh:status.fresh,error:status.error};online=!!status.source_connected;lastPollAt=Date.now();if(!status.fresh)gap('Источник Supabase отключён');renderStatus();renderSignals()}).catch(()=>{online=false;if(collectorStatus)collectorStatus.fresh=false;gap('Проверка Supabase недоступна');renderStatus();renderSignals()})},POLL_MS);setInterval(refreshModel,300000);setInterval(updateAnalysis,8000);setInterval(renderSignals,1000);
 
 </script>
-</body>
+<script src="beeai.js"></script></body>
 </html>
+
