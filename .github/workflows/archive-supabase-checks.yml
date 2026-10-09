@@ -1,0 +1,25 @@
+name: Verify Supabase page (archive)
+on:
+  push:
+    branches: [classic-archive-supabase-20261009]
+    paths:
+      - 'bog-hishchnik-alert/**'
+      - 'tests/supabase-page*'
+      - '.github/workflows/archive-supabase-checks.yml'
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: node tests/supabase-page.test.mjs
+        env:
+          PAGE_DIRECTORY: bog-hishchnik-alert
+          TZ: Europe/Kyiv
+      - run: node tests/supabase-page-transport.cjs
+      - run: node tests/supabase-page-bee-api.cjs
+      - run: node --check bog-hishchnik-alert/cloud-transport.js && node --check bog-hishchnik-alert/beeai.js && node --check bog-hishchnik-alert/bee-cloud-api.js
