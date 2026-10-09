@@ -4,10 +4,21 @@
 const START='[VIP_AI_CONTEXT]',END='[/VIP_AI_CONTEXT]';
 function epoch(v){if(v==null||v==='')return null;const n=typeof v==='number'?(v<1e12?v*1000:v):Date.parse(v);return Number.isFinite(n)?n:null}
 function clean(rows){const seen=new Map();for(const r of rows||[]){const id=String(r.id||'');const coefficient=Number(r.coefficient??r.coef);if(!id||!Number.isFinite(coefficient)||coefficient<1)continue;if(seen.has(id)){if(seen.get(id).coefficient!==coefficient)throw Error('Конфликт коэффициентов одного раунда');continue}seen.set(id,{...r,id,coefficient,timestamp:epoch(r.timestamp??r.round_timestamp)});}return [...seen.values()]}
-function sourceReason(s,rows){if(!s||s.source_connected!==true)return 'Сборщик Supabase не подключён';if(s.fresh!==true)return 'Данные Supabase устарели';if(s.error||s.gap||s.has_gap)return 'Источник сообщает ошибку или разрыв';if(!Number.isFinite(Number(s.session_rounds))||Number(s.session_rounds)<Math.max(200,Number(s.warmup_required)||200)||rows.length<200)return 'Разогрев: нужны 200 свежих последовательных раундов';return null}
+function sourceReason(s,rows,now=Date.now()){
+ if(!s||s.source_connected!==true)return 'Сборщик Supabase не подключён';
+ if(s.fresh!==true)return 'Данные Supabase устарели';
+ if(s.error||s.gap||s.has_gap)return 'Источник сообщает ошибку или разрыв';
+ const required=Math.max(200,Number(s.warmup_required)||200),session=s.session_rounds==null?null:Number(s.session_rounds);
+ if(rows.length<required||(session!=null&&(!Number.isFinite(session)||session<required)))return 'Разогрев: нужны '+required+' свежих последовательных раундов';
+ // The cloud RPC has no session counter; confirm warmup from actual cloud LIVE receipts, as the server does.
+ const sample=rows.slice(0,required),received=sample.map(r=>epoch(r.live_received_at));
+ if(sample.some(r=>r.origin!=='live'||r.collection_backend!=='cloud')||received.some(t=>t==null)||now-received[0]>=180000||received[0]>now+30000)return 'Свежесть LIVE раундов не подтверждена';
+ for(let n=1;n<received.length;n++)if(received[n]>received[n-1]||received[n-1]-received[n]>=180000)return 'Разрыв времени получения LIVE раундов';
+ return null;
+}
 function evaluate(p,s,rows,now,reportAt){
  let list;try{list=clean(rows)}catch(e){return {active:false,reason:e.message}}
- const reason=sourceReason(s,list);if(reason)return {active:false,reason};
+ const reason=sourceReason(s,list,now);if(reason)return {active:false,reason};
  if(!reportAt||now-reportAt>20000||reportAt>now+30000)return {active:false,reason:'Связь с облачным ИИ не подтверждена'};
  if(!p)return {active:false,reason:'ИИ пока не зарегистрировал прогноз'};
  if(p.status!=='pending')return {active:false,reason:'Окно закрыто: '+p.status};

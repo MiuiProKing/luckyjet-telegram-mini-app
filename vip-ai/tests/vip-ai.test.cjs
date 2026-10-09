@@ -5,13 +5,14 @@ const sandbox={Date,Intl,console};sandbox.globalThis=sandbox;vm.createContext(sa
 for(const file of ['vip-ai-core.js','classic.js','ml-core.js'])vm.runInContext(code(file),sandbox,{filename:file});
 const C=sandbox.VipAICore,ml=sandbox.BogML,classic=sandbox.VipClassic;
 const artifact=JSON.parse(code('models.js').replace(/^window.VIP_AI_MODELS=/,'').replace(/;\s*$/,''));
-const now=Date.now(),rows=Array.from({length:210},(_,i)=>({id:'r'+(1000-i),coefficient:i%7?1.8:12,timestamp:now-i*30000,estimated:true,source_seq:1000-i,origin:'live',collection_backend:'cloud'}));
+const now=Date.now(),rows=Array.from({length:210},(_,i)=>({id:'r'+(1000-i),coefficient:i%7?1.8:12,timestamp:now-i*30000,estimated:true,source_seq:1000-i,origin:'live',collection_backend:'cloud',live_received_at:new Date(now-i*30000).toISOString()}));
 const s={source_connected:true,fresh:true,session_rounds:300,warmup_required:200};
 const p={id:1,anchor_id:rows[0].id,created_at:now/1000,target:10,horizon:3,status:'pending',observed:0,explanation:'Разбор истории. Страховка: 2×.'};
 let checks=0;function test(name,fn){fn();checks++;console.log('PASS',name)}
 test('registered pending window has three rounds remaining',()=>assert.equal(C.evaluate(p,s,rows,now,now).remaining,3));
 test('above 10 targets are allowed',()=>assert.equal(C.evaluate({...p,target:50},s,rows,now,now).active,true));
-test('strict source and freshness gates',()=>{for(const bad of [{...s,source_connected:false},{...s,fresh:false},{...s,error:'gap'},{...s,gap:true},{...s,session_rounds:199},{...s,session_rounds:undefined}])assert.equal(C.evaluate(p,bad,rows,now,now).active,false)});
+test('strict source and freshness gates',()=>{for(const bad of [{...s,source_connected:false},{...s,fresh:false},{...s,error:'gap'},{...s,gap:true},{...s,session_rounds:199},{...s,session_rounds:'invalid'}])assert.equal(C.evaluate(p,bad,rows,now,now).active,false)});
+test('cloud RPC without a session counter uses verified LIVE receipts',()=>{assert.equal(C.sourceReason({source_connected:true,fresh:true},rows,now),null);assert.ok(C.sourceReason(s,rows.map(r=>({...r,live_received_at:null})),now));assert.ok(C.sourceReason(s,[{...rows[0],live_received_at:new Date(now-181000).toISOString()},...rows.slice(1)],now));assert.ok(C.sourceReason(s,rows.slice(0,199),now))});
 test('expired, future and unregistered forecasts are hidden',()=>{for(const bad of [{...p,status:'hit'},{...p,horizon:4},{...p,target:5},{...p,created_at:(now-180001)/1000},{...p,created_at:(now+31000)/1000},{...p,anchor_id:'absent'}])assert.equal(C.evaluate(bad,s,rows,now,now).active,false);assert.equal(C.evaluate(p,s,rows,now,now-20001).active,false)});
 const later={...rows[0],id:'later',coefficient:1.7,timestamp:now+1000,source_seq:1001};
 test('remaining rounds exclude duplicate IDs',()=>{const state=C.evaluate(p,s,[later,later,...rows],now+2000,now);assert.equal(state.remaining,2);assert.equal(state.anchorRows[0].id,p.anchor_id)});
