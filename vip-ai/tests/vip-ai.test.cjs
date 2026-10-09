@@ -31,7 +31,7 @@ test('public files contain no AI keys, access tokens or direct Gemini endpoint',
 test('page inline and external scripts compile with report hooks and VIP tab',()=>{for(const m of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi))if(m[2].trim())new vm.Script(m[2]);new vm.Script(code('vip-ai.js'));assert.ok(html.includes('id="vipAiTab"'));assert.ok(html.includes("bee-ai-report"));assert.ok(html.includes("bee-ai-error"))});
 // Minimal browser fixture exercises rendering, tab changes, enable and pause without real network.
 (async()=>{
- const elements=new Map(),listeners={};function element(){return {textContent:'',value:'',hidden:false,disabled:false,children:[],events:{},classList:{toggle(){}},setAttribute(){},addEventListener(k,f){this.events[k]=f},append(x){this.children.push(x)},replaceChildren(){this.children=[]}}}
+ const elements=new Map(),listeners={};function element(){return {textContent:'',value:'',hidden:false,disabled:false,children:[],events:{},classList:{toggle(){},remove(){}},setAttribute(){},addEventListener(k,f){this.events[k]=f},append(x){this.children.push(x)},replaceChildren(){this.children=[]}}}
  const ids=[...html.matchAll(/id="([^"]+)"/g)].map(m=>m[1]);for(const id of ids)elements.set(id,element());
  elements.get('vipAiHorizon').value='3';elements.get('vipAiModelTarget').value='10';
  let cloud={ok:true,enabled:true,key_server_only:true,message:'LIVE',knowledge:'Мои факты',predictions:[p],stats:[{target:10,horizon:3,hits:2,misses:5,unknown:1}]},posts=[];
