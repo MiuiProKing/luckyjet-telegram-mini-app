@@ -4,6 +4,14 @@
 const START='[VIP_AI_CONTEXT]',END='[/VIP_AI_CONTEXT]';
 function epoch(v){if(v==null||v==='')return null;const n=typeof v==='number'?(v<1e12?v*1000:v):Date.parse(v);return Number.isFinite(n)?n:null}
 function clean(rows){const seen=new Map();for(const r of rows||[]){const id=String(r.id||'');const coefficient=Number(r.coefficient??r.coef);if(!id||!Number.isFinite(coefficient)||coefficient<1)continue;if(seen.has(id)){if(seen.get(id).coefficient!==coefficient)throw Error('Конфликт коэффициентов одного раунда');continue}seen.set(id,{...r,id,coefficient,timestamp:epoch(r.timestamp??r.round_timestamp)});}return [...seen.values()]}
+function liveRows(input){
+ const list=clean(input);
+ if(list.some(r=>!Number.isSafeInteger(Number(r.source_seq))||Number(r.source_seq)<=0))throw Error('Некорректный номер записи LIVE');
+ const sorted=list.sort((a,b)=>Number(b.source_seq)-Number(a.source_seq)),seq=new Set();
+ for(const row of sorted){const n=Number(row.source_seq);if(seq.has(n))throw Error('Конфликт номеров разных LIVE раундов');seq.add(n)}
+ // Database nextval sequences are not gapless game round counters: duplicate INSERT attempts consume values.
+ return sorted;
+}
 function sourceReason(s,rows,now=Date.now()){
  if(!s||s.source_connected!==true)return 'Сборщик Supabase не подключён';
  if(s.fresh!==true)return 'Данные Supabase устарели';
@@ -49,5 +57,5 @@ function mergeKnowledge(previous,block){const prior=String(previous||'');let res
  const merged=[rest,block].filter(Boolean).join('\n');if(merged.length>2000)throw Error('База знаний заполнена: для контекста моделей нужно освободить место (настройки BeeAI ниже)');return merged;}
 function insurance(p){const m=String(p?.explanation||'').match(/Страховка\s*:\s*(1[.,]5|2|3|5)\s*[×xх]/i);if(!m)return null;const n=Number(m[1].replace(',','.'));return n<Number(p.target)?n:null}
 function removeContext(previous){const a=String(previous||'');if(!a.includes(START))return a;return mergeKnowledge(a,'')}
-root.VipAICore=Object.freeze({epoch,clean,sourceReason,evaluate,modelScores,context,mergeKnowledge,removeContext,insurance});
+root.VipAICore=Object.freeze({epoch,clean,liveRows,sourceReason,evaluate,modelScores,context,mergeKnowledge,removeContext,insurance});
 })(typeof window==='undefined'?globalThis:window);

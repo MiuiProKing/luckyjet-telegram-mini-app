@@ -22,7 +22,7 @@ function render(){
  text('vipAiTarget',active?'≥'+p.target+'×':'Нет актуального сигнала');
  text('vipAiTime',p?time(C.epoch(p.created_at)):'—');
  text('vipAiRemaining',active?state.remaining+' из '+p.horizon+' осталось':'—');
- const explanation=p?.explanation||'Облачный Gemini может выбрать наблюдение, если оснований нет.';
+ const explanation=p?.explanation?(active?p.explanation:'Последний ответ ИИ ('+time(C.epoch(p.created_at))+' · '+(p.target?'цель '+p.target+'×':'без цели')+' · '+(labels[p.status]||p.status)+'): '+p.explanation+'. Этот ответ не является актуальным сигналом VIP AI ≥10×.'):'Облачный Gemini может выбрать наблюдение, если оснований нет.';
  text('vipAiExplanation',explanation);
  text('vipAiStatus',sourceError||apiError||(report?.enabled===false?'ИИ на паузе':state.reason)+(report?.message?' · '+report.message:''));
  const basis=active?state.anchorRows:rows;
@@ -32,7 +32,7 @@ function render(){
  const rule=classic?.vip,end=rule?Number(rule.at)+Number(rule.window):0;
  text('vipAiWindow',rule&&end>now?'≈ '+time(Number(rule.at))+' – '+time(end):'Не подтверждено');
  text('vipAiClassic',rule?'Правила страницы: цель '+rule.target+'× · балл '+rule.score+' · '+(rule.estimated?'время оценочное':'время по архиву')+'. '+(rule.basis||''):'Расчёт правил пока недоступен.');
- text('vipAiInsurance',active&&C.insurance(p)?C.insurance(p).toFixed(2)+'× · выбор ИИ':'ИИ не выбрал');
+ text('vipAiInsurance',active?(C.insurance(p)?C.insurance(p).toFixed(2)+'× · выбор ИИ':'ИИ не выбрал'):'Нет актуальной меньшей цели');
  const h=Number($('vipAiHorizon').value),target=Number($('vipAiModelTarget').value),task=VIP_AI_MODELS.tasks[target+'x_'+h],snapshot=scores?.[target+'x_'+h];
  $('vipAiModels').replaceChildren();
  for(const [name] of Object.entries(task.models)){
@@ -52,8 +52,7 @@ async function liveQuery(full){
  if(!r.ok)throw Error('LIVE Supabase: HTTP '+r.status);
  const data=await r.json();if(!Array.isArray(data))throw Error('Некорректный ответ LIVE');
  if(!full&&data.length>=100)return liveQuery(true);
- const next=C.clean(full?data:[...data,...rows]).sort((a,b)=>Number(b.source_seq)-Number(a.source_seq)).slice(0,2000);
- for(let i=1;i<Math.min(next.length,200);i++)if(!Number.isFinite(Number(next[i].source_seq))||Number(next[i-1].source_seq)-Number(next[i].source_seq)!==1)throw Error('Разрыв последовательности LIVE; прогноз остановлен');
+ const next=C.liveRows(full?data:[...data,...rows]).slice(0,2000);
  rows=next;return rows;
 }
 async function refreshSource(){
