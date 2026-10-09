@@ -3,7 +3,7 @@
 'use strict';
 const C=VipAICore,$=id=>document.getElementById(id),names={logistic:'Логистическая',catboost:'CatBoost',lightgbm:'LightGBM',xgboost:'XGBoost'};
 const labels={pending:'Проверяется',hit:'Попадание',miss:'Промах',unknown:'Не проверено',late:'Ответ опоздал',observe:'Наблюдение',error:'Ошибка ИИ'};
-let report=null,reportAt=0,status=null,rows=[],sourceAt=0,sourceError='',apiError='',busy=false,syncBusy=false,autoSync=false,lastAnchor='',lastSync=0,lastSyncMessage='',scores=null,classic=null,anchorId='',selected=true;
+let report=null,reportAt=0,status=null,rows=[],sourceAt=0,sourceError='',apiError='',busy=false,syncBusy=false,autoSync=false,lastAnchor='',lastSync=0,lastSyncMessage='',scores=null,classic=null,anchorId='',selected=true,ruleCard=null;
 const time=t=>Number.isFinite(t)?BogML.displayTime(t):'—',fmt=p=>(p*100).toFixed(1)+'%';
 function text(id,value){$(id).textContent=String(value??'—')}
 function choose(active){selected=active;$('vipAiSignal').hidden=!active;$('vipAiTab').classList.toggle('active',active);$('vipAiTab').setAttribute('aria-selected',String(active));if(active){for(const id of ['normalTab','vipTab']){$(id).classList.remove('active');$(id).setAttribute('aria-selected','false')}$('normalSignal').hidden=true;$('vipSignal').hidden=true;render();}}
@@ -16,8 +16,33 @@ function quality(now){return sourceError?null:status&&now-sourceAt<20000?status:
 function calculation(input,at=Date.now()){
  const clean=C.clean(input);return {scores:C.modelScores(clean,VIP_AI_MODELS,BogML),classic:(()=>{const value=VipClassic.evaluateClassic(clean,quality(Date.now())||{},at);value.insurance=value.vip?VipClassic.plan(value.vip.target,value.vip.score):null;return value})()};
 }
+
+const duration=ms=>{const seconds=Math.max(0,Math.ceil(ms/1000));return String(Math.floor(seconds/60)).padStart(2,'0')+':'+String(seconds%60).padStart(2,'0')};
+function renderRuleCard(now){
+ const reason=C.sourceReason(quality(now),rows,now);
+ if(reason)ruleCard=null;
+ else if(!ruleCard||now>=Number(ruleCard.at)+Number(ruleCard.window)){
+  try{const value=VipClassic.evaluateClassic(C.clean(rows),quality(now),now).vip;
+   ruleCard=value&&[value.target,value.score,value.at,value.window].every(Number.isFinite)&&value.target>=10&&value.window>0?{...value,anchor_id:rows[0].id,rows:rows.length}:null;
+  }catch{ruleCard=null}
+ }
+ const rule=ruleCard,end=rule?rule.at+rule.window:0,plan=rule?VipClassic.plan(rule.target,rule.score):null;
+ text('vipAiRuleState',reason||(!rule?'Для расчёта VIP недостаточно данных':'Расчёт правил закреплён · это не подтверждение Gemini'));
+ text('vipAiRuleTarget',rule?rule.target.toFixed(2)+'×':'—');
+ text('vipAiRuleLevel',rule?(rule.score>=82?'Высокий балл':rule.score>=66?'Средний балл':'Низкий балл'):'—');
+ text('vipAiRuleInsurance',plan?'Дополнительная цель по формуле: '+plan.insurance.toFixed(2)+'×':'Дополнительная цель по формуле: —');
+ text('vipAiRuleScore',rule?rule.score+' / 100':'—');
+ $('vipAiRuleProgress').style.width=rule?Math.max(0,Math.min(100,rule.score))+'%':'0%';
+ text('vipAiRuleTimeLabel',rule?.estimated?'Начало наблюдения ≈':'Расчётное начало окна');
+ text('vipAiRuleStart',rule?time(rule.at):'—');
+ text('vipAiRuleCountdown',rule?(now<rule.at?'До окна: '+duration(rule.at-now):'До конца: '+duration(end-now)):'—');
+ text('vipAiRuleWindow',rule?'Окно наблюдения'+(rule.estimated?' ≈':'')+': '+time(rule.at)+' — '+time(end)+' · Europe/Kyiv · '+rule.rows+' раундов.':'Окно наблюдения пока не рассчитано.');
+ text('vipAiRuleBasis',rule?(rule.basis||'')+' Частота цели в исходной выборке: '+rule.hitRate+'% ('+rule.hits+' / '+rule.sampleSize+'); это не точность прогноза.':'');
+}
+
 function render(){
  const now=Date.now(),p=report?.predictions?.[0],state=C.evaluate(p,quality(now),rows,now,reportAt);
+ renderRuleCard(now);
  const active=state.active&&report?.enabled===true&&report?.key_server_only===true&&!apiError;
  text('vipAiTarget',active?'≥'+p.target+'×':'Нет актуального сигнала');
  text('vipAiTime',p?time(C.epoch(p.created_at)):'—');

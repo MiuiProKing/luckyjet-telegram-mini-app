@@ -68,6 +68,18 @@
 <div id="vipAiSignal" role="tabpanel" aria-labelledby="vipAiTab" hidden>
   <div class="analysis-head"><div><h2>VIP AI · 10× и выше</h2><p>Gemini + точные расчёты страницы + 4 сохранённые модели</p></div></div>
   <p class="signal-note">Экспериментальный сигнал, преимущество не доказано. Время — ориентир наблюдения; ИИ не знает будущий коэффициент. Меньшую цель («страховку») ИИ оценивает по истории и формуле страницы; это не гарантия возврата денег.</p>
+  <div class="analysis-head"><div><h2>Расчёт VIP для анализа ИИ</h2><p>Та же формула цели и времени, что в обычном VIP</p></div></div>
+  <p class="signal-note" id="vipAiRuleState" role="status">Ожидаю свежие раунды.</p>
+  <div class="analysis-grid vip">
+    <div class="signal-cell"><div class="signal-label">Ориентировочная цель правил</div><div id="vipAiRuleTarget" class="signal-value signal-target">—</div></div>
+    <div class="signal-cell"><div class="signal-label">Уровень оценки правил</div><div id="vipAiRuleLevel" class="signal-value">—</div><div id="vipAiRuleInsurance" class="signal-note">Дополнительная цель по формуле: —</div></div>
+    <div class="signal-cell"><div class="signal-label">Оценка правил</div><div id="vipAiRuleScore" class="signal-value blue">—</div><div class="score-track"><span id="vipAiRuleProgress"></span></div></div>
+    <div class="signal-cell"><div id="vipAiRuleTimeLabel" class="signal-label">Расчётное начало окна</div><div id="vipAiRuleStart" class="signal-value signal-time">—</div><div id="vipAiRuleCountdown" class="signal-note">—</div></div>
+  </div>
+  <p id="vipAiRuleWindow" class="signal-note">Окно наблюдения пока не рассчитано.</p>
+  <p id="vipAiRuleBasis" class="signal-note"></p>
+  <p class="signal-note">Выше — самостоятельный расчёт правил VIP. Дополнительная цель здесь вычислена формулой. Ниже — отдельный зарегистрированный ответ Gemini и меньшая цель, которую выбирает сам ИИ. Расчётное окно не является обещанием будущего коэффициента.</p>
+  <h3>Ответ облачного ИИ</h3>
   <div class="vip-ai-grid">
     <div class="vip-ai-cell"><span>Цель ИИ</span><strong id="vipAiTarget">—</strong></div>
     <div class="vip-ai-cell"><span>Зарегистрирован · Киев</span><strong id="vipAiTime">—</strong></div>
@@ -554,6 +566,6 @@ el('beeRefresh').addEventListener('click',refresh);el('beeToggle').addEventListe
 <script src="ml-core.js"></script>
 <script src="models.js"></script>
 <script src="vip-ai-core.js?v=20261010-sequence-fix"></script>
-<script src="vip-ai.js?v=20261010-sequence-fix"></script>
+<script src="vip-ai.js?v=20261010-vip-card"></script>
 </body>
 </html>
