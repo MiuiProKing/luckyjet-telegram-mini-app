@@ -1,0 +1,5 @@
+.local/
+.test/
+backup/
+__pycache__/
+*.sqlite3*

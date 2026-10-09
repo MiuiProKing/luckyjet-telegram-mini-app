@@ -1,0 +1,20 @@
+name: BeeAI PC checks
+on:
+  push:
+    branches: [classic-beeai-pc-20261008]
+  workflow_dispatch:
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: python beeai-pc/tests.py
+      - run: node --check beeai-pc/evaluate_classic.cjs
+      - run: node --check bog-hishchnik-alert/beeai.js
+      - run: node --check bog-hishchnik-alert/pc-live.js

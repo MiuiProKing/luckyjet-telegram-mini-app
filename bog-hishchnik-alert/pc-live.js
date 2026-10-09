@@ -56,7 +56,7 @@
   status('Проверяю подключение к нашему ПК…');
   window.dispatchEvent(new Event('pc-live-connect'));
  }
- window.PC_LIVE=Object.freeze({get,setAccess});
+ window.PC_LIVE=Object.freeze({get,setAccess,async beeAI(method='GET',data=null){if(!/^[A-Za-z0-9_-]{32,128}$/.test(access))throw Error('Нужен доступ к нашему ПК');const base=await discover();const response=await request(base+'/api/beeai',{method,headers:{Accept:'application/json',Authorization:'Bearer '+access,...(data?{'Content-Type':'application/json'}:{})},...(data?{body:JSON.stringify(data)}:{})});if(!response.ok)throw Error('ИИ на ПК: HTTP '+response.status);return response.json()}});
  const setup=()=>{
   const button=document.getElementById('pcConnect'),input=document.getElementById('pcAccess');
   if(button&&input)button.addEventListener('click',()=>{setAccess(input.value);input.value=''});
