@@ -1,0 +1,47 @@
+const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
+const dir=path.join(__dirname,'..'),html=fs.readFileSync(path.join(dir,'index.html'),'utf8');
+const code=name=>fs.readFileSync(path.join(dir,name),'utf8');
+const sandbox={Date,Intl,console};sandbox.globalThis=sandbox;vm.createContext(sandbox);
+for(const file of ['vip-ai-core.js','classic.js','ml-core.js'])vm.runInContext(code(file),sandbox,{filename:file});
+const C=sandbox.VipAICore,ml=sandbox.BogML,classic=sandbox.VipClassic;
+const artifact=JSON.parse(code('models.js').replace(/^window.VIP_AI_MODELS=/,'').replace(/;\s*$/,''));
+const now=Date.now(),rows=Array.from({length:210},(_,i)=>({id:'r'+(1000-i),coefficient:i%7?1.8:12,timestamp:now-i*30000,estimated:true,source_seq:1000-i,origin:'live',collection_backend:'cloud'}));
+const s={source_connected:true,fresh:true,session_rounds:300,warmup_required:200};
+const p={id:1,anchor_id:rows[0].id,created_at:now/1000,target:10,horizon:3,status:'pending',observed:0,explanation:'Разбор истории. Страховка: 2×.'};
+let checks=0;function test(name,fn){fn();checks++;console.log('PASS',name)}
+test('registered pending window has three rounds remaining',()=>assert.equal(C.evaluate(p,s,rows,now,now).remaining,3));
+test('above 10 targets are allowed',()=>assert.equal(C.evaluate({...p,target:50},s,rows,now,now).active,true));
+test('strict source and freshness gates',()=>{for(const bad of [{...s,source_connected:false},{...s,fresh:false},{...s,error:'gap'},{...s,gap:true},{...s,session_rounds:199},{...s,session_rounds:undefined}])assert.equal(C.evaluate(p,bad,rows,now,now).active,false)});
+test('expired, future and unregistered forecasts are hidden',()=>{for(const bad of [{...p,status:'hit'},{...p,horizon:4},{...p,target:5},{...p,created_at:(now-180001)/1000},{...p,created_at:(now+31000)/1000},{...p,anchor_id:'absent'}])assert.equal(C.evaluate(bad,s,rows,now,now).active,false);assert.equal(C.evaluate(p,s,rows,now,now-20001).active,false)});
+const later={...rows[0],id:'later',coefficient:1.7,timestamp:now+1000,source_seq:1001};
+test('remaining rounds exclude duplicate IDs',()=>{const state=C.evaluate(p,s,[later,later,...rows],now+2000,now);assert.equal(state.remaining,2);assert.equal(state.anchorRows[0].id,p.anchor_id)});
+test('already reached target never reappears as future signal',()=>assert.equal(C.evaluate(p,s,[{...later,coefficient:15},...rows],now+2000,now).active,false));
+test('finished pending window is suppressed before server settlement',()=>assert.equal(C.evaluate(p,s,[later,{...later,id:'later2'},{...later,id:'later3'},...rows],now+2000,now).active,false));
+test('conflicting duplicates are rejected',()=>assert.throws(()=>C.clean([rows[0],{...rows[0],coefficient:2}])));
+const scores=C.modelScores(rows,artifact,ml);
+test('all four frozen models produce bounded scores for matching tasks',()=>{assert.equal(Object.keys(scores).length,6);for(const v of Object.values(scores)){assert.equal(Object.keys(v.models).length,4);assert.equal(v.promoted,false);for(const n of Object.values(v.models))assert.ok(n>0&&n<1)}});
+test('model inputs exclude post-registration results',()=>{const state=C.evaluate(p,s,[later,...rows],now+2000,now),anchored=C.modelScores(state.anchorRows,artifact,ml);assert.equal(JSON.stringify(anchored),JSON.stringify(scores))});
+const calculation=classic.evaluateClassic(rows,s,now);calculation.insurance=classic.plan(calculation.vip.target,calculation.vip.score);
+test('exact classic functions produce main and lower goals',()=>{assert.equal(calculation.version,'20261002-audit1');assert.ok(calculation.vip.target>=10);assert.ok(calculation.insurance.insurance<calculation.insurance.main)});
+const block=C.context(rows,s,calculation,scores,now);
+test('Gemini context includes anchored scores, insurance history and stale guard',()=>{assert.ok(block.includes(rows[0].id));assert.ok(block.includes('use_only_if_anchor_matches'));assert.ok(block.includes('lower_targets'));assert.ok(block.includes('Страховка: N×'));assert.ok(block.length<2000)});
+test('knowledge preservation and bounded context replacement',()=>{const merged=C.mergeKnowledge('Мои факты',block);assert.ok(merged.startsWith('Мои факты'));assert.equal(C.mergeKnowledge(merged,block),merged);assert.equal(C.removeContext(merged),'Мои факты');assert.throws(()=>C.mergeKnowledge('x'.repeat(2000),block));assert.throws(()=>C.mergeKnowledge('[VIP_AI_CONTEXT]bad',block))});
+test('insurance is chosen only by actual AI text and validated',()=>{assert.equal(C.insurance(p),2);assert.equal(C.insurance({...p,explanation:'Страховка: 1,5×'}),1.5);for(const text of ['Без меньшей цели','Страховка: 20×','Страховка: 2.5×','Страховка: 0×','Страховка: нет'])assert.equal(C.insurance({...p,explanation:text}),null)});
+test('public files contain no AI keys, access tokens or direct Gemini endpoint',()=>{for(const file of ['index.html','vip-ai.js','vip-ai-core.js','classic.js','ml-core.js','models.js']){const text=code(file);assert.ok(!/AIza[A-Za-z0-9_-]{20,}|sbp_[a-f0-9]{20,}|sb_secret_|generativelanguage\.googleapis\.com|AmPrQzBs/.test(text),file)}});
+test('page inline and external scripts compile with report hooks and VIP tab',()=>{for(const m of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi))if(m[2].trim())new vm.Script(m[2]);new vm.Script(code('vip-ai.js'));assert.ok(html.includes('id="vipAiTab"'));assert.ok(html.includes("bee-ai-report"));assert.ok(html.includes("bee-ai-error"))});
+// Minimal browser fixture exercises rendering, tab changes, enable and pause without real network.
+(async()=>{
+ const elements=new Map(),listeners={};function element(){return {textContent:'',value:'',hidden:false,disabled:false,children:[],events:{},classList:{toggle(){}},setAttribute(){},addEventListener(k,f){this.events[k]=f},append(x){this.children.push(x)},replaceChildren(){this.children=[]}}}
+ const ids=[...html.matchAll(/id="([^"]+)"/g)].map(m=>m[1]);for(const id of ids)elements.set(id,element());
+ elements.get('vipAiHorizon').value='3';elements.get('vipAiModelTarget').value='10';
+ let cloud={ok:true,enabled:true,key_server_only:true,message:'LIVE',knowledge:'Мои факты',predictions:[p],stats:[{target:10,horizon:3,hits:2,misses:5,unknown:1}]},posts=[];
+ const w={addEventListener(k,f){listeners[k]=f}};const ui={Date,Intl,URLSearchParams,AbortSignal,window:w,document:{hidden:false,getElementById:id=>elements.get(id),createElement:element,addEventListener(){}},setInterval(){},console,BogML:ml,VipClassic:classic,VipAICore:C,VIP_AI_MODELS:artifact,BOG_CLOUD:{url:'https://example.supabase.co',anonKey:'public'},ClassicCloud:{getStatus:async()=>s},BeeCloud:{request:async(method,body)=>{if(method==='POST'){posts.push(body);cloud={...cloud,...body}}return cloud}},fetch:async()=>({ok:true,json:async()=>rows})};vm.createContext(ui);vm.runInContext(code('vip-ai.js'),ui);
+ const drain=async()=>{for(let i=0;i<30;i++)await Promise.resolve()};await drain();listeners['bee-ai-report']({detail:cloud});
+ test('VIP panel renders registered AI target, insurance and model comparison',()=>{assert.equal(elements.get('vipAiTarget').textContent,'≥10×');assert.ok(elements.get('vipAiInsurance').textContent.includes('2.00×'));assert.equal(elements.get('vipAiModels').children.length,4);assert.ok(elements.get('vipAiStats').textContent.includes('5 промахов'))});
+ elements.get('normalTab').events.click();test('other tabs hide VIP AI panel',()=>assert.equal(elements.get('vipAiSignal').hidden,true));
+ elements.get('vipAiTab').events.click();await elements.get('vipAiEnable').events.click();await drain();
+ test('enable sends model context while retaining knowledge and no key',()=>{assert.equal(posts.at(-1).enabled,true);assert.ok(posts.at(-1).knowledge.startsWith('Мои факты'));assert.ok(posts.at(-1).knowledge.includes('catboost'));assert.equal(Object.keys(posts.at(-1)).sort().join(','),'enabled,knowledge')});
+ listeners['bee-ai-error']({detail:'HTTP 429'});test('API outage removes future target',()=>assert.equal(elements.get('vipAiTarget').textContent,'Нет актуального сигнала'));
+ await elements.get('vipAiPause').events.click();test('pause updates shared server settings',()=>assert.equal(posts.at(-1).enabled,false));
+ console.log(checks+' checks passed');
+})().catch(e=>{console.error(e);process.exitCode=1});
