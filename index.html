@@ -573,6 +573,7 @@
     proView.hidden = true;
     analyzerView.hidden = false;
     document.body.classList.remove("catalog-active", "pro-active");
+    history.replaceState(null, "", "#luckyjet");
     window.scrollTo(0, 0);
   }
 
@@ -593,6 +594,7 @@
   });
 
   if (location.hash === "#pro") openPro();
+  else if (location.hash === "#luckyjet" || location.hash === "#classic") openLuckyJet();
 
   // === Exact browser port of analys.py decision flow ===
   const apiURL = "https://crash-gateway-grm-cr.100hp.app/history";
