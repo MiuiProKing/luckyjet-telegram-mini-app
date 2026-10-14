@@ -25,6 +25,11 @@ jobs:
           import re
           import base64
           import gzip
+          import json
+
+          # The cloud-connected game pages maintain their own entry scripts.
+          cloud_manifest = Path('luckyjet-supabase-pages.json')
+          cloud_pages = set(json.loads(cloud_manifest.read_text(encoding='utf-8'))['pages']) if cloud_manifest.exists() else set()
 
           version = "20260823-2"
           lucky_api = "https://crash-gateway-grm-cr.100hp.app/history"
@@ -60,7 +65,7 @@ jobs:
 
           payload = Path('beta-classic.payload.b64')
           beta_path = Path('beta-classic.html')
-          if payload.exists():
+          if payload.exists() and beta_path.name not in cloud_pages:
               beta_html = gzip.decompress(base64.b64decode(payload.read_text(encoding='utf-8').strip())).decode('utf-8')
               beta_path.write_text(beta_html, encoding='utf-8')
               print('Beta Classic restored from payload:', len(beta_html), 'characters')
@@ -73,6 +78,8 @@ jobs:
                 </button>'''
 
           for p in Path('.').glob('*.html'):
+              if p.as_posix() in cloud_pages:
+                  continue
               # Do not rewrite pages with independent game credentials.
               independent_games = {'aviator.html', 'rocketqueen.html', 'pro-rocketqueen.html'}
               if p.name in {'setup-server.html', 'pro-luckyjet.html'} or p.name in independent_games:
