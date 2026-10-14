@@ -1,0 +1,9 @@
+import { useQuery } from '@tanstack/react-query';
+export const PUBLIC_SOURCE = 'https://zulsrqkjkatzjjhacowy.supabase.co';
+const PUBLIC_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp1bHNycWtqa2F0empqaGFjb3d5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE1MzA4NTksImV4cCI6MjEwNzEwNjg1OX0.0MPkQgxa24gjHcXyQf7t-_tfe0g4kdDkC2SXJOxaOso';
+export interface Round { id:string; coefficient:number; round_timestamp:string; estimated:boolean; source_seq:number|null; feed_order:number; origin:string }
+export interface Status { source_connected:boolean; fresh:boolean; error:string; checked_at:string; last_round_at:string; game_order_verified:boolean }
+async function read<T>(path:string):Promise<T> { const response=await fetch(`${PUBLIC_SOURCE}/rest/v1/${path}`,{headers:{apikey:PUBLIC_ANON_KEY,Authorization:`Bearer ${PUBLIC_ANON_KEY}`},signal:AbortSignal.timeout(15000)}); if(!response.ok)throw new Error(`Источник недоступен (${response.status})`); return response.json(); }
+export function useFeed(){return useQuery({queryKey:['luckyjet-feed'],queryFn:async()=>{const [status,rounds]=await Promise.all([read<Status>('rpc/luckyjet_cloud_status'),read<Round[]>('luckyjet_classic_history?select=id,coefficient,round_timestamp,estimated,source_seq,feed_order,origin&order=feed_order.desc&limit=100')]);if(!Array.isArray(rounds)||typeof status.source_connected!=='boolean')throw new Error('Неверный ответ источника');return {status,rounds};},refetchInterval:10000,retry:1,staleTime:5000});}
+export function connection(status?:Status,error?:unknown){return error?'Источник недоступен':!status?'Подключение…':status.error?'Ошибка источника':!status.source_connected?'Источник отключён':!status.fresh?'Данные устарели':'Источник подключён';}
+export const roundTime=(date:string)=>new Intl.DateTimeFormat('ru-RU',{hour:'2-digit',minute:'2-digit',second:'2-digit'}).format(new Date(date));

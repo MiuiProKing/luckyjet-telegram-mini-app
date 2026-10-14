@@ -6,7 +6,7 @@
     document.documentElement.classList.add('ap-layout');
     if (document.querySelector('link[data-app-responsive]')) return;
     const link=document.createElement('link');link.rel='stylesheet';link.dataset.appResponsive='';
-    link.href=new URL('app-responsive.css?v=20261014-mobile-1',asset).href;document.head.appendChild(link);
+    link.href=new URL('app-responsive.css?v=20261014-mobile-2',asset).href;document.head.appendChild(link);
   }
   if (window.AppResponsive) {
     if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',window.AppResponsive.mount,{once:true});else window.AppResponsive.mount();
