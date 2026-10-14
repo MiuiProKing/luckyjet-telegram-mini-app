@@ -1,5 +1,6 @@
 (function () {
   'use strict';
+ const Date = window.LuckyJetSupabase?.Date || globalThis.Date;
 
   const BASE = 'https://allpredictor.com/api/v1';
   const API_KEY = 'ap_de0cc6901c6303fe93388c94934c30ceac8baf126e2474b6';

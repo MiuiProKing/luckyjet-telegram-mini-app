@@ -1,6 +1,7 @@
 
 (function(){
 'use strict';
+ const Date = window.LuckyJetSupabase?.Date || globalThis.Date;
 // Extracted from a publicly served client asset at historique-luckyjet.shop.
 // Asset: PredictionPanel-BX01Z_sa.js. Retrieved 2026-10-02.
 // Pure calculation functions only; no account credentials or network calls.

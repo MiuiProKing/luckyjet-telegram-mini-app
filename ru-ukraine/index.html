@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
+<script src="../luckyjet-supabase.js?v=20261014-supabase-1"></script>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
 <meta name="theme-color" content="#061A40"/>
@@ -273,6 +274,7 @@
 <script>
 (function () {
   'use strict';
+ const Date = window.LuckyJetSupabase?.Date || globalThis.Date;
 
   const BASE = 'https://allpredictor.com/api/v1';
   const API_KEY = 'ap_de0cc6901c6303fe93388c94934c30ceac8baf126e2474b6';
@@ -1574,7 +1576,7 @@
   };
 })();
 </script>
-<script src="live-coefficients.js?v=20260912-2"></script>
+<script src="live-coefficients.js?v=20261014-supabase-1"></script>
 <script src="ru-ai-companion.js?v=20261008-3"></script>
 </body>
 </html>

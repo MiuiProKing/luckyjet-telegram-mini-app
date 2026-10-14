@@ -1,5 +1,6 @@
 (function () {
  'use strict';
+ const Date = window.LuckyJetSupabase?.Date || globalThis.Date;
  const API='https://xrniwkvfrtchtxjrwwgd.supabase.co/functions/v1/v0xff3-live';
  const MODEL_LIMIT=2000, FRESH_MS=180000, COVERAGE_MS=15000, GRACE_MS=15000;
  const KEY='pro_supabase_signals_v2', ENGINE=window.GodPreditor, $=id=>document.getElementById(id);

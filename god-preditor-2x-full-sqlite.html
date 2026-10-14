@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="ru">
 <head>
+<script src="luckyjet-supabase.js?v=20261014-supabase-1"></script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#070812">
@@ -26,6 +27,7 @@
 <script>
 (function(){
 'use strict';
+ const Date = window.LuckyJetSupabase?.Date || globalThis.Date;
 const RELAY='https://xlidiojdbozxikjloiaj.supabase.co/functions/v1/v0xff3-live';
 const PAGE_SIZE=5000,MAX_PAGES=100,MAX_ROUNDS=100000;
 const nativeFetch=window.fetch.bind(window);
@@ -41,5 +43,5 @@ window.fetch=async function(input,init){const url=typeof input==='string'?input:
 })();
 </script>
 <script src="god-preditor-engine.js?v=20260830-6"></script>
-<script src="live-coefficients.js?v=20260912-2"></script>
+<script src="live-coefficients.js?v=20261014-supabase-1"></script>
 </body></html>

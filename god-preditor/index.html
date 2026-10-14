@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="ru">
 <head>
+<script src="../luckyjet-supabase.js?v=20261014-supabase-1"></script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#080b12">
@@ -114,6 +115,6 @@ function start(){if(S.timer)return;refresh();S.timer=setInterval(()=>refresh(),5
 function stop(){clearInterval(S.timer);S.timer=null;$('live').textContent='● СТОП';$('msg').textContent='Автоанализ остановлен'}
 loadSettings();
 </script>
-<script src="live-coefficients.js?v=20260912-2"></script>
+<script src="live-coefficients.js?v=20261014-supabase-1"></script>
 </body>
 </html>

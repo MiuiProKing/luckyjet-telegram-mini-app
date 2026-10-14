@@ -1,5 +1,6 @@
 (function(){
 'use strict';
+ const Date = window.LuckyJetSupabase?.Date || globalThis.Date;
 const C=Object.assign({
   relay:'https://xlidiojdbozxikjloiaj.supabase.co/functions/v1/v0xff3-live',
   storagePrefix:'god_preditor_exact_v5',maxRounds:2000,pollMs:5000,autoMs:8000,

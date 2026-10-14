@@ -33,5 +33,6 @@ jobs:
           test -f admin.html
       - name: Verify Lucky Jet audit scenarios
         run: |
+          node --test tests/luckyjet-hub-supabase.test.mjs
           TZ=UTC node tests/pro-luckyjet-audit.test.mjs
           TZ=Europe/Kyiv node tests/pro-luckyjet-audit.test.mjs

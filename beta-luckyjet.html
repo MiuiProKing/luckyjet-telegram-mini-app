@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="ru">
 <head>
+<script src="luckyjet-supabase.js?v=20261014-supabase-1"></script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#05050a">
@@ -31,7 +32,8 @@ let lastRoundKey="",polling=false,auto=false,active=null;
 const els={dot:$("apiDot"),title:$("apiTitle"),sub:$("apiSub"),bars:$("bars"),target:$("target"),label:$("targetLabel"),last:$("last"),round:$("round"),time:$("time"),min:$("min"),max:$("max"),signal:$("signal"),auto:$("auto"),message:$("message"),history:$("history")};
 function setMessage(text){els.message.textContent=text}
 function normalize(v){const n=Number(v);return Number.isFinite(n)&&n>=1?Number((n===1?1.01:n).toFixed(2)):null}
-function firstRow(data){if(Array.isArray(data))return data[0]||null;if(Array.isArray(data?.history))return data.history[0]||null;return data&&typeof data==="object"?data:null}\nfunction extract(data){const row=firstRow(data);if(!row)return null;let value=row.coef??row.crash??row.value??row.topCoefficient??row.multiplier??row.coefficient;if(value==null&&Array.isArray(row.finalValues)&&row.finalValues.length)value=row.finalValues[0];return normalize(value)}
+function firstRow(data){if(Array.isArray(data))return data[0]||null;if(Array.isArray(data?.history))return data.history[0]||null;return data&&typeof data==="object"?data:null}
+function extract(data){const row=firstRow(data);if(!row)return null;let value=row.coef??row.crash??row.value??row.topCoefficient??row.multiplier??row.coefficient;if(value==null&&Array.isArray(row.finalValues)&&row.finalValues.length)value=row.finalValues[0];return normalize(value)}
 function roundKey(data,coef){const row=firstRow(data)||{};return String(row?.roundConfig?.id||row?.roundId||row?.round_id||row?.id||row?.hash||row?.provablyFair?.hash||coef)}
 async function fetchCoef(){const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),8000);try{const response=await fetch(API_URL,{headers:API_HEADERS,cache:"no-store",signal:controller.signal});if(!response.ok)throw new Error("HTTP "+response.status);const data=await response.json();return{coef:extract(data),key:roundKey(data,extract(data)),data}}finally{clearTimeout(timer)}}
 function render(){els.label.textContent=coefs.length<MIN_HISTORY?`Сбор данных ${coefs.length}/${MIN_HISTORY}`:"Анализ готов";els.bars.innerHTML=coefs.slice(-10).map(c=>{const max=Math.max(3,...coefs.slice(-10)),h=Math.max(5,Math.min(64,c/max*64)),cls=c<1.5?"low":c<2?"mid":"high";return`<div class="bar-wrap"><div class="bar ${cls}" style="height:${h}px"></div><div class="bar-label">${c.toFixed(1)}</div></div>`}).join("");els.history.innerHTML=coefs.slice(-12).reverse().map(c=>`<div class="chip"><b>${c.toFixed(2)}X</b>${c<1.5?"LOW":c>=5?"HIGH":"MID"}</div>`).join("")}
@@ -46,6 +48,6 @@ try{Telegram.WebApp.ready();Telegram.WebApp.expand()}catch(_){ }
 render();poll();setInterval(poll,POLL_MS);
 })();
 </script>
-<script src="live-coefficients.js?v=20260912-2"></script>
+<script src="live-coefficients.js?v=20261014-supabase-1"></script>
 </body>
 </html>

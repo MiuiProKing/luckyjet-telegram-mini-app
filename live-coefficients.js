@@ -109,14 +109,15 @@
     const session = rocket ? ROCKET_SESSION : LUCKY_SESSION;
 
     try {
-      const response = await fetch(url, {
-        headers: headers(session),
-        cache: 'no-store'
-      });
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-      const payload = await response.json();
-      const coef = rocket ? parseRocket(payload) : parseLucky(payload);
+      const cloud = !rocket && window.LuckyJetSupabase;
+      let payload;
+      if (cloud) payload = (await cloud.history(20)).rows;
+      else {
+        const response = await fetch(url, {headers: headers(session), cache: 'no-store'});
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        payload = await response.json();
+      }
+      const coef = cloud ? payload[0]?.coefficient : rocket ? parseRocket(payload) : parseLucky(payload);
       if (coef == null) return;
 
       const h = historyRead();
@@ -128,7 +129,7 @@
       const last = h[h.length - 1];
 
       if (!last || (key && last.key !== key) || (!key && Number(last.coef) !== Number(coef))) {
-        h.push({ key, coef: Number(coef), ts: Date.now(), game: rocket ? 'rocket-queen' : 'lucky-jet' });
+        h.push({ key, coef: Number(coef), ts: cloud ? Date.parse(keyRow.round_timestamp) : Date.now(), game: rocket ? 'rocket-queen' : 'lucky-jet' });
         historyWrite(h);
       }
 
@@ -138,8 +139,8 @@
           game: rocket ? 'rocket-queen' : 'lucky-jet',
           coef: Number(coef),
           payload,
-          sessionId: session,
-          source: url
+          ...(rocket ? {sessionId: session} : {}),
+          source: cloud ? cloud.config.url + '/rest/v1/luckyjet_classic_history' : url
         }
       }));
     } catch (_) {}

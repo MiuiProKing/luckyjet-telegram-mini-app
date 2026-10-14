@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="ru">
 <head>
+<script src="luckyjet-supabase.js?v=20261014-supabase-1"></script>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
   <meta name="theme-color" content="#090612">
@@ -162,6 +163,7 @@
 <script>
 (function(){
   'use strict';
+ const Date = window.LuckyJetSupabase?.Date || globalThis.Date;
   const HISTORY_URL='https://crash-gateway-grm-cr.100hp.app/history';
   const CUSTOMER_ID='077dee8d-c923-4c02-9bee-757573662e69';
   const DEFAULT_SESSION_ID='ceab7738-1e49-4ed1-8d92-751b22e958cd';
@@ -402,6 +404,6 @@
   wire();tick();setInterval(tick,1000);render();poll();timer=setInterval(poll,POLL_MS);
 })();
 </script>
-<script src="live-coefficients.js?v=20260912-2"></script>
+<script src="live-coefficients.js?v=20261014-supabase-1"></script>
 </body>
 </html>

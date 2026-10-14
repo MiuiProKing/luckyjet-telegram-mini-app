@@ -24,7 +24,7 @@ jobs:
         run: |
           from pathlib import Path
           import re
-          tag = '<script src="live-coefficients.js?v=20260912-2"></script>'
+          tag = '<script src="live-coefficients.js?v=20261014-supabase-1"></script>'
           changed = []
           pattern = re.compile(r'<script\s+src=["\']live-coefficients\.js(?:\?[^"\']*)?["\']\s*></script>', re.I)
           for p in Path('.').rglob('*.html'):

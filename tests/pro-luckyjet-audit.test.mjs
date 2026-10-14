@@ -145,6 +145,6 @@ await check('Model input is bounded at 2000 and has deterministic ID order',()=>
  const h=harness();h.app.merge(rows(Array(3000).fill(2.2)));assert.equal(h.app.state().rounds.length,2000);
 });
 await check('Page has versioned engine/runtime and no legacy target overwriter',()=>{
- assert(html.includes('pro-luckyjet-engine.js?v=20261002-audit1'));assert(html.includes('pro-luckyjet-app.js?v=20261002-audit1'));assert(!html.includes('src="live-coefficients.js'));assert(html.includes('id="archiveDate"'));
+ assert(html.includes('pro-luckyjet-engine.js?v=20261014-supabase-1'));assert(html.includes('pro-luckyjet-app.js?v=20261014-supabase-1'));assert(!html.includes('src="live-coefficients.js'));assert(html.includes('id="archiveDate"'));
 });
 console.log(`${count} behavioral checks passed; timezone ${Intl.DateTimeFormat().resolvedOptions().timeZone}`);
