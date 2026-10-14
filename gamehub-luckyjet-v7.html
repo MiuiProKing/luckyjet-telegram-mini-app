@@ -14,7 +14,9 @@
     @keyframes p{to{opacity:.35;transform:scale(.72)}}
     h1{font-size:20px;margin:0 0 9px}.status{font-size:14px;color:#c4b5fd;line-height:1.45}.err{color:#fca5a5}.small{font-size:11px;color:#737373;margin-top:12px}
   </style>
-<script src="app-config.js?v=20260823-2"></script><script src="i18n-runtime.js?v=20260823-2"></script><script src="language-onboarding.js?v=20260823-2"></script><script src="license-client.js?v=20260823-2"></script><script src="access.js?v=20260823-2"></script><script src="analytics-client.js?v=20260823-2"></script><script src="app-center.js?v=20260823-2"></script></head>
+<script src="app-config.js?v=20260823-2"></script><script src="i18n-runtime.js?v=20260823-2"></script><script src="language-onboarding.js?v=20260823-2"></script><script src="license-client.js?v=20260823-2"></script><script src="access.js?v=20260823-2"></script><script src="analytics-client.js?v=20260823-2"></script><script src="app-center.js?v=20260823-2"></script><link rel="stylesheet" href="app-responsive.css?v=20261014-mobile-1" data-app-responsive>
+<script defer src="app-responsive.js?v=20261014-mobile-1"></script>
+</head>
 <body>
   <main class="box">
     <div class="dot"></div>
@@ -61,6 +63,7 @@
         html=window.pako.ungzip(bytes,{to:'string'});
       }
       if(!html || !html.includes('<html')) throw new Error('HTML не распакован');
+      html=html.replace(/<\/head>/i,'<link rel="stylesheet" href="app-responsive.css?v=20261014-mobile-1" data-app-responsive><script defer src="app-responsive.js?v=20261014-mobile-1"><\/script></head>');
       document.open();
       document.write(html);
       document.close();

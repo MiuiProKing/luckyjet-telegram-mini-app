@@ -1,0 +1,77 @@
+/* Shared layout rules for the maintained mini-app pages. */
+html.ap-layout { width:100%; min-width:0; overflow-x:hidden; }
+@supports (overflow:clip) { html.ap-layout { overflow-x:clip; } }
+html.ap-layout body {
+  box-sizing:border-box; width:100%; min-width:0; max-width:100%;
+  flex-direction:column !important; gap:12px;
+}
+html.ap-layout *, html.ap-layout *::before, html.ap-layout *::after { box-sizing:border-box; }
+html.ap-layout :where(main,.wrap,.app,.container,.shell,.page,.catalog-shell,.pro-shell,.catalog-view,.pro-view) { min-width:0; max-width:100%; }
+html.ap-layout .wrap { width:100%; max-width:720px; padding-top:0 !important; flex-shrink:0; }
+html.ap-layout :where(.meta,.cell,.grid,.grid2,.grid3,.fields,.row,.actions,.pro-info,.market-signal,.streak-bar,.coef-chart,.stats,.card,.ac-grid,.oa-grid)>* { min-width:0; }
+html.ap-layout :where(button,input,select,textarea) { max-width:100%; min-width:0; }
+html.ap-layout :where(img,svg,canvas,video,iframe) { max-width:100%; }
+html.ap-layout :where(p,h1,h2,h3,.title,.value,.status,.ms-title,.ms-desc,.ac-value,.oa-value) { overflow-wrap:anywhere; }
+html.ap-layout :where(pre,.ap-table-scroll) { max-width:100%; overflow:auto; }
+html.ap-layout .ap-table-scroll { width:100%; min-width:0; overscroll-behavior-x:contain; }
+html.ap-layout .meta { grid-template-columns:repeat(3,minmax(0,1fr)); }
+html.ap-layout :where(.controls,.history-tools,.streak-bar,.row,.actions,.btns,.buttons,.button-row,.ac-row,.oa-row) { flex-wrap:wrap; }
+html.ap-layout .topbar:has(>h1) { display:grid; grid-template-columns:44px minmax(0,1fr) 44px; gap:8px; align-items:center; padding-top:0; }
+html.ap-layout .topbar>h1 { min-width:0; margin:0; padding:0; text-align:center; font-size:clamp(17px,4.8vw,28px); letter-spacing:0; }
+html.ap-layout .topbar:has(>h1)>.icon-btn { position:static !important; width:44px; height:44px; margin:0; padding:0; }
+html.ap-layout .wrap>button { white-space:normal; height:auto; min-height:48px; padding:12px; }
+html.ap-layout .market-signal .ms-left { min-width:0; flex:1; }
+html.ap-layout .market-signal .ms-icon, html.ap-layout .mb-dot { flex-shrink:0; }
+html.ap-layout .market-badge { max-width:100%; min-width:0; }
+html.ap-layout #luckyjetSupabaseStatus {
+  position:relative !important; inset:auto !important; flex:0 0 auto !important;
+  width:100% !important; max-width:720px !important; min-width:0 !important;
+  margin:0 auto 4px !important; white-space:normal !important; overflow-wrap:anywhere;
+}
+/* Existing buttons are moved intact here: their handlers and state are retained. */
+html.ap-layout #appResponsiveToolbar {
+  position:relative; z-index:30; display:flex; flex-wrap:wrap; align-items:center;
+  justify-content:flex-end; gap:8px; width:100%; max-width:720px; min-width:0;
+  margin:0 auto 4px; padding:0; flex:0 0 auto;
+}
+html.ap-layout #appResponsiveToolbar:empty { display:none; }
+html.ap-layout #appResponsiveToolbar>[data-codex-home-controls] {
+  position:static !important; inset:auto !important; display:flex; flex-wrap:wrap; gap:8px; width:auto; min-width:0; margin-right:auto;
+}
+html.ap-layout #appResponsiveToolbar :is(.pro-app-back,#backToCatalog,#allPredictorAdminButton,#appCenterOpen,#ljBeeAiFab,.voice-toggle,.global-theme-fab,[data-codex-home-controls]>button) {
+  position:static !important; inset:auto !important; transform:none !important;
+  width:auto !important; min-width:44px !important; max-width:100% !important;
+  height:44px !important; min-height:44px !important; margin:0 !important;
+  padding:0 12px !important; flex:0 0 auto; white-space:normal; line-height:1.25;
+}
+html.ap-layout #appResponsiveToolbar :is(#appCenterOpen,#ljBeeAiFab,.voice-toggle,.global-theme-fab,[data-codex-home-controls]>button) { width:44px !important; padding:0 !important; }
+html.ap-layout #appResponsiveToolbar .pro-app-back { margin-right:auto !important; }
+html.ap-layout #appResponsiveToolbar #globalLanguageSwitcher { position:relative !important; inset:auto !important; margin:0; flex:0 0 auto; }
+html.ap-layout #appResponsiveToolbar #globalLanguageButton { min-height:44px !important; }
+html.ap-layout #appResponsiveToolbar .global-theme-host { position:static; width:44px; height:44px; margin:0; }
+html.ap-layout #appResponsiveToolbar .global-theme-panel { position:absolute; top:calc(100% + 8px); right:0; max-width:100%; }
+html.ap-layout #globalLanguageMenu { max-width:calc(100vw - 24px); }
+html.ap-layout :is(.panel,.sheet,#appCenterPanel,#ownerAdminPanel,#trialAccessDialog,.global-theme-panel) { min-width:0; max-width:calc(100vw - 24px); max-height:calc(100vh - 24px); max-height:calc(100dvh - 24px); overflow-y:auto; }
+html.ap-layout .panel { left:12px; right:12px; top:12px; width:auto; margin-inline:auto; }
+html.ap-layout :is(.panel-body,.panel-head,.field,.controls,.ac-card,.oa-card) { min-width:0; }
+html.ap-layout :is(.catalog-toast,.toast,.voice-toast,.speaking-indicator) { max-width:calc(100vw - 24px); white-space:normal; overflow-wrap:anywhere; }
+@media (max-width:600px) {
+  html.ap-layout body { padding:12px; padding-bottom:max(24px,env(safe-area-inset-bottom)); }
+  html.ap-layout body:is(.catalog-active,.pro-active) { padding:12px 0 90px; }
+  html.ap-layout body:is(.catalog-active,.pro-active)>#appResponsiveToolbar,
+  html.ap-layout body:is(.catalog-active,.pro-active)>#luckyjetSupabaseStatus { width:calc(100% - 24px) !important; }
+  html.ap-layout .meta { gap:8px; }
+  html.ap-layout .cell { padding:9px 6px; }
+  html.ap-layout .pro-modes { grid-template-columns:repeat(3,minmax(0,1fr)); gap:7px; }
+  html.ap-layout .pro-modes button { width:100%; height:auto; min-height:56px; padding:8px 4px; font-size:11px; overflow-wrap:anywhere; }
+  html.ap-layout .round-grid { grid-template-columns:repeat(4,minmax(0,1fr)); }
+  html.ap-layout .market-signal { padding:12px; gap:10px; }
+  html.ap-layout .market-signal .ms-score { font-size:clamp(20px,6vw,28px); }
+  html.ap-layout .topbar { gap:6px; }
+}
+@media (max-width:360px) {
+  html.ap-layout .fields { grid-template-columns:minmax(0,1fr); }
+  html.ap-layout .market-signal { flex-wrap:wrap; }
+  html.ap-layout .market-signal .ms-right { margin-left:auto; }
+  html.ap-layout .meta .title { font-size:11px; }
+}
