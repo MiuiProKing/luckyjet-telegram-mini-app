@@ -31,7 +31,8 @@ jobs:
               if '.git' in p.parts:
                   continue
               text = p.read_text(encoding='utf-8')
-              if p.name == 'pro-luckyjet.html' or (p.parts and p.parts[0] == 'luckyjet-live'):
+              # These clients already own their data transport; never add the legacy bridge.
+              if p.name == 'pro-luckyjet.html' or (p.parts and p.parts[0] in {'luckyjet-live', 'portal', 'design'}):
                   new = pattern.sub('', text)
               elif pattern.search(text):
                   new = pattern.sub(tag, text, count=1)
