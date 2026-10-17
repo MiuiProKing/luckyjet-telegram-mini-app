@@ -1,5 +1,9 @@
 # KnowzCode work log
 
+## MicroFix · 2026-10-16 · Preserve portal transport at publication
+
+The post-merge live-bridge workflow reinserted the unresolved script into both portal HTML entry points. Exclude `portal/` and `design/` from legacy bridge injection, using the workflow's existing removal behavior for clients with their own transport. Remove the reinjected tags; keep compiled application assets unchanged. Verification passed: the actual embedded workflow script was executed against 7 temporary HTML fixtures, preserving 4 independent transports, updating 2 legacy clients and skipping `.git`.
+
 ## MicroFix · 2026-10-16 · Portal polish and code audit
 
 Request: retain the existing AllPredictor theme and improve it slightly; review the code and mobile layout.
