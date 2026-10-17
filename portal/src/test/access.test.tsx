@@ -15,6 +15,7 @@ describe('Session access',()=>{
   fireEvent.submit(input.closest('form')!);
   expect(screen.getByText('Application content')).toBeTruthy();
   expect(sessionStorage.getItem('allpredictor-access')).toBe('yes');
+  expect(document.activeElement).toBe(screen.getByRole('main'));
  });
  it('masks the PIN and toggles its visibility',()=>{
   render(<AppShell>content</AppShell>);
@@ -31,5 +32,14 @@ describe('Session access',()=>{
  it('restores reduced motion on every app page',()=>{
   sessionStorage.setItem('allpredictor-motion','reduced');render(<AppShell>content</AppShell>);
   expect(document.documentElement.classList.contains('reduced-motion')).toBe(true);
+ });
+ it('offers a skip link without changing the hash route',()=>{
+  sessionStorage.setItem('allpredictor-access','yes');
+  window.location.hash='#/history';
+  render(<AppShell>content</AppShell>);
+  const skip=screen.getByRole('link',{name:'К содержимому'});
+  fireEvent.click(skip);
+  expect(document.activeElement).toBe(screen.getByRole('main'));
+  expect(window.location.hash).toBe('#/history');
  });
 });

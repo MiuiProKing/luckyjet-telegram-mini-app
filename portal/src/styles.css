@@ -16,3 +16,65 @@
 
 /* Intrinsic sizing at narrow phone widths; decorative effects stay inside cards. */
 html,body,#root{width:100%;min-width:0;max-width:100%} .app :where(main,section,article,header,footer,nav,div){min-width:0} .status-main>span{overflow-wrap:anywhere} .live-number{font-size:clamp(26px,7vw,48px);overflow-wrap:anywhere;white-space:normal} .gate-header,.main-content,.header-inner{padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env(safe-area-inset-right))} @media(max-width:767px){.hero-copy{max-width:100%}.hero-copy p{max-width:70%}.mobile-nav{margin-top:0}.app-footer{padding-bottom:24px}.hero h2{font-size:clamp(28px,8vw,34px)}}
+
+/* A small polish of the original theme: keep its palette and visual hierarchy. */
+.hero,.gate-art,.live-panel,.game-tile{border-radius:12px}
+.version-row,.status-strip,.viewer-frame,.pin-input-wrap{border-radius:10px}
+.nav-link,.filter-tabs button{border-radius:8px}
+.hero-cta,.gate-submit{min-height:44px}
+.status-strip{font-size:12px;padding-block:4px}
+.status-actions button,.header-account button,.viewer-heading>a{min-width:44px;min-height:44px}
+.filter-tabs button{min-height:44px;font-size:12px}
+.search input{min-height:44px;font-size:13px}
+.search svg{top:14px}
+.tile-copy h3,.version-row h3{font-size:13px}
+.tile-copy p,.version-row p,.live-label,.live-meta,.live-link,.section-title>a,
+.page-heading p,.page-date,.round-table th,.round-id,.history-summary span,
+.setting-row p,.setting-value,.privacy-note,.history-caveat,.viewer-heading p,
+.viewer-warning,.viewer-note,.pin-hint,.pin-error,.session-note,.gate-header-note,
+.app-footer,.footer-note{font-size:12px;line-height:1.7}
+.tile-tag,.count,.eyebrow,.gate-copy .eyebrow,.gate-art-caption .eyebrow{font-size:10px}
+.tile-copy{padding-block:14px}
+.setting-value{max-width:180px;overflow-wrap:anywhere}
+.setting-row input[type=checkbox]{width:28px;height:28px;cursor:pointer;outline-offset:7px}
+.setting-row:has(input[type=checkbox]){min-height:76px}
+.round-table .coefficient{display:inline-block;max-width:100%;white-space:normal;overflow-wrap:anywhere}
+.round-table td{font-variant-numeric:tabular-nums}
+.coefficient{border-radius:6px}
+.skip-link{position:fixed;top:12px;left:16px;z-index:30;padding:12px 18px;border-radius:8px;background:var(--primary);color:var(--primary-foreground);transform:translateY(-160%)}
+.skip-link:focus{transform:translateY(0)}
+.main-content:focus{outline:none}
+.catalogue-results{font-size:12px;color:var(--muted-foreground);margin:-2px 0 14px}
+@media(min-width:768px) and (max-width:1000px){
+ .header-inner{height:auto;min-height:108px;grid-template-columns:minmax(0,1fr) auto;gap:8px 20px;padding-block:14px}
+ .desktop-nav{grid-row:2;grid-column:1/-1;justify-content:center}
+ .header-account{grid-row:1;grid-column:2}
+ .nav-link{min-height:44px;padding:10px 18px}
+}
+@media(max-width:767px){
+ .main-content{padding-bottom:32px}
+ .status-actions{justify-self:end}
+ .source-name{display:none}
+ .live-panel{grid-template-columns:minmax(0,1fr);gap:4px}
+ .live-label,.live-meta,.mini-rounds,.live-link{grid-column:1}
+ .mini-rounds{grid-row:auto;justify-content:flex-start;gap:6px;margin-top:14px}
+ .mini-rounds .coefficient,.coefficient{font-size:12px;padding:7px 8px}
+ .live-number{font-size:40px}
+ .page-heading p{max-width:38em}
+ .filter-tabs{gap:4px}
+ .filter-tabs button{padding-inline:10px}
+ .history-summary{flex-wrap:wrap;gap:16px 24px}
+ .round-table th,.round-table td{padding:14px 5px;font-size:12px}
+ .round-table th:nth-child(1){width:28%}
+ .round-table th:nth-child(2){width:28%}
+ .round-table th:nth-child(3){width:44%}
+ .round-table .round-id{font-size:11px}
+ .setting-value{max-width:112px}
+ .setting-row h3{font-size:13px}
+ .viewer-heading>a:last-child{width:44px}
+ .app-footer{padding-bottom:calc(112px + env(safe-area-inset-bottom))}
+ .mobile-nav{position:fixed;inset:auto 0 0;margin:0;min-height:72px;padding-top:8px;padding-bottom:max(8px,env(safe-area-inset-bottom))}
+ .mobile-nav a{min-height:48px;font-size:11px;gap:4px}
+ .session-note{flex-wrap:wrap;text-align:center}
+ .gate-footer{font-size:10px;flex-wrap:wrap}
+}
