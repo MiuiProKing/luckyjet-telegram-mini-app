@@ -2,7 +2,7 @@
 (() => {
   'use strict';
   if (window.LuckyJetSupabase) return;
-  const config = {"url":"https://zulsrqkjkatzjjhacowy.supabase.co","anonKey":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp1bHNycWtqa2F0empqaGFjb3d5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE1MzA4NTksImV4cCI6MjEwNzEwNjg1OX0.0MPkQgxa24gjHcXyQf7t-_tfe0g4kdDkC2SXJOxaOso"};
+  const config = {"url":"https://stzrirukuxcyalrsstxx.supabase.co","anonKey":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN0enJpcnVrdXhjeWFscnNzdHh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMyMjQ1OTIsImV4cCI6MjEwODgwMDU5Mn0.0RGmnreFUZYWGPq0j-RYtAzvCwqyP---kJ1mRRf5h10"};
   const nativeFetch = window.fetch.bind(window), NativeDate = window.Date || Date;
   const headers = {apikey: config.anonKey, Authorization: 'Bearer ' + config.anonKey, Accept: 'application/json'};
   const cache = new Map(), flights = new Map();
