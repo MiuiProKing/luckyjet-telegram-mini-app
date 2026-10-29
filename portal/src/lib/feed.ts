@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-export const PUBLIC_SOURCE = 'https://zulsrqkjkatzjjhacowy.supabase.co';
-const PUBLIC_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp1bHNycWtqa2F0empqaGFjb3d5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE1MzA4NTksImV4cCI6MjEwNzEwNjg1OX0.0MPkQgxa24gjHcXyQf7t-_tfe0g4kdDkC2SXJOxaOso';
+export const PUBLIC_SOURCE = 'https://stzrirukuxcyalrsstxx.supabase.co';
+const PUBLIC_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN0enJpcnVrdXhjeWFscnNzdHh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMyMjQ1OTIsImV4cCI6MjEwODgwMDU5Mn0.0RGmnreFUZYWGPq0j-RYtAzvCwqyP---kJ1mRRf5h10';
 export interface Round { id:string; coefficient:number; round_timestamp:string; estimated:boolean; source_seq:number|null; feed_order:number; origin:string }
 export interface Status { source_connected:boolean; fresh:boolean; error:string; checked_at:string; last_round_at:string; game_order_verified:boolean }
 async function read<T>(path:string):Promise<T> { const response=await fetch(`${PUBLIC_SOURCE}/rest/v1/${path}`,{headers:{apikey:PUBLIC_ANON_KEY,Authorization:`Bearer ${PUBLIC_ANON_KEY}`},signal:AbortSignal.timeout(15000)}); if(!response.ok)throw new Error(`Источник недоступен (${response.status})`); return response.json(); }

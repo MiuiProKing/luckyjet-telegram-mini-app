@@ -41,7 +41,7 @@ test('Legacy game requests use Supabase, preserve exact 1.00 and equal coefficie
  const h=harness(),r=await h.c.fetch(game,{headers:{'session-id':'do-not-forward'}}),rows=await r.json();
  assert.equal(rows.length,3);assert.equal(rows[0].coefficient,1);assert.equal(rows[1].coefficient,rows[2].coefficient);assert.notEqual(rows[1].id,rows[2].id);
  assert.equal(rows[0].round_timestamp,iso);assert.equal(rows[0].timestamp,Date.parse(iso));assert.equal(rows[0].estimated,false);
- assert(h.calls.every(c=>c.url.startsWith('https://zulsrqkjkatzjjhacowy.supabase.co/')));
+ assert(h.calls.every(c=>c.url.startsWith('https://stzrirukuxcyalrsstxx.supabase.co/')));
  assert(h.calls.every(c=>!('session-id' in c.options.headers)));
  assert.equal(h.elements.get('luckyjetSupabaseStatus').dataset.connected,'true');
 });
