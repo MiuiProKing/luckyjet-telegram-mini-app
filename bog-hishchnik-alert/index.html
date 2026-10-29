@@ -432,6 +432,7 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden){checkForN
 window.addEventListener('bee-cloud-connect',()=>refreshModel());document.addEventListener('visibilitychange',()=>{if(!document.hidden){gap('Страница была в фоне: непрерывность окна не подтверждена');refreshModel()}});restoreJournal();chooseMode('normal');render();refreshModel();connectLive();setInterval(()=>{if(!window.ClassicCloud.connected())checkForNewRound();else window.ClassicCloud.getStatus(true).then(status=>{collectorStatus={...(collectorStatus||{}),source_connected:status.source_connected,fresh:status.fresh,error:status.error};online=!!status.source_connected;lastPollAt=Date.now();if(!status.fresh)gap('Источник Supabase отключён');renderStatus();renderSignals()}).catch(()=>{online=false;if(collectorStatus)collectorStatus.fresh=false;gap('Проверка Supabase недоступна');renderStatus();renderSignals()})},POLL_MS);setInterval(refreshModel,300000);setInterval(updateAnalysis,8000);setInterval(renderSignals,1000);
 
 </script>
-<script src="beeai.js"></script></body>
+<script src="beeai.js"></script><script src="live-coefficients.js?v=20261014-supabase-1"></script>
+</body>
 </html>
 
