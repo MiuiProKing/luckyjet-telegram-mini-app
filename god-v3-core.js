@@ -67,7 +67,7 @@ $("signalCountdown").textContent=active?"До завершения окна: "+d
 $("signalTarget").textContent="";
 $("signalReason").textContent=(c.validated?"Внутренний тест показал улучшение, но независимая проверка необходима. ":"Преимущество перед базовой частотой не подтверждено. ")+"Расчёт по медиане последних интервалов; точное время выпадения неизвестно.";
 }
-const previousRender=render;render=function(){previousRender();computeSignal()};
+const previousRender=render;render=function(){previousRender();computeSignal();renderJournal()};
 setupSignalPanel();setInterval(paintSignal,1000);
 
 const JOURNAL_KEY="god-v3-window-journal-"+document.body.dataset.mode;
@@ -96,13 +96,18 @@ if(changed)persistJournal();renderJournal();
 }
 function renderJournal(){
 let host=$("journalList");if(!host)return;
-let rows=journal.slice().reverse();
-host.innerHTML=rows.length?rows.map(w=>{
+let target=Number($("target").value)||10;
+let when=t=>new Date(t).toLocaleString("ru-RU",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit"});
+let checks=journal.slice().reverse().map(w=>{
 let color=w.status==="hit"?"#65e7ad":w.status==="miss"?"#ff858d":"#d5b7ff";
 let label=w.status==="hit"?"✅ ЗАШЛО":w.status==="miss"?"❌ НЕ ЗАШЛО":w.status==="unknown"?"⚪ НЕТ ДАННЫХ":"⏳ ПРОВЕРЯЕТСЯ";
-let when=t=>new Date(t).toLocaleString("ru-RU",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit"});
-return '<div style="padding:13px;border-bottom:1px solid #ffffff20"><strong style="color:'+color+'">'+label+'</strong><div style="font-size:12px;margin-top:5px">Цель ≥'+w.target+'× · '+when(w.start)+' — '+when(w.end)+'</div><small>Результат: '+(w.actual==null?"ожидание":fmt(w.actual)+"×")+'</small></div>'
-}).join(""):'<p style="color:#bda5d5">Пока нет сохранённых окон. Новые окна будут записываться автоматически.</p>';
+return '<div style="padding:12px;border-bottom:1px solid #ffffff20"><strong style="color:'+color+'">'+label+'</strong><div style="font-size:12px;margin-top:5px">Цель ≥'+w.target+'× · '+when(w.start)+' — '+when(w.end)+'</div><small>Максимум в окне: '+(w.actual==null?"ещё не определён":fmt(w.actual)+"×")+'</small></div>'
+}).join("");
+let observed=data.slice(-80).reverse().map(r=>'<div style="display:flex;justify-content:space-between;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid #ffffff12"><div><strong style="color:'+(r.x>=target?'#65e7ad':'#ff858d')+'">'+(r.x>=target?'✅ ДОСТИГНУТА ЦЕЛЬ':'❌ НИЖЕ ЦЕЛИ')+'</strong><div style="font-size:11px;color:#a995c1;margin-top:4px">'+when(r.t)+'</div></div><strong style="font-size:18px;color:#f0d2ff">'+fmt(r.x)+'×</strong></div>').join("");
+host.innerHTML='<div style="display:flex;gap:8px;margin:12px 0"><button type="button" id="journalChecksTab">Проверки ('+journal.length+')</button><button type="button" id="journalRoundsTab">Раунды ('+Math.min(80,data.length)+')</button></div><div id="journalChecks">'+(checks||'<p style="color:#bda5d5">Пока нет завершённых проверок. Новые прогнозные окна записываются автоматически.</p>')+'</div><div id="journalRounds" style="display:none">'+(observed||'<p style="color:#bda5d5">Коэффициенты загружаются из Supabase…</p>')+'</div><p style="font-size:11px;color:#9984ae;margin:15px 0">Раунды — фактические коэффициенты, а не доказательство успешной ставки. Проверки — только заранее сохранённые прогнозные окна.</p>';
+let tab=host.dataset.tab||"rounds";
+function show(t){host.dataset.tab=t;$("journalChecks").style.display=t==="checks"?"block":"none";$("journalRounds").style.display=t==="rounds"?"block":"none";$("journalChecksTab").style.background=t==="checks"?"#8742b5":"#281a3b";$("journalRoundsTab").style.background=t==="rounds"?"#8742b5":"#281a3b"}
+$("journalChecksTab").onclick=()=>show("checks");$("journalRoundsTab").onclick=()=>show("rounds");show(tab)
 }
 function setupJournal(){
 let host=document.createElement("div");host.id="journalList";
