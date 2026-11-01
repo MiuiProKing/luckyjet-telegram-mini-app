@@ -32,7 +32,7 @@ jobs:
                   continue
               text = p.read_text(encoding='utf-8')
               # These clients already own their data transport; never add the legacy bridge.
-              if p.name == 'pro-luckyjet.html' or (p.parts and p.parts[0] in {'luckyjet-live', 'portal', 'design'}):
+              if p.name == 'pro-luckyjet.html' or (p.parts and p.parts[0] in {'luckyjet-live', 'portal', 'design', 'god-preditor-pro-vip'}):
                   new = pattern.sub('', text)
               elif pattern.search(text):
                   new = pattern.sub(tag, text, count=1)
