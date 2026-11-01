@@ -1,3 +1,4 @@
+// Regression for the preserved v1 next-round model; the live app uses window-model.mjs.
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {analyze,advanceJournal,summary} from '../small-model.mjs';

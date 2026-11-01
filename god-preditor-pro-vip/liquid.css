@@ -7,3 +7,6 @@ body,.hero{background:#000}.hero{background:#000}.pro-logo{overflow:visible;whit
 @media(max-width:650px){.liquid-word{width:220px}.pro-logo>b{font-size:7px;padding:3px 5px;margin-left:5px}.vip-badge{width:39px;margin-left:5px}.pro-logo small{margin-top:11px;font-size:6px}#result-flash img{width:130px;height:130px}#visible-check .check-result img,#visible-check .check-result picture{width:32px;height:32px}}
 @media(max-width:365px){.liquid-word{width:192px}.vip-badge{width:33px}.pro-logo>b{font-size:6px}}
 @media(prefers-reduced-motion:reduce){.minimal-prediction #signal,#result-flash{animation:none!important}}
+
+.minimal-prediction .signal-copy:before{content:'РАСЧЁТНОЕ ОКНО · КИЕВ'}#signal-note{font:9px 'IBM Plex Mono',monospace;color:#b4a4bd;max-width:600px;margin:10px auto 0;padding:0 15px;line-height:1.7}#window{font-variant-numeric:tabular-nums}#statistics .disclaimer{display:block!important}#statistics #targets{display:grid!important}
+@media(max-width:650px){#signal-note{font-size:8px;max-width:360px}#window{font-size:10px!important}.minimal-prediction #signal{overflow-wrap:anywhere}}

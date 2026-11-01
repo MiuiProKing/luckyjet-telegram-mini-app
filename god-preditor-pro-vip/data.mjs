@@ -9,7 +9,9 @@ export function normalizeRound(input,source='custom',now=Date.now()){
  const o=typeof input==='number'?{coefficient:input}:input;
  if(!o||typeof o!=='object')throw Error('Раунд должен быть объектом или числом');
  const coefficient=Number(o.coefficient??o.multiplier??o.coef??o.value);
- const timestamp=parseTime(o.timestamp??o.played_at??o.time,now);
+ const rawTimestamp=o.timestamp??o.played_at??o.time;
+ if(rawTimestamp==null||String(rawTimestamp).trim()==='')throw Error('Для проверки временного окна нужно время раунда');
+ const timestamp=parseTime(rawTimestamp,now);
  if(!Number.isFinite(coefficient)||coefficient<1)throw Error('Коэффициент должен быть числом ≥ 1');
  if(!Number.isFinite(timestamp)||timestamp<=0||timestamp>now)throw Error('Неверное или будущее время раунда');
  const id=String(o.id??`${timestamp}:${coefficient}`);
