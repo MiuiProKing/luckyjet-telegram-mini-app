@@ -62,7 +62,7 @@ let c=candidate,now=Date.now(),active=now>=c.from&&now<=c.to,remaining=now<c.fro
 let fmtTime=t=>new Date(t).toLocaleTimeString("ru-RU",{hour:"2-digit",minute:"2-digit",second:"2-digit"});
 let dur=t=>{let sec=Math.max(0,Math.ceil(t/1000));return String(Math.floor(sec/3600)).padStart(2,"0")+":"+String(Math.floor(sec%3600/60)).padStart(2,"0")+":"+String(sec%60).padStart(2,"0")};
 state.textContent=active?"🟡 ОКНО АНАЛИЗА":"⏳ ЖДАТЬ";state.style.color=active?"#63e8b5":"#f8c86d";
-$("signalTime").textContent=fmtTime(c.from)+" — "+fmtTime(c.to);
+$("signalTime").textContent=fmtTime(c.from)+" — "+fmtTime(c.to);let goal=$("signalGoal");if(goal)goal.textContent="ЦЕЛЬ ≥"+fmt(c.target,0)+"×";
 $("signalCountdown").textContent=active?"До завершения окна: "+dur(remaining):"До начала окна: "+dur(remaining);
 $("signalTarget").textContent="";
 $("signalReason").textContent=(c.validated?"Внутренний тест показал улучшение, но независимая проверка необходима. ":"Преимущество перед базовой частотой не подтверждено. ")+"Расчёт по медиане последних интервалов; точное время выпадения неизвестно.";
@@ -84,10 +84,10 @@ journal=journal.slice(-300);persistJournal();
 function verifyJournal(){
 if(!data.length)return;let changed=false,now=Date.now();
 for(let w of journal){
-if(w.status!=="pending"||now<=w.end)continue;
+if(w.status!=="pending")continue;
 let slice=data.filter(r=>r.t>=w.start&&r.t<=w.end);
 let hit=slice.find(r=>r.x>=w.target);
-if(hit){w.status="hit";w.actual=hit.x;w.resultAt=hit.t;changed=true;continue}
+if(hit){w.status="hit";w.actual=hit.x;w.resultAt=hit.t;changed=true;continue}if(now<=w.end)continue;
 let before=data.findLast(r=>r.t<w.start),after=data.find(r=>r.t>w.end);
 if(before&&after&&slice.length){w.status="miss";w.actual=Math.max(...slice.map(r=>r.x));changed=true}
 else if(now-w.end>86400000){w.status="unknown";changed=true}
@@ -115,7 +115,7 @@ let h=$("history");if(h){h.insertBefore(host,h.querySelector(".history"));let t=
 let details=h.querySelector(".history");if(details){details.style.display="none";let b=document.createElement("button");b.textContent="Показать коэффициенты";b.onclick=()=>{details.style.display=details.style.display==="none"?"block":"none";b.textContent=details.style.display==="none"?"Показать коэффициенты":"Скрыть коэффициенты"};h.appendChild(b)}}
 renderJournal()
 }
-const previousSignal=computeSignal;computeSignal=function(){previousSignal();if(candidate&&candidate.from>Date.now()&&candidate.from-Date.now()<86400000)recordWindow(candidate);verifyJournal()};
+const previousSignal=computeSignal;computeSignal=function(){previousSignal();if(candidate&&candidate.to>Date.now()&&candidate.from-Date.now()<86400000)recordWindow(candidate);verifyJournal()};
 setupJournal();
 
 
