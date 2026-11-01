@@ -35,5 +35,40 @@ $("feedNote").textContent="CSV сформирован: "+rows.length+" раун�
 }catch(e){$("feedNote").textContent="Ошибка выгрузки: "+e.message}finally{btn.disabled=false;btn.textContent="⬇ Скачать ВСЮ историю CSV"}
 }
 const oldRender=render;render=function(){oldRender();let strip=$("liveStrip");if(strip)strip.innerHTML=data.slice(-30).reverse().map(r=>'<span style="padding:7px 10px;border-radius:9px;background:'+(r.x>=100?'#623163':r.x>=10?'#184b54':r.x>=2?'#154334':'#263148')+';font-weight:700;font-size:14px">'+fmt(r.x)+'×</span>').join("");};
+
+function setupSignalPanel(){
+let panel=document.createElement("section");panel.id="signalPanel";panel.className="box";panel.style.cssText="margin:16px 0;border:1px solid #245a87;background:radial-gradient(circle at top right,#182d59,#080e20 75%);box-shadow:0 0 30px #0a3e7030;padding:20px;text-align:center";
+panel.innerHTML='<div style="font-size:12px;letter-spacing:3px;color:#8bd9ff">⚡ GOD PREDITOR · СИГНАЛ</div><div id="signalState" style="font-size:clamp(27px,7vw,48px);font-weight:900;color:#f8c86d;margin:16px 0 8px">ОЖИДАНИЕ ДАННЫХ</div><div id="signalTime" style="font-size:clamp(24px,7vw,44px);font-weight:800;color:#fff;font-variant-numeric:tabular-nums">--:--:--</div><div id="signalCountdown" style="font-size:18px;color:#8bd9ff;margin:8px">—</div><div id="signalTarget" style="color:#c5d8ee;margin:9px">Цель: —</div><div id="signalReason" style="color:#9eb2d3;font-size:13px;line-height:1.6">Исторические интервалы — не гарантия будущих результатов</div><div style="font-size:11px;color:#7187a8;margin-top:15px">Время локальное · сигналы экспериментальные · не рекомендация делать ставку</div>';
+let metrics=document.getElementById("metrics");metrics.parentNode.insertBefore(panel,metrics);
+}
+let candidate=null;
+function computeSignal(){
+if(!data.length)return;
+let target=Number($("target").value),events=data.filter(x=>x.x>=target),g=events.slice(1).map((x,i)=>(x.t-events[i].t)/1000).filter(x=>x>0);
+if(g.length<5){candidate=null;paintSignal();return}
+let recent=g.slice(-Math.min(60,g.length)),med=median(recent),scatter=mad(recent),now=Date.now(),last=events.at(-1).t,base=last+med*1000;
+let width=Math.max(15000,Math.min(180000,scatter*1000*1.5));
+let step=median(data.slice(1).map((x,i)=>(x.t-data[i].t)/1000).filter(x=>x>0&&x<300))||20;
+let until=base+width;
+while(until<now){base+=med*1000;until=base+width;if(med<=0)break}
+let f=data.map(x=>x.x>=target?1:0),test=backtest(f,Math.max(1,Number($("horizon").value)));
+candidate={target,at:base,from:base-width,to:base+width,med,scatter,validated:Number.isFinite(test.m)&&Number.isFinite(test.b)&&test.n>=30&&test.m<test.b*.98,tests:test.n};
+paintSignal()
+}
+function paintSignal(){
+let state=$("signalState");if(!state)return;
+if(!candidate){state.textContent="МАЛО ИСТОРИИ";state.style.color="#f8c86d";$("signalTime").textContent="—";$("signalCountdown").textContent="Недостаточно повторений выбранной цели";$("signalTarget").textContent="Цель: "+$("target").value+"×";$("signalReason").textContent="Для расчёта нужно не менее 6 событий";return}
+let c=candidate,now=Date.now(),active=now>=c.from&&now<=c.to,remaining=now<c.from?c.from-now:now<=c.to?c.to-now:0;
+let fmtTime=t=>new Date(t).toLocaleTimeString("ru-RU",{hour:"2-digit",minute:"2-digit",second:"2-digit"});
+let dur=t=>{let sec=Math.max(0,Math.ceil(t/1000));return String(Math.floor(sec/3600)).padStart(2,"0")+":"+String(Math.floor(sec%3600/60)).padStart(2,"0")+":"+String(sec%60).padStart(2,"0")};
+state.textContent=active?"🟡 ОКНО АНАЛИЗА":"⏳ ЖДАТЬ";state.style.color=active?"#63e8b5":"#f8c86d";
+$("signalTime").textContent=fmtTime(c.from)+" — "+fmtTime(c.to);
+$("signalCountdown").textContent=active?"До завершения окна: "+dur(remaining):"До начала окна: "+dur(remaining);
+$("signalTarget").textContent="Цель ≥"+c.target+"× · исторический интервал "+fmt(c.med/60,1)+" мин";
+$("signalReason").textContent=(c.validated?"Внутренний тест показал улучшение, но независимая проверка необходима. ":"Преимущество перед базовой частотой не подтверждено. ")+"Расчёт по медиане последних интервалов; точное время выпадения неизвестно.";
+}
+const previousRender=render;render=function(){previousRender();computeSignal()};
+setupSignalPanel();setInterval(paintSignal,1000);
+
 setupLive();
 setInterval(()=>{if($("auto").checked)load()},15000);load();
