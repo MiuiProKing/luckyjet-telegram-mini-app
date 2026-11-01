@@ -20,6 +20,7 @@ jobs:
             echo "Checking $file"
             node --check "$file"
           done
+          node --check god-preditor-pro-vip/app.js
       - name: Verify required files
         run: |
           test -f index.html
@@ -34,5 +35,6 @@ jobs:
       - name: Verify Lucky Jet audit scenarios
         run: |
           node --test tests/luckyjet-hub-supabase.test.mjs
+          node --test god-preditor-pro-vip/tests/*.test.mjs
           TZ=UTC node tests/pro-luckyjet-audit.test.mjs
           TZ=Europe/Kyiv node tests/pro-luckyjet-audit.test.mjs
