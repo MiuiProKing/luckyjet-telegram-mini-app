@@ -38,7 +38,7 @@ const oldRender=render;render=function(){oldRender();let strip=$("liveStrip");if
 
 function setupSignalPanel(){
 let panel=document.createElement("section");panel.id="signalPanel";panel.className="box";panel.style.cssText="margin:16px 0;border:1px solid #245a87;background:radial-gradient(circle at top right,#182d59,#080e20 75%);box-shadow:0 0 30px #0a3e7030;padding:20px;text-align:center";
-panel.innerHTML='<div style="font-size:12px;letter-spacing:3px;color:#8bd9ff">⚡ GOD PREDITOR · СИГНАЛ</div><div id="signalState" style="font-size:clamp(27px,7vw,48px);font-weight:900;color:#f8c86d;margin:16px 0 8px">ОЖИДАНИЕ ДАННЫХ</div><div id="signalTime" style="font-size:clamp(24px,7vw,44px);font-weight:800;color:#fff;font-variant-numeric:tabular-nums">--:--:--</div><div id="signalCountdown" style="font-size:18px;color:#8bd9ff;margin:8px">—</div><div id="signalTarget" style="color:#c5d8ee;margin:9px">Цель: —</div><div id="signalReason" style="color:#9eb2d3;font-size:13px;line-height:1.6">Исторические интервалы — не гарантия будущих результатов</div><div style="font-size:11px;color:#7187a8;margin-top:15px">Время локальное · сигналы экспериментальные · не рекомендация делать ставку</div>';
+panel.innerHTML='<div style="font-size:12px;letter-spacing:3px;color:#8bd9ff">⚡ GOD PREDITOR · СИГНАЛ</div><div id="signalGoal" style="font-size:clamp(27px,8vw,42px);font-weight:900;color:#efd4ff;text-shadow:0 0 20px #a453d6;margin:10px 0">🎯 ЛОВИ 10×</div><div id="signalState" style="font-size:clamp(27px,7vw,48px);font-weight:900;color:#f8c86d;margin:16px 0 8px">ОЖИДАНИЕ ДАННЫХ</div><div id="signalTime" style="font-size:clamp(24px,7vw,44px);font-weight:800;color:#fff;font-variant-numeric:tabular-nums">--:--:--</div><div id="signalCountdown" style="font-size:18px;color:#8bd9ff;margin:8px">—</div><div id="signalTarget" style="color:#c5d8ee;margin:9px">Цель: —</div><div id="signalReason" style="color:#9eb2d3;font-size:13px;line-height:1.6">Исторические интервалы — не гарантия будущих результатов</div><div style="font-size:11px;color:#7187a8;margin-top:15px">Время локальное · сигналы экспериментальные · не рекомендация делать ставку</div>';
 let metrics=document.getElementById("metrics");metrics.parentNode.insertBefore(panel,metrics);
 }
 let candidate=null;
@@ -57,12 +57,12 @@ paintSignal()
 }
 function paintSignal(){
 let state=$("signalState");if(!state)return;
-if(!candidate){state.textContent="МАЛО ИСТОРИИ";state.style.color="#f8c86d";$("signalTime").textContent="—";$("signalCountdown").textContent="Недостаточно повторений выбранной цели";$("signalTarget").textContent="Цель: "+$("target").value+"×";$("signalReason").textContent="";return}
+if(!candidate){let goal=$("signalGoal");if(goal)goal.textContent="🎯 ЛОВИ "+($("target").value||10)+"×";state.textContent="МАЛО ИСТОРИИ";state.style.color="#f8c86d";$("signalTime").textContent="—";$("signalCountdown").textContent="Недостаточно повторений выбранной цели";$("signalTarget").textContent="Цель: "+$("target").value+"×";$("signalReason").textContent="";return}
 let c=candidate,now=Date.now(),active=now>=c.from&&now<=c.to,remaining=now<c.from?c.from-now:now<=c.to?c.to-now:0;
 let fmtTime=t=>new Date(t).toLocaleTimeString("ru-RU",{hour:"2-digit",minute:"2-digit",second:"2-digit"});
 let dur=t=>{let sec=Math.max(0,Math.ceil(t/1000));return String(Math.floor(sec/3600)).padStart(2,"0")+":"+String(Math.floor(sec%3600/60)).padStart(2,"0")+":"+String(sec%60).padStart(2,"0")};
-state.textContent=active?"🟡 ОКНО АНАЛИЗА":"⏳ ЖДАТЬ";state.style.color=active?"#63e8b5":"#f8c86d";
-$("signalTime").textContent=fmtTime(c.from)+" — "+fmtTime(c.to);let goal=$("signalGoal");if(goal)goal.textContent="ЦЕЛЬ ≥"+fmt(c.target,0)+"×";
+state.textContent=active?"🟢 ВРЕМЯ ЦЕЛИ":"⏳ ОЖИДАНИЕ";state.style.color=active?"#63e8b5":"#f8c86d";
+$("signalTime").textContent=fmtTime(c.from)+" — "+fmtTime(c.to);let goal=$("signalGoal");if(goal)goal.textContent="🎯 ЛОВИ "+fmt(c.target,0)+"×";
 $("signalCountdown").textContent=active?"До завершения окна: "+dur(remaining):"До начала окна: "+dur(remaining);
 $("signalTarget").textContent="";
 $("signalReason").textContent=(c.validated?"Внутренний тест показал улучшение, но независимая проверка необходима. ":"Преимущество перед базовой частотой не подтверждено. ")+"Расчёт по медиане последних интервалов; точное время выпадения неизвестно.";
