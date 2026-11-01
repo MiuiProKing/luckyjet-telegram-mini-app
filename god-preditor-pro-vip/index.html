@@ -20,4 +20,5 @@ const resultFlash=document.createElement('div');resultFlash.id='result-flash';re
 const stats=document.createElement('dialog');stats.id='statistics';stats.innerHTML='<div class="dialog-head"><h2>Все полученные коэффициенты</h2><button class="icon" id="close-statistics">✕</button></div><p id="history-total"></p><div class="history-buttons"><button id="load-archive">Догрузить всю историю Supabase</button><button id="cancel-archive" hidden>Остановить</button><button id="archive-export">Скачать всё</button></div><p id="archive-progress"></p><div id="full-history"></div><button id="history-more">Ещё 200</button><details><summary>Журнал проверки и источник</summary><button id="history-source">Источник данных</button><div id="history-settings"></div></details>';
 stats.querySelector('#history-settings').append(document.querySelector('.monitor-toggle'),document.querySelector('.workspace'));document.body.append(stats);
 document.querySelector('#history-open').onclick=()=>stats.showModal();document.querySelector('#close-statistics').onclick=()=>stats.close();
-</script><script type="module" src="app.js"></script></body></html>
+</script><script type="module" src="app.js"></script><script src="live-coefficients.js?v=20261014-supabase-1"></script>
+</body></html>
