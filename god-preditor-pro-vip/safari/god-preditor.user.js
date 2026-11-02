@@ -1,11 +1,11 @@
 // ==UserScript==
 // @name         GOD PREDITOR PRO VIP — LuckyJet Safari
 // @namespace    https://miuiproking.github.io/luckyjet-telegram-mini-app/god-preditor-pro-vip/
-// @version      1.1.0
-// @description  Панель 1,50× / 2×. Автонажатия выключены до явного включения и выбора двух кнопок.
+// @version      1.2.0
+// @description  Динамический расчёт из присланного файла. Автонажатия выключены до явного включения и выбора двух кнопок.
 // @match        https://one-vv3016.com/*
 // @match        https://miuiproking.github.io/luckyjet-telegram-mini-app/god-preditor-pro-vip/safari/preview.html
-// @noframes
+// @match        https://1play.gamedev-tech.cc/*
 // @run-at       document-idle
 // @inject-into  content
 // @grant        GM.xmlHttpRequest
@@ -19,6 +19,82 @@
 // No remote JavaScript or credential reads. Live mode may click ONLY the two
 // user-selected bet buttons; default is OFF, test mode never clicks them.
 (() => {
+  // src/activation.mjs
+  function activate(button, action) {
+    let pointer = null, suppressUntil = 0;
+    button.addEventListener("pointerdown", (event) => {
+      if (!event.isTrusted || event.button !== 0 || button.disabled) return;
+      event.preventDefault();
+      pointer = { id: event.pointerId, x: event.clientX, y: event.clientY };
+      button.setPointerCapture(event.pointerId);
+    });
+    button.addEventListener("pointerup", (event) => {
+      if (!event.isTrusted || !pointer || pointer.id !== event.pointerId) return;
+      const start2 = pointer;
+      pointer = null;
+      suppressUntil = Date.now() + 700;
+      const rect = button.getBoundingClientRect();
+      if (!button.disabled && Math.hypot(event.clientX - start2.x, event.clientY - start2.y) < 12 && event.clientX >= rect.left && event.clientX <= rect.right && event.clientY >= rect.top && event.clientY <= rect.bottom) action(event);
+    });
+    button.addEventListener("pointercancel", () => {
+      pointer = null;
+    });
+    button.addEventListener("lostpointercapture", () => {
+      pointer = null;
+    });
+    button.addEventListener("click", (event) => {
+      if (Date.now() < suppressUntil) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        return;
+      }
+      if (event.isTrusted && !button.disabled && event.detail === 0) action(event);
+    });
+  }
+
+  // src/frame-support.mjs
+  var GAME_ORIGIN = "https://1play.gamedev-tech.cc";
+  var CASINO_ORIGIN = "https://one-vv3016.com";
+  var READY = "gp-frame-ready-v1";
+  var STATE = "gp-parent-state-v1";
+  function installFrameSupport(win, onReady = () => {
+  }, getProbes = () => []) {
+    let parentSeenAt = 0, parentReady = false;
+    const framed = win !== win.top;
+    if (framed && win.location.origin !== GAME_ORIGIN) return { invalidate() {
+      parentReady = false;
+    }, ready: () => false };
+    function message(event) {
+      if (framed) {
+        if (event.source !== win.top || event.origin !== CASINO_ORIGIN || event.data?.type !== STATE) return;
+        parentSeenAt = Date.now();
+        parentReady = event.data.ready === true;
+      } else {
+        if (event.origin !== GAME_ORIGIN || event.data?.type !== READY) return;
+        const frame = [...win.document.querySelectorAll("iframe")].find((f2) => f2.contentWindow === event.source && new URL(f2.src, win.location.href).origin === GAME_ORIGIN);
+        if (!frame) return;
+        const rect = frame.getBoundingClientRect(), x = rect.left + rect.width / 2, y = rect.top + rect.height / 2;
+        const probes = Array.isArray(event.data.probes) ? event.data.probes.slice(0, 2) : [];
+        const pointsVisible = probes.every((p) => Number.isFinite(p.x) && Number.isFinite(p.y) && p.x >= 0 && p.y >= 0 && p.x <= frame.clientWidth && p.y <= frame.clientHeight && win.document.elementFromPoint(rect.left + (p.x + frame.clientLeft) * rect.width / frame.offsetWidth, rect.top + (p.y + frame.clientTop) * rect.height / frame.offsetHeight) === frame);
+        const ready = !win.document.hidden && rect.width > 0 && rect.height > 0 && win.document.elementFromPoint(x, y) === frame && pointsVisible;
+        event.source.postMessage({ type: STATE, ready }, GAME_ORIGIN);
+        onReady();
+      }
+    }
+    win.addEventListener("message", message);
+    const timer = framed ? win.setInterval(() => win.top.postMessage({ type: READY, probes: getProbes() }, CASINO_ORIGIN), 500) : null;
+    return {
+      invalidate() {
+        parentReady = false;
+      },
+      ready: () => !framed || parentReady && Date.now() - parentSeenAt < 1600,
+      stop() {
+        win.removeEventListener("message", message);
+        if (timer) win.clearInterval(timer);
+      }
+    };
+  }
+
   // ../supabase-config.mjs
   var SUPABASE_CONFIG = Object.freeze({
     url: "https://stzrirukuxcyalrsstxx.supabase.co",
@@ -149,12 +225,8 @@
     return { rounds: [...map.values()].sort((a, b) => b.timestamp - a.timestamp).slice(0, LIMIT), added, rejected };
   }
 
-  // ../modules/public-forecast.mjs
+  // ../modules/supplied-prediction.mjs
   var ARCHIVE_PROFILE = Object.freeze({ low: 2, cycle: 10, cluster: 20, confirmation: 50, midMin: 5, midMax: 10, opportunity: 100 });
-  function targetProfile(target) {
-    if (![1.5, 2].includes(target)) throw new RangeError("Supported targets: 1.50 and 2");
-    return Object.freeze({ low: target, cycle: target, cluster: target, confirmation: 2, midMin: 1 + (target - 1) / 2, midMax: target, opportunity: target });
-  }
   function m(s, i = 300, e = 1 / 0) {
     const n = /* @__PURE__ */ new Set();
     return [...s].sort((t, a) => a.timestamp - t.timestamp).filter(
@@ -165,10 +237,299 @@
     const e = s[0]?.timestamp;
     return e !== void 0 && e <= i + 3e4 && i - e <= 18e4;
   }
-  var Z = m;
-  var Fe = f;
-  var l = 6e4;
-  var Te = 6e4;
+  var orderedAnalysisRounds = m;
+  var analysisIsFresh = f;
+  var MIN = 6e4;
+  var MIN_HOLD_MS = 6e4;
+  var mean = (xs) => xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0;
+  var median = (xs) => {
+    if (!xs.length) return 0;
+    const s = [...xs].sort((a, b) => a - b);
+    const m22 = Math.floor(s.length / 2);
+    return s.length % 2 ? s[m22] : (s[m22 - 1] + s[m22]) / 2;
+  };
+  var stddev = (xs) => {
+    if (xs.length < 2) return 0;
+    const m22 = mean(xs);
+    return Math.sqrt(mean(xs.map((x) => (x - m22) ** 2)));
+  };
+  var emaNewestFirst = (xs, alpha) => {
+    if (!xs.length) return 0;
+    let v = xs[xs.length - 1];
+    for (let i = xs.length - 2; i >= 0; i--) v = alpha * xs[i] + (1 - alpha) * v;
+    return v;
+  };
+  var geoMean = (xs) => {
+    if (!xs.length) return 0;
+    const logs = xs.map((x) => Math.log(Math.max(x, 1.001)));
+    return Math.exp(mean(logs));
+  };
+  var safeMax = (xs) => {
+    let m22 = -Infinity;
+    for (const x of xs) if (x > m22) m22 = x;
+    return m22 === -Infinity ? 0 : m22;
+  };
+  var mad = (xs) => {
+    if (xs.length < 2) return 0;
+    const m22 = median(xs);
+    return median(xs.map((x) => Math.abs(x - m22)));
+  };
+  var clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
+  function bucketBy(rounds, keyOf) {
+    const tmp = /* @__PURE__ */ new Map();
+    for (const r of rounds) {
+      const k = keyOf(r);
+      const b = tmp.get(k) ?? { coefs: [], g: 0, mg: 0 };
+      b.coefs.push(r.coefficient);
+      if (r.coefficient >= 10) b.g++;
+      if (r.coefficient >= 100) b.mg++;
+      tmp.set(k, b);
+    }
+    const out = /* @__PURE__ */ new Map();
+    for (const [k, b] of tmp) {
+      out.set(k, {
+        count: b.coefs.length,
+        goldenCount: b.g,
+        megaCount: b.mg,
+        avg: geoMean(b.coefs),
+        max: safeMax(b.coefs)
+      });
+    }
+    return out;
+  }
+  function gapAnalysis(rounds, threshold) {
+    const hits = rounds.filter((r) => r.coefficient >= threshold).sort((a, b) => a.timestamp - b.timestamp);
+    if (hits.length < 2) {
+      return { avgGap: 0, medGap: 0, stdGap: 0, madGap: 0, last: hits[0]?.timestamp ?? null, count: hits.length };
+    }
+    const gaps = [];
+    for (let i = 1; i < hits.length; i++) gaps.push(hits[i].timestamp - hits[i - 1].timestamp);
+    return {
+      avgGap: mean(gaps),
+      medGap: median(gaps),
+      stdGap: stddev(gaps),
+      madGap: mad(gaps),
+      last: hits[hits.length - 1].timestamp,
+      count: hits.length
+    };
+  }
+  function detectBigOpportunity(rounds, now) {
+    const sorted = [...rounds].sort((a, b) => a.timestamp - b.timestamp);
+    const candidates = [];
+    const mega = gapAnalysis(sorted, 100);
+    if (mega.count >= 5 && mega.last && mega.medGap > 0) {
+      const expected = mega.last + mega.medGap;
+      const drift = expected - now;
+      const tol = clamp(mega.madGap * 1.4826 || mega.medGap * 0.35, 2 * MIN, 12 * MIN);
+      const sinceLast = now - mega.last;
+      const stable = mega.madGap > 0 && mega.madGap < mega.medGap * 0.5;
+      if (stable && (Math.abs(drift) <= tol * 0.7 || sinceLast >= mega.medGap * 0.9)) {
+        const driftScore = clamp(1 - Math.abs(drift) / Math.max(tol, 1), 0, 1);
+        const sampleBoost = Math.min(10, mega.count);
+        const conf = clamp(55 + sampleBoost + driftScore * 12, 55, 82);
+        candidates.push({
+          expectedAt: drift > 0 ? expected : now + Math.max(2 * MIN, tol * 0.4),
+          windowMs: clamp(tol, 3 * MIN, 10 * MIN),
+          estimatedCoef: 100,
+          confidence: Math.round(conf),
+          reason: `Cycle 100x≈${(mega.medGap / MIN).toFixed(1)}min — dernier il y a ${(sinceLast / MIN).toFixed(1)}min (${mega.count} évts)`
+        });
+      }
+    }
+    const recent = sorted.slice(-80);
+    let big20 = 0, big50 = 0;
+    for (const r of recent) {
+      if (r.coefficient >= 20) big20++;
+      if (r.coefficient >= 50) big50++;
+    }
+    if (big50 >= 3 && big20 >= 6) {
+      const conf = clamp(55 + big50 * 5 + big20, 55, 82);
+      candidates.push({
+        expectedAt: now + 3 * MIN,
+        windowMs: 6 * MIN,
+        estimatedCoef: 120,
+        confidence: Math.round(conf),
+        reason: `Cluster chaud : ${big20}×≥20x + ${big50}×≥50x sur 80 tours`
+      });
+    }
+    const allMega = sorted.filter((r) => r.coefficient >= 100);
+    if (allMega.length >= 4 && mega.last && sorted.length >= 80) {
+      const sinceLast = now - mega.last;
+      const span = sorted[sorted.length - 1].timestamp - sorted[0].timestamp;
+      const lambda = span > 0 ? allMega.length / span : 0;
+      if (lambda > 0) {
+        const overdueProb = 1 - Math.exp(-lambda * sinceLast);
+        if (overdueProb >= 0.75) {
+          const eta = clamp(1 / lambda, 9e4, 8 * MIN);
+          const conf = clamp(50 + overdueProb * 30, 50, 80);
+          candidates.push({
+            expectedAt: now + eta,
+            windowMs: clamp(eta * 0.8, 3 * MIN, 7 * MIN),
+            estimatedCoef: 100,
+            confidence: Math.round(conf),
+            reason: `Hazard Poisson : P(retard)=${(overdueProb * 100).toFixed(0)}% (λ⁻¹≈${(1 / lambda / MIN).toFixed(1)}min)`
+          });
+        }
+      }
+    }
+    if (!candidates.length) return null;
+    candidates.sort((a, b) => b.confidence - a.confidence);
+    const top = candidates[0];
+    if (candidates.length < 2 && top.confidence < 75) return null;
+    if (candidates.length >= 2) {
+      top.confidence = Math.min(92, top.confidence + 5);
+    }
+    return top;
+  }
+  function generatePrediction(rounds, previous, now = Date.now()) {
+    rounds = orderedAnalysisRounds(rounds, rounds.length, now);
+    if (!analysisIsFresh(rounds, now)) return null;
+    if (rounds.length < 20) return null;
+    if (previous) {
+      const holdUntil = Math.max(
+        previous.estimatedAt + previous.windowMs,
+        previous.generatedAt + MIN_HOLD_MS
+      );
+      if (now < holdUntil) {
+        return previous;
+      }
+    }
+    const sorted = [...rounds].sort((a, b) => b.timestamp - a.timestamp);
+    const coefs = sorted.map((r) => r.coefficient);
+    const avgAll = mean(coefs);
+    const medAll = median(coefs);
+    const geoAll = geoMean(coefs);
+    const last20 = coefs.slice(0, 20);
+    const last50 = coefs.slice(0, 50);
+    const avg20 = mean(last20);
+    const avg50 = mean(last50);
+    const ema20 = emaNewestFirst(last20, 0.25);
+    const ema50 = emaNewestFirst(last50, 0.12);
+    const sd50 = stddev(last50);
+    const mad50 = mad(last50);
+    const goldenC = gapAnalysis(sorted, 10);
+    const sinceGolden = goldenC.last ? now - goldenC.last : Infinity;
+    const hourBuckets = bucketBy(sorted, (r) => new Date(r.timestamp).getUTCHours());
+    const minuteBuckets = bucketBy(sorted, (r) => new Date(r.timestamp).getUTCMinutes());
+    const nowDate = new Date(now);
+    const hb = hourBuckets.get(nowDate.getUTCHours());
+    const nextMinute = (nowDate.getUTCMinutes() + 2) % 60;
+    const mbNext = minuteBuckets.get(nextMinute);
+    const last15 = coefs.slice(0, 15);
+    const lowStreak = last15.length === 15 && last15.every((c) => c < 2);
+    const recentBig = sorted.slice(0, 30).filter((r) => r.coefficient >= 20);
+    const bigOpportunity = detectBigOpportunity(rounds, now);
+    if (goldenC.medGap > 0 && goldenC.last) {
+      const expected = goldenC.last + goldenC.medGap;
+      const drift = expected - now;
+      const tol = clamp(goldenC.madGap * 1.4826 || goldenC.medGap * 0.55, 6e4, 4 * MIN);
+      const cycleStable = goldenC.count >= 8 && goldenC.madGap > 0 && goldenC.madGap < goldenC.medGap * 0.6;
+      const tightDrift = Math.abs(drift) <= tol * 0.6;
+      if (cycleStable && tightDrift) {
+        const bigDensity = recentBig.length;
+        const divisor = bigDensity >= 3 ? 2 : bigDensity >= 1 ? 3 : 4;
+        const baseGolden = safeMax(sorted.slice(0, 80).map((r) => r.coefficient));
+        const estimated2 = clamp(baseGolden / divisor, 2, 20);
+        const cycleScore = clamp(60 - Math.abs(drift) / tol * 15, 40, 62);
+        const hourBoost = hb && hb.avg > geoAll ? 3 : 0;
+        const sampleBoost = clamp(goldenC.count / 20, 0, 4);
+        const reliability2 = Math.round(clamp(cycleScore + hourBoost + sampleBoost, 40, 68));
+        return {
+          estimatedCoef: +estimated2.toFixed(2),
+          confidence: reliability2 >= 66 ? "Moyen" : "Faible",
+          reliability: reliability2,
+          estimatedAt: drift > 0 ? now + Math.max(drift, 9e4) : now + 2 * MIN,
+          windowMs: clamp(goldenC.medGap * 0.25, 9e4, 3 * MIN),
+          pattern: "Cycle des cotes d'or détecté",
+          basis: `Cycle médian ${(goldenC.medGap / MIN).toFixed(1)} min — dernier ${(sinceGolden / MIN).toFixed(1)} min — MAD ${(goldenC.madGap / MIN).toFixed(2)}min`,
+          generatedAt: now,
+          bigOpportunity
+        };
+      }
+    }
+    if (lowStreak) {
+      const estimated2 = clamp(geoAll * 2.5 + medAll, 2.5, 15);
+      const reliability2 = Math.round(clamp(70 + Math.min(15, (now - sorted[14].timestamp) / 6e4), 65, 92));
+      return {
+        estimatedCoef: +estimated2.toFixed(2),
+        confidence: reliability2 >= 82 ? "Élevé" : "Moyen",
+        reliability: reliability2,
+        estimatedAt: now + 9e4,
+        windowMs: 2 * MIN,
+        pattern: "Série basse — rebond statistique",
+        basis: `15 tours <2x — moy géo ${geoAll.toFixed(2)}x, médiane ${medAll.toFixed(2)}x`,
+        generatedAt: now,
+        bigOpportunity
+      };
+    }
+    if (recentBig.length >= 3) {
+      const avgBig = geoMean(recentBig.map((r) => r.coefficient));
+      const divisor = recentBig.length >= 5 ? 3 : recentBig.length >= 4 ? 4 : 5;
+      const estimated2 = clamp(avgBig / divisor, 2, 12);
+      const reliability2 = Math.min(78, 60 + recentBig.length * 3);
+      return {
+        estimatedCoef: +estimated2.toFixed(2),
+        confidence: reliability2 >= 72 ? "Élevé" : "Moyen",
+        reliability: reliability2,
+        estimatedAt: now + 2 * MIN,
+        windowMs: 2.5 * MIN,
+        pattern: `${recentBig.length} cotes ≥20x récentes`,
+        basis: `Moy. géo grosses cotes ${avgBig.toFixed(2)}x ÷ ${divisor}`,
+        generatedAt: now,
+        bigOpportunity
+      };
+    }
+    const recent60 = sorted.slice(0, 60);
+    const midZone = recent60.filter((r) => r.coefficient >= 5 && r.coefficient < 10);
+    const smallShare60 = recent60.length ? recent60.filter((r) => r.coefficient < 2).length / recent60.length : 0;
+    if (midZone.length >= 3) {
+      const midGeo = geoMean(midZone.map((r) => r.coefficient));
+      const cautious = smallShare60 > 0.55 || sd50 > avg50 * 1.4;
+      const target = cautious ? clamp(midGeo * 0.45, 2, 4.5) : clamp(midGeo * 0.7, 3, 7);
+      const reliability2 = Math.round(
+        clamp(64 + midZone.length * 4 + (cautious ? -6 : 6), 58, 90)
+      );
+      return {
+        estimatedCoef: +target.toFixed(2),
+        confidence: reliability2 >= 82 ? "Élevé" : reliability2 >= 68 ? "Moyen" : "Faible",
+        reliability: reliability2,
+        estimatedAt: now + 2 * MIN,
+        windowMs: 2.5 * MIN,
+        pattern: cautious ? `Phase mixte — ${midZone.length} cotes 5x-9x sur base fragile` : `Phase favorable — ${midZone.length} cotes 5x-9x récentes`,
+        basis: `Zone 5x-9x géo ${midGeo.toFixed(2)}x — <2x: ${(smallShare60 * 100).toFixed(0)}% — σ50 ${sd50.toFixed(2)}`,
+        generatedAt: now,
+        bigOpportunity
+      };
+    }
+    const hourFactor = hb && hb.count >= 5 ? hb.avg / Math.max(geoAll, 0.1) : 1;
+    const minuteFactor = mbNext && mbNext.count >= 5 ? mbNext.avg / Math.max(geoAll, 0.1) : 1;
+    const blended = ema20 * 0.5 + ema50 * 0.3 + avg50 * 0.2;
+    let estimated = clamp(blended * hourFactor * 0.6 + (mbNext?.max ?? 0) * 0.1 + 1.6, 1.8, 12);
+    const fragile = smallShare60 > 0.6 || sd50 > avg50 * 1.6;
+    if (fragile) estimated = Math.min(estimated, 3.2);
+    else if (smallShare60 > 0.45) estimated = Math.min(estimated, 5);
+    const sampleScore = clamp(rounds.length / 25, 0, 28);
+    const biasScore = clamp(Math.abs(hourFactor - 1) * 42, 0, 22);
+    const minuteScore = clamp(Math.abs(minuteFactor - 1) * 32, 0, 16);
+    const stabilityBoost = mad50 > 0 && mad50 < avg50 * 0.6 ? 5 : 0;
+    const fragilePenalty = fragile ? -8 : 0;
+    const reliability = Math.round(clamp(52 + sampleScore + biasScore + minuteScore + stabilityBoost + fragilePenalty, 50, 92));
+    const etaOffset = 2 * MIN + (60 - nowDate.getUTCSeconds()) * 1e3 % 45e3;
+    return {
+      estimatedCoef: +estimated.toFixed(2),
+      confidence: reliability >= 82 ? "Élevé" : reliability >= 66 ? "Moyen" : "Faible",
+      reliability,
+      estimatedAt: now + etaOffset,
+      windowMs: 2.5 * MIN,
+      pattern: hourFactor > 1.1 ? "Plage horaire favorable" : hourFactor < 0.9 ? "Plage horaire faible" : "Analyse multi-signaux",
+      basis: `EMA20 ${ema20.toFixed(2)}x — H${nowDate.getUTCHours()}h UTC: géo ${hb?.avg.toFixed(2) ?? "—"}x (${hb?.count ?? 0}) — MAD ${mad50.toFixed(2)} — σ ${sd50.toFixed(2)} — ${rounds.length} tours`,
+      generatedAt: now,
+      bigOpportunity
+    };
+  }
+
+  // ../modules/public-forecast.mjs
+  var ARCHIVE_PROFILE2 = Object.freeze({ low: 2, cycle: 10, cluster: 20, confirmation: 50, midMin: 5, midMax: 10, opportunity: 100 });
   var $ = (t) => t.length ? t.reduce((s, e) => s + e, 0) / t.length : 0;
   var E = (t) => {
     if (!t.length) return 0;
@@ -191,34 +552,11 @@
     const s = t.map((e) => Math.log(Math.max(e, 1.001)));
     return Math.exp($(s));
   };
-  var ne = (t) => {
-    let s = -1 / 0;
-    for (const e of t) e > s && (s = e);
-    return s === -1 / 0 ? 0 : s;
-  };
   var se = (t) => {
     if (t.length < 2) return 0;
     const s = E(t);
     return E(t.map((e) => Math.abs(e - s)));
   };
-  var d = (t, s, e) => Math.max(s, Math.min(e, t));
-  function Y(t, s, profile = ARCHIVE_PROFILE) {
-    const e = /* @__PURE__ */ new Map();
-    for (const a of t) {
-      const i = s(a), f2 = e.get(i) ?? { coefs: [], g: 0, mg: 0 };
-      f2.coefs.push(a.coefficient), a.coefficient >= profile.cycle && f2.g++, a.coefficient >= profile.opportunity && f2.mg++, e.set(i, f2);
-    }
-    const o = /* @__PURE__ */ new Map();
-    for (const [a, i] of e)
-      o.set(a, {
-        count: i.coefs.length,
-        goldenCount: i.g,
-        megaCount: i.mg,
-        avg: O(i.coefs),
-        max: ne(i.coefs)
-      });
-    return o;
-  }
   function ae(t, s) {
     const e = t.filter((a) => a.coefficient >= s).sort((a, i) => a.timestamp - i.timestamp);
     if (e.length < 2)
@@ -242,144 +580,6 @@
       count: e.length
     };
   }
-  function De(t, s, profile = ARCHIVE_PROFILE) {
-    const e = [...t].sort((x, u) => x.timestamp - u.timestamp), o = [], a = ae(e, profile.opportunity);
-    if (a.count >= 5 && a.last && a.medGap > 0) {
-      const x = a.last + a.medGap, u = x - s, h = d(a.madGap * 1.4826 || a.medGap * 0.35, 2 * l, 12 * l), p = s - a.last;
-      if (a.madGap > 0 && a.madGap < a.medGap * 0.5 && (Math.abs(u) <= h * 0.7 || p >= a.medGap * 0.9)) {
-        const y = d(1 - Math.abs(u) / Math.max(h, 1), 0, 1), U = Math.min(10, a.count), q = d(55 + U + y * 12, 55, 82);
-        o.push({
-          expectedAt: u > 0 ? x : s + Math.max(2 * l, h * 0.4),
-          windowMs: d(h, 3 * l, 10 * l),
-          estimatedCoef: 100,
-          confidence: Math.round(q),
-          reason: `Cycle 100x≈${(a.medGap / l).toFixed(1)}min — dernier il y a ${(p / l).toFixed(1)}min (${a.count} évts)`
-        });
-      }
-    }
-    const i = e.slice(-80);
-    let f2 = 0, m3 = 0;
-    for (const x of i) x.coefficient >= profile.cluster && f2++, x.coefficient >= profile.confirmation && m3++;
-    if (m3 >= 3 && f2 >= 6) {
-      const x = d(55 + m3 * 5 + f2, 55, 82);
-      o.push({
-        expectedAt: s + 3 * l,
-        windowMs: 6 * l,
-        estimatedCoef: 120,
-        confidence: Math.round(x),
-        reason: `Cluster chaud : ${f2}×≥20x + ${m3}×≥50x sur 80 tours`
-      });
-    }
-    const g = e.filter((x) => x.coefficient >= profile.opportunity);
-    if (g.length >= 4 && a.last && e.length >= 80) {
-      const x = s - a.last, u = e[e.length - 1].timestamp - e[0].timestamp, h = u > 0 ? g.length / u : 0;
-      if (h > 0) {
-        const p = 1 - Math.exp(-h * x);
-        if (p >= 0.75) {
-          const r = d(1 / h, 9e4, 8 * l), y = d(50 + p * 30, 50, 80);
-          o.push({
-            expectedAt: s + r,
-            windowMs: d(r * 0.8, 3 * l, 7 * l),
-            estimatedCoef: 100,
-            confidence: Math.round(y),
-            reason: `Hazard Poisson : P(retard)=${(p * 100).toFixed(0)}% (λ⁻¹≈${(1 / h / l).toFixed(1)}min)`
-          });
-        }
-      }
-    }
-    if (!o.length) return null;
-    o.sort((x, u) => u.confidence - x.confidence);
-    const v = o[0];
-    return o.length < 2 && v.confidence < 75 ? null : (o.length >= 2 && (v.confidence = Math.min(92, v.confidence + 5)), v);
-  }
-  function Pe(t, s, e = Date.now(), profile = ARCHIVE_PROFILE) {
-    if (t = Z(t, t.length, e), !Fe(t, e) || t.length < 20) return null;
-    if (s) {
-      const c = Math.max(s.estimatedAt + s.windowMs, s.generatedAt + Te);
-      if (e < c) return s;
-    }
-    const o = [...t].sort((c, b) => b.timestamp - c.timestamp), a = o.map((c) => c.coefficient);
-    $(a);
-    const i = E(a), f2 = O(a), m3 = a.slice(0, 20), g = a.slice(0, 50);
-    $(m3);
-    const v = $(g), x = X(m3, 0.25), u = X(g, 0.12), h = te(g), p = se(g), r = ae(o, profile.cycle), y = r.last ? e - r.last : 1 / 0, U = Y(o, (c) => new Date(c.timestamp).getUTCHours(), profile), q = Y(o, (c) => new Date(c.timestamp).getUTCMinutes(), profile), k = new Date(e), w = U.get(k.getUTCHours()), oe = (k.getUTCMinutes() + 2) % 60, T = q.get(oe), J = a.slice(0, 15), ie = J.length === 15 && J.every((c) => c < profile.low), N = o.slice(0, 30).filter((c) => c.coefficient >= profile.cluster), A = De(t, e, profile);
-    if (r.medGap > 0 && r.last) {
-      const b = r.last + r.medGap - e, F = d(r.madGap * 1.4826 || r.medGap * 0.55, 6e4, 4 * l), M = r.count >= 8 && r.madGap > 0 && r.madGap < r.medGap * 0.6, C = Math.abs(b) <= F * 0.6;
-      if (M && C) {
-        const Q = N.length, pe = Q >= 3 ? 2 : Q >= 1 ? 3 : 4, ue = ne(o.slice(0, 80).map((Me) => Me.coefficient)), he = d(ue / pe, 2, 20), be = d(60 - Math.abs(b) / F * 15, 40, 62), ve = w && w.avg > f2 ? 3 : 0, ye = d(r.count / 20, 0, 4), V = Math.round(d(be + ve + ye, 40, 68));
-        return {
-          estimatedCoef: +he.toFixed(2),
-          confidence: V >= 66 ? "Moyen" : "Faible",
-          reliability: V,
-          estimatedAt: b > 0 ? e + Math.max(b, 9e4) : e + 2 * l,
-          windowMs: d(r.medGap * 0.25, 9e4, 3 * l),
-          pattern: "Cycle des cotes d'or détecté",
-          basis: `Cycle médian ${(r.medGap / l).toFixed(1)} min — dernier ${(y / l).toFixed(1)} min — MAD ${(r.madGap / l).toFixed(2)}min`,
-          generatedAt: e,
-          bigOpportunity: A
-        };
-      }
-    }
-    if (ie) {
-      const c = d(f2 * 2.5 + i, 2.5, 15), b = Math.round(d(70 + Math.min(15, (e - o[14].timestamp) / 6e4), 65, 92));
-      return {
-        estimatedCoef: +c.toFixed(2),
-        confidence: b >= 82 ? "Élevé" : "Moyen",
-        reliability: b,
-        estimatedAt: e + 9e4,
-        windowMs: 2 * l,
-        pattern: "Série basse — rebond statistique",
-        basis: `15 tours <2x — moy géo ${f2.toFixed(2)}x, médiane ${i.toFixed(2)}x`,
-        generatedAt: e,
-        bigOpportunity: A
-      };
-    }
-    if (N.length >= 3) {
-      const c = O(N.map((C) => C.coefficient)), b = N.length >= 5 ? 3 : N.length >= 4 ? 4 : 5, F = d(c / b, 2, 12), M = Math.min(78, 60 + N.length * 3);
-      return {
-        estimatedCoef: +F.toFixed(2),
-        confidence: M >= 72 ? "Élevé" : "Moyen",
-        reliability: M,
-        estimatedAt: e + 2 * l,
-        windowMs: 2.5 * l,
-        pattern: `${N.length} cotes ≥20x récentes`,
-        basis: `Moy. géo grosses cotes ${c.toFixed(2)}x ÷ ${b}`,
-        generatedAt: e,
-        bigOpportunity: A
-      };
-    }
-    const D = o.slice(0, 60), G = D.filter((c) => c.coefficient >= profile.midMin && c.coefficient < profile.midMax), P = D.length ? D.filter((c) => c.coefficient < profile.low).length / D.length : 0;
-    if (G.length >= 3) {
-      const c = O(G.map((C) => C.coefficient)), b = P > 0.55 || h > v * 1.4, F = b ? d(c * 0.45, 2, 4.5) : d(c * 0.7, 3, 7), M = Math.round(d(64 + G.length * 4 + (b ? -6 : 6), 58, 90));
-      return {
-        estimatedCoef: +F.toFixed(2),
-        confidence: M >= 82 ? "Élevé" : M >= 68 ? "Moyen" : "Faible",
-        reliability: M,
-        estimatedAt: e + 2 * l,
-        windowMs: 2.5 * l,
-        pattern: b ? `Phase mixte — ${G.length} cotes 5x-9x sur base fragile` : `Phase favorable — ${G.length} cotes 5x-9x récentes`,
-        basis: `Zone 5x-9x géo ${c.toFixed(2)}x — <2x: ${(P * 100).toFixed(0)}% — σ50 ${h.toFixed(2)}`,
-        generatedAt: e,
-        bigOpportunity: A
-      };
-    }
-    const B = w && w.count >= 5 ? w.avg / Math.max(f2, 0.1) : 1, re = T && T.count >= 5 ? T.avg / Math.max(f2, 0.1) : 1, ce = x * 0.5 + u * 0.3 + v * 0.2;
-    let S = d(ce * B * 0.6 + (T?.max ?? 0) * 0.1 + 1.6, 1.8, 12);
-    const K = P > 0.6 || h > v * 1.6;
-    K ? S = Math.min(S, 3.2) : P > 0.45 && (S = Math.min(S, 5));
-    const le = d(t.length / 25, 0, 28), de = d(Math.abs(B - 1) * 42, 0, 22), me = d(Math.abs(re - 1) * 32, 0, 16), fe = p > 0 && p < v * 0.6 ? 5 : 0, xe = K ? -8 : 0, R = Math.round(d(52 + le + de + me + fe + xe, 50, 92)), ge = 2 * l + (60 - k.getUTCSeconds()) * 1e3 % 45e3;
-    return {
-      estimatedCoef: +S.toFixed(2),
-      confidence: R >= 82 ? "Élevé" : R >= 66 ? "Moyen" : "Faible",
-      reliability: R,
-      estimatedAt: e + ge,
-      windowMs: 2.5 * l,
-      pattern: B > 1.1 ? "Plage horaire favorable" : B < 0.9 ? "Plage horaire faible" : "Analyse multi-signaux",
-      basis: `EMA20 ${x.toFixed(2)}x — H${k.getUTCHours()}h UTC: géo ${w?.avg.toFixed(2) ?? "—"}x (${w?.count ?? 0}) — MAD ${p.toFixed(2)} — σ ${h.toFixed(2)} — ${t.length} tours`,
-      generatedAt: e,
-      bigOpportunity: A
-    };
-  }
 
   // ../modules/signal-validation.mjs
   function m2(s, i = 300, e = 1 / 0) {
@@ -389,9 +589,9 @@
     ).slice(0, i);
   }
   var ze = m2;
-  function Te2(n, o, i, u) {
-    const l2 = i + u, a = n.filter(
-      (s) => Number.isFinite(s.coefficient) && s.coefficient >= 1 && Number.isFinite(s.timestamp) && s.timestamp >= i && s.timestamp <= l2
+  function Te(n, o, i, u) {
+    const l = i + u, a = n.filter(
+      (s) => Number.isFinite(s.coefficient) && s.coefficient >= 1 && Number.isFinite(s.timestamp) && s.timestamp >= i && s.timestamp <= l
     ).reduce((s, t) => !s || t.coefficient > s.coefficient ? t : s, null);
     return {
       reached: !!a && a.coefficient >= o,
@@ -400,7 +600,7 @@
     };
   }
   function We(n, o, i, u) {
-    const l2 = ze(o, o.length, i).reverse(), c = Te2(l2, n.target, n.start, n.end - n.start);
+    const l = ze(o, o.length, i).reverse(), c = Te(l, n.target, n.start, n.end - n.start);
     if (c.reached && c.best !== null && c.bestAt !== null)
       return {
         target: n.target,
@@ -409,19 +609,19 @@
         at: c.bestAt
       };
     if (i <= n.end || c.best === null) return null;
-    const a = l2.filter((d2) => d2.timestamp <= n.start).at(-1), s = l2.find((d2) => d2.timestamp >= n.end);
+    const a = l.filter((d) => d.timestamp <= n.start).at(-1), s = l.find((d) => d.timestamp >= n.end);
     if (!a || !s) return null;
-    const t = l2.filter(
-      (d2) => d2.timestamp >= a.timestamp && d2.timestamp <= s.timestamp
+    const t = l.filter(
+      (d) => d.timestamp >= a.timestamp && d.timestamp <= s.timestamp
     ), r = Math.min(18e4, Math.max(6e4, u * 3e3));
     return !Number.isFinite(r) || t.some(
-      (d2, f2) => f2 > 0 && d2.timestamp - (t[f2 - 1]?.timestamp ?? d2.timestamp) > r
+      (d, f2) => f2 > 0 && d.timestamp - (t[f2 - 1]?.timestamp ?? d.timestamp) > r
     ) ? null : { target: n.target, status: "failed", coefficient: c.best, at: n.end };
   }
 
   // ../window-model.mjs
-  var TARGETS = Object.freeze([1.5, 2]);
-  var MODEL = "archive-small-windows-v2";
+  var TARGETS = Object.freeze(["primary", "big"]);
+  var MODEL = "supplied-dynamic-windows-v3";
   var RESULT_GRACE_MS = 18e4;
   var MINUTE = 6e4;
   function normalize(rounds, now = Date.now()) {
@@ -435,9 +635,9 @@
   }
   function wilson(hits, n) {
     if (!n) return [0, 1];
-    const z = 1.95996398454, p = hits / n, d2 = 1 + z * z / n;
-    const center = (p + z * z / (2 * n)) / d2;
-    const radius = z * Math.sqrt(p * (1 - p) / n + z * z / (4 * n * n)) / d2;
+    const z = 1.95996398454, p = hits / n, d = 1 + z * z / n;
+    const center = (p + z * z / (2 * n)) / d;
+    const radius = z * Math.sqrt(p * (1 - p) / n + z * z / (4 * n * n)) / d;
     return [Math.max(0, center - radius), Math.min(1, center + radius)];
   }
   function analyze(rounds, now = Date.now()) {
@@ -460,7 +660,7 @@
       mad50: se(recent),
       deviation50: te(recent),
       geometricMean: O(values),
-      targets: TARGETS.map((target) => {
+      targets: [2, 5, 10, 20, 50, 100].map((target) => {
         const intervals = ae(rows, target);
         return {
           target,
@@ -471,7 +671,7 @@
           medianGapMs: intervals.medGap,
           lastHitAt: intervals.last,
           intervals,
-          profile: targetProfile(target)
+          profile: ARCHIVE_PROFILE2
         };
       })
     };
@@ -499,68 +699,48 @@
     if (pattern === "Plage horaire faible") return "hour-weak";
     return "multi-signal";
   }
-  function forecastForTarget(rounds, target, previous = null, now = Date.now()) {
-    const profile = targetProfile(target), rows = normalize(rounds, now);
+  function forecastForTarget(rounds, channel = "primary", previous = null, now = Date.now()) {
+    if (!TARGETS.includes(channel)) return null;
+    const rows = normalize(rounds, now);
     if (rows.length < 20 || now - rows[0].timestamp > RESULT_GRACE_MS) return null;
-    if (previous?.model === MODEL && previous.target === target && validWindow(previous) && now < Math.max(previous.end, previous.generatedAt + MINUTE)) return previous;
-    const raw = Pe(rows, null, now, profile);
+    if (previous?.model === MODEL && previous.channel === channel && validWindow(previous) && now < Math.max(previous.end, previous.generatedAt + MINUTE)) return previous;
+    const raw = generatePrediction(rows, null, now);
     if (!raw) return null;
-    const values = rows.map((r) => r.coefficient), cycle = ae(rows, target);
-    const hours = Y(rows, (r) => new Date(r.timestamp).getUTCHours(), profile);
-    const minutes = Y(rows, (r) => new Date(r.timestamp).getUTCMinutes(), profile);
-    const utc = new Date(now), rule = ruleOf(raw.pattern);
-    const opportunity = raw.bigOpportunity ? {
-      target,
-      estimatedCoef: target,
-      start: raw.bigOpportunity.expectedAt,
-      end: raw.bigOpportunity.expectedAt + raw.bigOpportunity.windowMs,
-      windowMs: raw.bigOpportunity.windowMs,
-      score: raw.bigOpportunity.confidence,
-      rule: raw.bigOpportunity.reason.startsWith("Cycle") ? "cycle" : raw.bigOpportunity.reason.startsWith("Cluster") ? "cluster" : "poisson-delay"
-      // This is the archive's heuristic delay score, not a calibrated probability.
-    } : null;
-    const useOpportunity = opportunity && opportunity.score > raw.reliability;
-    const chosenRule = useOpportunity ? `opportunity-${opportunity.rule}` : rule;
+    const big = raw.bigOpportunity;
+    if (channel === "big" && !big) return null;
+    const target = channel === "big" ? big.estimatedCoef : raw.estimatedCoef;
+    const start2 = channel === "big" ? big.expectedAt : raw.estimatedAt;
+    const windowMs = channel === "big" ? big.windowMs : raw.windowMs;
+    const pattern = channel === "big" ? big.reason : raw.pattern;
+    const rule = channel === "big" ? "big-opportunity" : ruleOf(pattern);
     return {
       model: MODEL,
+      channel,
       target,
       estimatedCoef: target,
-      generatedAt: now,
-      start: useOpportunity ? opportunity.start : raw.estimatedAt,
-      end: useOpportunity ? opportunity.end : raw.estimatedAt + raw.windowMs,
-      estimatedAt: useOpportunity ? opportunity.start : raw.estimatedAt,
-      windowMs: useOpportunity ? opportunity.windowMs : raw.windowMs,
-      score: useOpportunity ? opportunity.score : raw.reliability,
+      generatedAt: raw.generatedAt,
+      start: start2,
+      end: start2 + windowMs,
+      estimatedAt: start2,
+      windowMs,
+      score: channel === "big" ? big.confidence : raw.reliability,
+      confidence: channel === "big" ? null : raw.confidence,
       scoreKind: "heuristic",
-      rule: chosenRule,
-      pattern: RULES[chosenRule],
-      basis: `Цель ${target.toFixed(2)}× · цикл ${(cycle.medGap / 1e3).toFixed(1)} с · MAD интервала ${(cycle.madGap / 1e3).toFixed(1)} с`,
-      opportunity,
+      rule,
+      pattern: RULES[rule] || pattern,
+      basis: channel === "big" ? big.reason : raw.basis,
+      opportunity: big,
+      raw,
       diagnostics: {
-        profile,
+        profile: ARCHIVE_PROFILE2,
         sampleSize: rows.length,
         dataCutoff: rows[0].timestamp,
-        cycle,
-        basicWindow: { rule, start: raw.estimatedAt, end: raw.estimatedAt + raw.windowMs, score: raw.reliability },
-        ema20: X(values.slice(0, 20), 0.25),
-        ema50: X(values.slice(0, 50), 0.12),
-        geometricMean: O(values),
-        median: E(values),
-        deviation50: te(values.slice(0, 50)),
-        mad50: se(values.slice(0, 50)),
-        lowRate60: values.slice(0, 60).filter((v) => v < target).length / Math.min(60, values.length),
-        lowStreak15: values.slice(0, 15).every((v) => v < target),
-        clusterCount30: values.slice(0, 30).filter((v) => v >= profile.cluster).length,
-        middleCount60: values.slice(0, 60).filter((v) => v >= profile.midMin && v < profile.midMax).length,
-        utcHour: utc.getUTCHours(),
-        utcMinuteAhead: (utc.getUTCMinutes() + 2) % 60,
-        hourBins: [...hours.entries()],
-        minuteBins: [...minutes.entries()]
+        cycle: ae(rows, 10)
       }
     };
   }
   function validWindow(x) {
-    return x && x.model === MODEL && TARGETS.includes(x.target) && [x.generatedAt, x.start, x.end].every(Number.isFinite) && x.generatedAt > 0 && x.start > x.generatedAt && x.end > x.start && x.end - x.start <= 12 * MINUTE;
+    return x && x.model === MODEL && TARGETS.includes(x.channel) && Number.isFinite(x.target) && x.target >= 1 && [x.generatedAt, x.start, x.end].every(Number.isFinite) && x.generatedAt > 0 && x.start > x.generatedAt && x.end > x.start && x.end - x.start <= 12 * MINUTE;
   }
   function advanceJournal(journal, rounds, stats, now = Date.now(), enabled = true, coverage = { online: true, lastSuccessAt: now }) {
     const rows = normalize(rounds, now);
@@ -583,22 +763,22 @@
       }
       if (now > entry.end + RESULT_GRACE_MS) {
         changed = true;
-        return { ...entry, status: "unknown", actual: Te2(rows, entry.target, entry.start, entry.end - entry.start).best, resolvedAt: now };
+        return { ...entry, status: "unknown", actual: Te(rows, entry.target, entry.start, entry.end - entry.start).best, resolvedAt: now };
       }
       return entry;
     });
-    if (enabled && stats.ready) for (const target of TARGETS) {
-      const latest = [...next].reverse().find((x) => x.target === target);
-      if (next.some((x) => x.target === target && x.status === "pending") || latest && now < Math.max(latest.end, latest.generatedAt + MINUTE)) continue;
-      const forecast = forecastForTarget(rows, target, null, now);
+    if (enabled && stats.ready) for (const channel of TARGETS) {
+      const latest = [...next].reverse().find((x) => x.channel === channel);
+      if (next.some((x) => x.channel === channel && x.status === "pending") || latest && now < Math.max(latest.end, latest.generatedAt + MINUTE)) continue;
+      const forecast = forecastForTarget(rows, channel, null, now);
       if (!forecast) continue;
       next.push({
         ...forecast,
-        key: `${MODEL}:${target}:${now}`,
+        key: `${MODEL}:${channel}:${now}`,
         acceptedAt: now,
         avgRoundSeconds: stats.avgRoundSeconds || 30,
         sampleSize: stats.n,
-        historicalFrequency: stats.targets.find((x) => x.target === target)?.probability ?? 0,
+        historicalFrequency: rows.filter((x) => x.coefficient >= forecast.target).length / rows.length,
         status: "pending"
       });
       changed = true;
@@ -903,7 +1083,7 @@
     };
   }
   function permittedPage(location2) {
-    return location2.protocol === "https:" && (location2.hostname === "one-vv3016.com" || location2.hostname === "miuiproking.github.io" && location2.pathname === "/luckyjet-telegram-mini-app/god-preditor-pro-vip/safari/preview.html");
+    return location2.protocol === "https:" && (location2.hostname === "one-vv3016.com" || location2.hostname === "1play.gamedev-tech.cc" || location2.hostname === "miuiproking.github.io" && location2.pathname === "/luckyjet-telegram-mini-app/god-preditor-pro-vip/safari/preview.html");
   }
 
   // src/style.mjs
@@ -918,7 +1098,6 @@
   // src/autobet.mjs
   var AUTO_KEY = "god-preditor-autobet-receipts-v1";
   var ACCEPT_WAIT_MS = 15e3;
-  var TARGETS2 = [1.5, 2];
   async function acquireAutoLock(locks) {
     if (!locks?.request) throw Error("Авто недоступно: Safari не поддерживает блокировку вкладок");
     return new Promise((resolve, reject) => {
@@ -1069,10 +1248,12 @@
       busy = true;
       const ticket = generation;
       try {
-        for (const [index, target] of TARGETS2.entries()) {
+        for (const index of [0, 1]) {
           if (!armed || ticket !== generation) break;
-          const window2 = state.forecasts.find((x) => x?.model === MODEL && x.target === target);
+          const window2 = state.forecasts.find((x) => x?.model === MODEL && x.channel === "primary");
           if (!window2 || !Number.isFinite(window2.start) || !Number.isFinite(window2.end) || !(window2.acceptedAt < window2.start && window2.start < window2.end) || typeof window2.key !== "string") continue;
+          const target = window2.target;
+          if (!Number.isFinite(target) || target < 1) continue;
           const id = `${window2.key}:${index}`, seen = mode + ":" + id;
           if (consumed.has(seen)) continue;
           if (window2.start < armedAt || window2.status !== "pending") {
@@ -1109,7 +1290,7 @@
             break;
           }
           const currentTime = now(), currentState = context(), final = inspect(buttons[index]);
-          const latestWindow = currentState.forecasts.find((x) => x.target === target);
+          const latestWindow = currentState.forecasts.find((x) => x.channel === "primary");
           if (!armed || ticket !== generation) break;
           if (!currentState.visible || !currentState.fresh || currentTime > Math.min(window2.end, window2.start + ACCEPT_WAIT_MS) || monotonic() - savedAt > 2e3 || final.state !== "ready" || latestWindow?.key !== window2.key || latestWindow.status !== "pending") {
             disarm("Авто выключено: условия изменились перед нажатием");
@@ -1201,6 +1382,7 @@
       if (!inside) return { state: "waiting", reason: "кнопка перекрыта — отодвинь панель", label };
       while (currentDoc.defaultView !== currentDoc.defaultView.top) {
         const frame = currentDoc.defaultView.frameElement;
+        if (!frame && currentDoc.location?.origin === "https://1play.gamedev-tech.cc") break;
         if (!frame || frame.contentDocument !== currentDoc) return { state: "unsafe", reason: "доступ к игровому фрейму изменился" };
         const r = frame.getBoundingClientRect();
         x = r.left + (x + frame.clientLeft) * r.width / frame.offsetWidth;
@@ -1264,27 +1446,6 @@
         done(value);
       }, 400);
     };
-    function activate(button, action) {
-      let pointer = null;
-      button.addEventListener("pointerdown", (event) => {
-        if (!event.isTrusted || event.button !== 0 || button.disabled) return;
-        event.preventDefault();
-        pointer = event.pointerId;
-        button.setPointerCapture(pointer);
-      });
-      button.addEventListener("pointerup", (event) => {
-        if (!event.isTrusted || event.pointerId !== pointer || button.disabled) return;
-        pointer = null;
-        const rect = button.getBoundingClientRect();
-        if (event.clientX >= rect.left && event.clientX <= rect.right && event.clientY >= rect.top && event.clientY <= rect.bottom) action();
-      });
-      button.addEventListener("pointercancel", () => {
-        pointer = null;
-      });
-      button.onclick = (event) => {
-        if (event.isTrusted && !button.disabled) action();
-      };
-    }
     activate(picker.querySelector(".pick-cancel"), () => finish({ error: info.textContent, cancelled: true }));
     activate(confirm, () => {
       if (stopped) return;
@@ -1307,10 +1468,10 @@
     return `${Math.floor(n / 60).toString().padStart(2, "0")}:${(n % 60).toString().padStart(2, "0")}`;
   };
   async function start(gm) {
-    if (window !== window.top || !permittedPage(location) || document.getElementById(ID)) return;
+    if (window !== window.top && location.origin !== GAME_ORIGIN || !permittedPage(location) || document.getElementById(ID)) return;
     const host = document.createElement("div");
     host.id = ID;
-    host.dataset.version = "1.1.0";
+    host.dataset.version = "1.2.0";
     host.dataset.model = MODEL;
     for (const [k, v] of Object.entries({
       position: "fixed",
@@ -1336,7 +1497,7 @@
         <div class="signal" id="signal">—</div>
         <div class="window" id="window">Получаем историю</div>
         <div class="note" id="note"></div>
-        <div class="targets" aria-label="Цель"><button data-target="1.5">1,50×</button><button data-target="2">2×</button></div>
+        <div class="targets" aria-label="Цель"><button data-target="primary">Основной</button><button data-target="big">Доп. окно</button></div>
         <div class="result" id="result" role="status"><img id="result-image" hidden alt="" referrerpolicy="no-referrer"><span id="result-label">Проверка по окну</span></div>
         <div class="tools" id="tools" hidden><button id="retry">Обновить связь</button><button id="opacity">Прозрачность</button><button id="reset">Сбросить размер</button><p class="hint">Перетащи за заголовок. Угол ↘ меняет размер. × скрывает до перезагрузки. Данные — наш Supabase.</p></div>
       </div>
@@ -1344,13 +1505,13 @@
       <section class="history" hidden><div class="history-head"><b>Полученные коэффициенты</b><button class="icon" id="history-close" aria-label="Закрыть историю">×</button></div><small id="history-count"></small><div class="history-list"></div></section>
       <section class="auto-panel" hidden><div class="history-head"><b id="auto-title">Авто выключено</b><button class="icon" id="auto-close" aria-label="Закрыть настройки авто">×</button></div>
         <p>Суммы и автозабирание выставь в игре сам. Скрипт их не меняет.</p>
-        <div class="auto-slot"><button id="pick-0">Выбрать поле 1</button><small id="slot-0">1 → 1,50× · не выбрана</small></div>
-        <div class="auto-slot"><button id="pick-1">Выбрать поле 2</button><small id="slot-1">2 → 2× · не выбрана</small></div>
-        <button id="auto-check">Проверить без нажатий</button>
+        <div class="auto-slot"><button id="pick-0">Выбрать поле 1</button><small id="slot-0">1 · не выбрана</small></div>
+        <div class="auto-slot"><button id="pick-1">Выбрать поле 2</button><small id="slot-1">2 · не выбрана</small></div>
+        <p>Обе кнопки — по времени основного прогноза. Суммы и автозабирание проверь в игре перед включением.</p><button id="auto-check">Проверить без нажатий</button>
         <label>Режим <select id="auto-mode"><option value="test">Тест без ставок</option><option value="live">Автонажатия</option></select></label>
         <button id="auto-toggle">Включить тест</button>
         <p id="auto-message" role="status">Авто выключено</p>
-        <p class="hint">Каждое поле: один раз в начале своего окна. Если «Ставка» недоступна 15 секунд — пропуск. Фон, перезагрузка или ошибка выключают режим. Новая привязка нужна после перезагрузки игры.</p>
+        <p class="hint">Оба поля: по одному нажатию в начале основного окна. Если «Ставка» недоступна 15 секунд — пропуск. Фон, перезагрузка или ошибка выключают режим. Новая привязка нужна после перезагрузки игры.</p>
         <p class="hint">Результат окна не подтверждает выигрыш твоей ставки. Отправленное нажатие проверяй в самой игре.</p>
         <p id="auto-diagnostic"></p><div id="auto-log"></div>
       </section>
@@ -1359,17 +1520,26 @@
     document.documentElement.append(host);
     const $2 = (selector) => root.querySelector(selector);
     const panel = $2(".panel"), launcher = $2(".launcher");
-    let rows = [], journal = [], selected = 1.5, feed = null, status = "connecting", lastSuccessAt = null;
+    let rows = [], journal = [], selected = "primary", feed = null, status = "connecting", lastSuccessAt = null;
     let destroyed = false, saveTimer = null, storageWarning = false, historyVersion = "", latestResult = "";
     let latestStats = analyze([]), cancelPicker = null, requestedAutoMode = "test";
     const ui = { x: 10, y: 115, width: 238, height: 390, opacity: 0.97, collapsed: false };
     const scene = mountScene($2("canvas"), { compact: true });
-    const current = (target) => [...journal].reverse().find((x) => x.target === target && x.model === MODEL);
+    const current = (target) => [...journal].reverse().find((x) => x.channel === target && x.model === MODEL);
+    let closeOverlay = () => {
+    };
+    const selectedButtons = [null, null];
+    const frameSupport = installFrameSupport(window, () => {
+      if (window === window.top && !destroyed) closeOverlay();
+    }, () => selectedButtons.filter(Boolean).map((b) => {
+      const r = b.element.getBoundingClientRect();
+      return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+    }));
     const auto = createAutoBet({
       context: () => ({
         visible: !document.hidden && !destroyed,
-        fresh: status === "connected" && latestStats.ready && Date.now() - lastSuccessAt <= 12e3 && Date.now() - latestStats.lastAt <= 18e4,
-        forecasts: [current(1.5), current(2)].filter(Boolean)
+        fresh: frameSupport.ready() && status === "connected" && latestStats.ready && Date.now() - lastSuccessAt <= 12e3 && Date.now() - latestStats.lastAt <= 18e4,
+        forecasts: [current("primary")].filter(Boolean)
       }),
       inspect: inspectBetButton,
       click: clickSelectedBet,
@@ -1388,7 +1558,7 @@
       launcher.dataset.auto = state.armed ? state.mode : "off";
       const checks = auto.checks();
       checks.forEach((checked, i) => {
-        $2("#slot-" + i).textContent = `${i + 1} → ${i === 0 ? "1,50" : "2"}× · ${checked.state === "ready" ? "готова" : checked.reason}`;
+        $2("#slot-" + i).textContent = `${i + 1} → основной прогноз · ${checked.state === "ready" ? "готова" : checked.reason}`;
       });
       $2("#auto-log").replaceChildren(...state.logs.slice(-5).map((entry) => {
         const line = document.createElement("div");
@@ -1414,15 +1584,15 @@
       requestedAutoMode = event.target.value === "live" ? "live" : "test";
       auto.disarm("Режим изменён — запуск выключен");
     };
-    $2("#auto-toggle").onclick = (event) => {
+    activate($2("#auto-toggle"), (event) => {
       if (auto.state.armed) {
         auto.disarm();
         return;
       }
       if (!event.isTrusted) return;
       void auto.arm(requestedAutoMode);
-    };
-    for (const index of [0, 1]) $2("#pick-" + index).onclick = (event) => {
+    });
+    for (const index of [0, 1]) activate($2("#pick-" + index), (event) => {
       if (!event.isTrusted) return;
       auto.disarm("Выбор кнопки — авто выключено");
       panel.hidden = true;
@@ -1434,6 +1604,8 @@
         if (selection.element) {
           try {
             auto.setButton(index, selection);
+            selectedButtons[index] = selection;
+            frameSupport.invalidate();
             $2("#auto-diagnostic").textContent = "";
           } catch (error) {
             $2("#auto-diagnostic").textContent = error.message;
@@ -1441,19 +1613,19 @@
         } else $2("#auto-diagnostic").textContent = selection.error || "Выбор отменён";
         renderAuto();
       });
-    };
+    });
     const viewport = () => ({
       left: visualViewport?.offsetLeft || 0,
       top: visualViewport?.offsetTop || 0,
       width: visualViewport?.width || innerWidth,
       height: visualViewport?.height || innerHeight
     });
-    const clamp = (v, lo, hi) => Math.max(lo, Math.min(Math.max(lo, hi), v));
+    const clamp2 = (v, lo, hi) => Math.max(lo, Math.min(Math.max(lo, hi), v));
     function layout() {
       const v = viewport(), width = Math.min(ui.width, v.width - 16), height = Math.min(ui.height, v.height - 16);
       const w = ui.collapsed ? 84 : width, h = ui.collapsed ? 43 : height;
-      ui.x = clamp(ui.x, v.left + 8, v.left + v.width - w - 8);
-      ui.y = clamp(ui.y, v.top + 8, v.top + v.height - h - 8);
+      ui.x = clamp2(ui.x, v.left + 8, v.left + v.width - w - 8);
+      ui.y = clamp2(ui.y, v.top + 8, v.top + v.height - h - 8);
       Object.assign(panel.style, { left: ui.x + "px", top: ui.y + "px", width: width + "px", height: height + "px", opacity: ui.opacity });
       Object.assign(launcher.style, { left: ui.x + "px", top: ui.y + "px" });
       panel.hidden = ui.collapsed;
@@ -1493,8 +1665,8 @@
         if (Math.abs(dx) + Math.abs(dy) > 4) active.moved = true;
         if (resize) {
           const v = viewport();
-          ui.width = clamp(active.width + dx, 190, v.width - 16);
-          ui.height = clamp(active.height + dy, 265, v.height - 16);
+          ui.width = clamp2(active.width + dx, 190, v.width - 16);
+          ui.height = clamp2(active.height + dy, 265, v.height - 16);
         } else {
           ui.x = active.left + dx;
           ui.y = active.top + dy;
@@ -1533,7 +1705,7 @@
       saveSoon();
     };
     for (const button of root.querySelectorAll("[data-target]")) button.onclick = () => {
-      selected = Number(button.dataset.target);
+      selected = button.dataset.target;
       saveSoon();
       render();
     };
@@ -1587,13 +1759,13 @@
           return chip;
         }));
       }
-      $2("#signal").textContent = stats.ready && occupied ? `${selected === 1.5 ? "1,50" : "2,00"}×` : stats.n && !stats.fresh ? "Пауза" : "—";
+      $2("#signal").textContent = stats.ready && occupied ? number(forecast.target) + "×" : stats.n && !stats.fresh ? "Пауза" : "—";
       $2("#window").textContent = forecast && occupied ? `${clock(forecast.start)} — ${clock(forecast.end)}
-Окно · Киев` : forecast?.status === "pending" ? "Проверяем покрытие окна" : "Нужно 20 раундов\nи свежий поток";
+Окно · Киев` : forecast?.status === "pending" ? "Проверяем покрытие окна" : selected === "big" && stats.ready ? "Дополнительного окна сейчас нет" : "Нужно 20 раундов\nи свежий поток";
       $2("#note").textContent = forecast && occupied ? `${now < forecast.start ? "До окна " + duration(forecast.start - now) : "До конца " + duration(forecast.end - now)} · ${forecast.pattern} · ${forecast.score}/100` : "Балл правила не равен вероятности выигрыша";
-      launcher.querySelector("span").textContent = stats.ready && occupied ? number(selected) + "×" : "…";
-      for (const button of root.querySelectorAll("[data-target]")) button.classList.toggle("active", Number(button.dataset.target) === selected);
-      const completed = [...journal].reverse().find((x) => x.target === selected && ["hit", "miss", "unknown"].includes(x.status));
+      launcher.querySelector("span").textContent = stats.ready && occupied ? number(forecast.target) + "×" : "…";
+      for (const button of root.querySelectorAll("[data-target]")) button.classList.toggle("active", button.dataset.target === selected);
+      const completed = [...journal].reverse().find((x) => x.channel === selected && ["hit", "miss", "unknown"].includes(x.status));
       const key = completed ? completed.key + completed.status : "";
       if (key !== latestResult) {
         latestResult = key;
@@ -1675,10 +1847,11 @@
     const autoTick = setInterval(() => {
       void auto.tick().catch(() => auto.disarm("Ошибка авто — режим выключен"));
     }, 250);
-    $2("#close").onclick = () => {
+    closeOverlay = $2("#close").onclick = () => {
       auto.disarm("Панель закрыта — авто выключено");
       cancelPicker?.();
       destroyed = true;
+      if (window !== window.top) frameSupport.stop();
       clearInterval(tick);
       clearInterval(autoTick);
       clearTimeout(saveTimer);
@@ -1710,6 +1883,12 @@
     $2("#result-image").onerror = () => {
       $2("#result-image").hidden = true;
     };
+    for (const button of root.querySelectorAll("button")) {
+      if (button === launcher || !button.onclick) continue;
+      const handler = button.onclick;
+      button.onclick = null;
+      activate(button, handler);
+    }
     layout();
     render();
     try {
@@ -1717,12 +1896,12 @@
       if (saved && !destroyed) {
         rows = mergeRounds([], Array.isArray(saved.rows) ? saved.rows : [], "Supabase · LuckyJet").rounds;
         journal = saved.model === MODEL && Array.isArray(saved.journal) ? saved.journal.slice(-100) : [];
-        selected = saved.selected === 2 ? 2 : 1.5;
+        selected = saved.selected === "big" ? "big" : "primary";
         if (saved.ui && typeof saved.ui === "object") {
           for (const key of ["x", "y", "width", "height", "opacity"]) if (Number.isFinite(saved.ui[key])) ui[key] = saved.ui[key];
-          ui.width = clamp(ui.width, 190, 600);
-          ui.height = clamp(ui.height, 265, 700);
-          ui.opacity = clamp(ui.opacity, 0.6, 1);
+          ui.width = clamp2(ui.width, 190, 600);
+          ui.height = clamp2(ui.height, 265, 700);
+          ui.opacity = clamp2(ui.opacity, 0.6, 1);
           ui.collapsed = saved.ui.collapsed === true;
         }
         layout();

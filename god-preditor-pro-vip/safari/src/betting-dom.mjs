@@ -1,3 +1,4 @@
+import {activate} from './activation.mjs';
 const BUSY = /забра|забрати|cash[\s-]?out|collect|cancel|отмен|скасув|очікуван|ожидан|waiting|placed|accepted|принят/iu;
 const BET = /^(?:сделать\s+ставку|зробити\s+ставку|ставка|поставить|place\s+bet|bet)(?:$|\s|[\d₴$€])/iu;
 const labelOf = element => String(element.innerText || element.getAttribute('aria-label') || element.textContent || '').normalize('NFKC').replace(/\s+/g, ' ').trim();
@@ -48,6 +49,7 @@ export function inspectBetButton(selected) {
     if (!inside) return {state: 'waiting', reason: 'кнопка перекрыта — отодвинь панель', label};
     while (currentDoc.defaultView !== currentDoc.defaultView.top) {
       const frame = currentDoc.defaultView.frameElement;
+      if (!frame && currentDoc.location?.origin === 'https://1play.gamedev-tech.cc') break;
       if (!frame || frame.contentDocument !== currentDoc) return {state: 'unsafe', reason: 'доступ к игровому фрейму изменился'};
       const r = frame.getBoundingClientRect();
       x = r.left + (x + frame.clientLeft) * r.width / frame.offsetWidth;
@@ -97,20 +99,6 @@ export function pickButton(root, index, done) {
     picker.addEventListener('click', event => {event.preventDefault(); event.stopImmediatePropagation();}, true);
     setTimeout(() => {picker.remove(); done(value);}, 400);
   };
-  function activate(button, action) {
-    let pointer = null;
-    button.addEventListener('pointerdown', event => {
-      if (!event.isTrusted || event.button !== 0 || button.disabled) return;
-      event.preventDefault(); pointer = event.pointerId; button.setPointerCapture(pointer);
-    });
-    button.addEventListener('pointerup', event => {
-      if (!event.isTrusted || event.pointerId !== pointer || button.disabled) return;
-      pointer = null; const rect = button.getBoundingClientRect();
-      if (event.clientX >= rect.left && event.clientX <= rect.right && event.clientY >= rect.top && event.clientY <= rect.bottom) action();
-    });
-    button.addEventListener('pointercancel', () => {pointer = null;});
-    button.onclick = event => {if (event.isTrusted && !button.disabled) action();};
-  }
   activate(picker.querySelector('.pick-cancel'), () => finish({error: info.textContent, cancelled: true}));
   activate(confirm, () => {if (stopped) return; update(); if (!candidate.error) finish(candidate);});
   update(); return () => finish({cancelled: true});

@@ -41,7 +41,7 @@ export function createExtensionFetch(gm, config) {
 
 export function permittedPage(location) {
   return location.protocol === 'https:' && (
-    location.hostname === 'one-vv3016.com' ||
+    location.hostname === 'one-vv3016.com' || location.hostname === '1play.gamedev-tech.cc' ||
     (location.hostname === 'miuiproking.github.io' &&
       location.pathname === '/luckyjet-telegram-mini-app/god-preditor-pro-vip/safari/preview.html')
   );
