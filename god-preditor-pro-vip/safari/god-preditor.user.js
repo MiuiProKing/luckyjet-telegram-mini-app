@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         GOD PREDITOR PRO VIP — LuckyJet Safari
 // @namespace    https://miuiproking.github.io/luckyjet-telegram-mini-app/god-preditor-pro-vip/
-// @version      1.3.0
-// @description  Динамический расчёт из присланного файла. Автонажатия выключены до явного включения и выбора двух кнопок.
+// @version      1.4.0
+// @description  Исправленная экспериментальная модель v2; преимущество в точности не установлено. Автонажатия выключены до явного включения и выбора двух кнопок.
 // @match        https://one-vv3016.com/*
 // @match        https://miuiproking.github.io/luckyjet-telegram-mini-app/god-preditor-pro-vip/safari/preview.html
 // @match        https://1play.gamedev-tech.cc/*
@@ -14,11 +14,37 @@
 // @connect      stzrirukuxcyalrsstxx.supabase.co
 // ==/UserScript==
 
-// Generated from the same source model, feed and scene as the main page.
+// Generated from the Safari-only hardened v2 model and the existing feed/scene.
 // Build: npm ci && npm run build (inside god-preditor-pro-vip/safari).
 // No remote JavaScript or credential reads. Live mode may click ONLY the two
 // user-selected bet buttons; default is OFF, test mode never clicks them.
 (() => {
+  // src/freshness.mjs
+  function sourceReady(status, stats, lastSuccessAt, now = Date.now()) {
+    if (status !== "connected" || stats?.ready !== true || !Number.isFinite(now) || !Number.isFinite(lastSuccessAt) || !Number.isFinite(stats.lastAt)) return false;
+    const pollAge = now - lastSuccessAt, roundAge = now - stats.lastAt;
+    return pollAge >= 0 && pollAge <= 12e3 && roundAge >= 0 && roundAge <= 18e4;
+  }
+
+  // src/storage.mjs
+  async function loadPanelState(gm, model, { key, legacyKey }) {
+    const current = await gm.getValue(key, null);
+    const saved = current ?? await gm.getValue(legacyKey, null);
+    if (!saved || typeof saved !== "object" || Array.isArray(saved)) return null;
+    const journal = Array.isArray(saved.journal) ? saved.journal.filter((x) => x && typeof x === "object") : [];
+    const legacy = Array.isArray(saved.legacyJournal) ? saved.legacyJournal.filter((x) => x && typeof x === "object") : [];
+    const active = saved.model === model ? journal.filter((x) => x.model === model) : [];
+    const archived = saved.model === model ? journal.filter((x) => x.model !== model) : journal;
+    return {
+      model,
+      rows: Array.isArray(saved.rows) ? saved.rows : [],
+      journal: active.slice(-100),
+      legacyJournal: [...legacy, ...archived].slice(-200),
+      selected: saved.selected === "big" ? "big" : "primary",
+      ui: saved.ui && typeof saved.ui === "object" && !Array.isArray(saved.ui) ? saved.ui : {}
+    };
+  }
+
   // src/activation.mjs
   function activate(button, action) {
     let pointer = null, suppressUntil = 0;
@@ -71,7 +97,7 @@
         parentReady = event.data.ready === true;
       } else {
         if (event.origin !== GAME_ORIGIN || event.data?.type !== READY) return;
-        const frame = [...win.document.querySelectorAll("iframe")].find((f2) => f2.contentWindow === event.source && new URL(f2.src, win.location.href).origin === GAME_ORIGIN);
+        const frame = [...win.document.querySelectorAll("iframe")].find((f) => f.contentWindow === event.source && new URL(f.src, win.location.href).origin === GAME_ORIGIN);
         if (!frame) return;
         const rect = frame.getBoundingClientRect(), x = rect.left + rect.width / 2, y = rect.top + rect.height / 2;
         const probes = Array.isArray(event.data.probes) ? event.data.probes.slice(0, 2) : [];
@@ -225,281 +251,358 @@
     return { rounds: [...map.values()].sort((a, b) => b.timestamp - a.timestamp).slice(0, LIMIT), added, rejected };
   }
 
-  // ../modules/supplied-prediction.mjs
-  var ARCHIVE_PROFILE = Object.freeze({ low: 2, cycle: 10, cluster: 20, confirmation: 50, midMin: 5, midMax: 10, opportunity: 100 });
-  function m(s, i = 300, e = 1 / 0) {
-    const n = /* @__PURE__ */ new Set();
-    return [...s].sort((t, a) => a.timestamp - t.timestamp).filter(
-      (t) => !Number.isFinite(t.coefficient) || t.coefficient < 1 || !Number.isFinite(t.timestamp) || t.timestamp <= 0 || t.timestamp > e || t.id && n.has(t.id) ? false : (t.id && n.add(t.id), true)
-    ).slice(0, i);
-  }
-  function f(s, i = Date.now()) {
-    const e = s[0]?.timestamp;
-    return e !== void 0 && e <= i + 3e4 && i - e <= 18e4;
-  }
-  var orderedAnalysisRounds = m;
-  var analysisIsFresh = f;
+  // src/prediction-v2.ts
+  var EVIDENCE_STATUS = "experimental-unvalidated";
+  var MIN_ROUNDS = 20;
+  var MAX_FRESH_AGE_MS = 18e4;
+  var POISSON_HORIZON_MS = 18e4;
   var MIN = 6e4;
-  var MIN_HOLD_MS = 6e4;
-  var mean = (xs) => xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0;
+  var MIN_HOLD_MS = MIN;
+  var MIN_TIMESTAMP = 9466848e5;
+  var MAX_TIMESTAMP = 864e13;
+  var isRecord = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
+  var finite = (value) => typeof value === "number" && Number.isFinite(value);
+  var validTimestamp = (value) => finite(value) && Number.isSafeInteger(value) && value >= MIN_TIMESTAMP && value <= MAX_TIMESTAMP;
+  var validNow = (value) => validTimestamp(value) && value <= MAX_TIMESTAMP - 30 * MIN;
+  function stableId(value) {
+    if (typeof value === "string" && value.length > 0 && value.trim() === value) return value;
+    if (typeof value === "number" && Number.isSafeInteger(value)) return String(value);
+    return null;
+  }
+  function normalizeWithDiagnostics(input, now) {
+    const diagnostics = {
+      inputCount: Array.isArray(input) ? input.length : 0,
+      acceptedCount: 0,
+      invalidCount: 0,
+      futureCount: 0,
+      estimatedCount: 0,
+      incompleteCount: 0,
+      duplicateCount: 0,
+      conflictingIdCount: 0,
+      conflictingRecordCount: 0,
+      freshestAgeMs: null,
+      fresh: false,
+      validInput: Array.isArray(input) && validNow(now)
+    };
+    if (!diagnostics.validInput || !Array.isArray(input)) return { rounds: [], diagnostics };
+    const groups = /* @__PURE__ */ new Map();
+    for (const value of input) {
+      if (!isRecord(value)) {
+        diagnostics.invalidCount++;
+        continue;
+      }
+      const id = stableId(value.id);
+      if (id === null || !finite(value.coefficient) || value.coefficient < 1 || !validTimestamp(value.timestamp) || value.estimated !== void 0 && typeof value.estimated !== "boolean" || value.completed !== void 0 && typeof value.completed !== "boolean") {
+        diagnostics.invalidCount++;
+        continue;
+      }
+      if (value.estimated === true) {
+        diagnostics.estimatedCount++;
+        continue;
+      }
+      if (value.completed === false) {
+        diagnostics.incompleteCount++;
+        continue;
+      }
+      if (value.timestamp > now) {
+        diagnostics.futureCount++;
+        continue;
+      }
+      const round = { id, coefficient: value.coefficient, timestamp: value.timestamp };
+      const existing = groups.get(id);
+      if (existing) {
+        existing.count++;
+        existing.conflict ||= existing.round.coefficient !== round.coefficient || existing.round.timestamp !== round.timestamp;
+      } else groups.set(id, { round, count: 1, conflict: false });
+    }
+    const rounds = [];
+    for (const group of groups.values()) {
+      if (group.conflict) {
+        diagnostics.conflictingIdCount++;
+        diagnostics.conflictingRecordCount += group.count;
+      } else {
+        rounds.push(group.round);
+        diagnostics.duplicateCount += group.count - 1;
+      }
+    }
+    rounds.sort((a, b) => b.timestamp - a.timestamp || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+    diagnostics.acceptedCount = rounds.length;
+    diagnostics.freshestAgeMs = rounds.length ? now - rounds[0].timestamp : null;
+    diagnostics.fresh = diagnostics.freshestAgeMs !== null && diagnostics.freshestAgeMs <= MAX_FRESH_AGE_MS;
+    return { rounds, diagnostics };
+  }
+  function normalizeRounds(rounds, now = Date.now()) {
+    return normalizeWithDiagnostics(rounds, now).rounds;
+  }
+  function newestContiguousSegment(rounds) {
+    let boundary = rounds.length;
+    let boundaryGapMs = null;
+    for (let index = 1; index < rounds.length; index++) {
+      const gap = rounds[index - 1].timestamp - rounds[index].timestamp;
+      if (gap > MAX_FRESH_AGE_MS) {
+        boundary = index;
+        boundaryGapMs = gap;
+        break;
+      }
+    }
+    return {
+      rounds: rounds.slice(0, boundary),
+      diagnostics: {
+        gapThresholdMs: MAX_FRESH_AGE_MS,
+        currentSegmentCount: boundary,
+        discardedOlderSegmentRows: rounds.length - boundary,
+        boundaryGapMs,
+        status: boundaryGapMs === null ? "no-large-gap-observed" : "continuity-unknown-before-gap"
+      }
+    };
+  }
+  var mean = (xs) => {
+    let value = 0;
+    for (let i = 0; i < xs.length; i++) value += (xs[i] - value) / (i + 1);
+    return value;
+  };
   var median = (xs) => {
     if (!xs.length) return 0;
-    const s = [...xs].sort((a, b) => a - b);
-    const m22 = Math.floor(s.length / 2);
-    return s.length % 2 ? s[m22] : (s[m22 - 1] + s[m22]) / 2;
+    const sorted = [...xs].sort((a, b) => a - b);
+    const middle = Math.floor(sorted.length / 2);
+    return sorted.length % 2 ? sorted[middle] : sorted[middle - 1] / 2 + sorted[middle] / 2;
+  };
+  var safeMax = (xs) => {
+    let maximum = 0;
+    for (const value of xs) if (value > maximum) maximum = value;
+    return maximum;
   };
   var stddev = (xs) => {
     if (xs.length < 2) return 0;
-    const m22 = mean(xs);
-    return Math.sqrt(mean(xs.map((x) => (x - m22) ** 2)));
+    const average = mean(xs);
+    const scale = safeMax(xs);
+    return scale ? scale * Math.sqrt(mean(xs.map((x) => ((x - average) / scale) ** 2))) : 0;
   };
   var emaNewestFirst = (xs, alpha) => {
     if (!xs.length) return 0;
-    let v = xs[xs.length - 1];
-    for (let i = xs.length - 2; i >= 0; i--) v = alpha * xs[i] + (1 - alpha) * v;
-    return v;
+    let value = xs[xs.length - 1];
+    for (let i = xs.length - 2; i >= 0; i--) value = alpha * xs[i] + (1 - alpha) * value;
+    return value;
   };
-  var geoMean = (xs) => {
-    if (!xs.length) return 0;
-    const logs = xs.map((x) => Math.log(Math.max(x, 1.001)));
-    return Math.exp(mean(logs));
-  };
-  var safeMax = (xs) => {
-    let m22 = -Infinity;
-    for (const x of xs) if (x > m22) m22 = x;
-    return m22 === -Infinity ? 0 : m22;
-  };
+  var geoMean = (xs) => xs.length ? Math.exp(mean(xs.map((x) => Math.log(Math.max(x, 1.001))))) : 0;
   var mad = (xs) => {
     if (xs.length < 2) return 0;
-    const m22 = median(xs);
-    return median(xs.map((x) => Math.abs(x - m22)));
+    const center = median(xs);
+    return median(xs.map((x) => Math.abs(x - center)));
   };
-  var clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
+  var clamp = (value, low, high) => Math.max(low, Math.min(high, value));
   function bucketBy(rounds, keyOf) {
-    const tmp = /* @__PURE__ */ new Map();
-    for (const r of rounds) {
-      const k = keyOf(r);
-      const b = tmp.get(k) ?? { coefs: [], g: 0, mg: 0 };
-      b.coefs.push(r.coefficient);
-      if (r.coefficient >= 10) b.g++;
-      if (r.coefficient >= 100) b.mg++;
-      tmp.set(k, b);
+    const grouped = /* @__PURE__ */ new Map();
+    for (const round of rounds) {
+      const key = keyOf(round);
+      const values = grouped.get(key) ?? [];
+      values.push(round.coefficient);
+      grouped.set(key, values);
     }
-    const out = /* @__PURE__ */ new Map();
-    for (const [k, b] of tmp) {
-      out.set(k, {
-        count: b.coefs.length,
-        goldenCount: b.g,
-        megaCount: b.mg,
-        avg: geoMean(b.coefs),
-        max: safeMax(b.coefs)
-      });
-    }
-    return out;
+    return new Map([...grouped].map(([key, values]) => [key, { count: values.length, avg: geoMean(values), max: safeMax(values) }]));
   }
   function gapAnalysis(rounds, threshold) {
-    const hits = rounds.filter((r) => r.coefficient >= threshold).sort((a, b) => a.timestamp - b.timestamp);
-    if (hits.length < 2) {
-      return { avgGap: 0, medGap: 0, stdGap: 0, madGap: 0, last: hits[0]?.timestamp ?? null, count: hits.length };
-    }
+    const hits = rounds.filter((round) => round.coefficient >= threshold).sort((a, b) => a.timestamp - b.timestamp);
     const gaps = [];
     for (let i = 1; i < hits.length; i++) gaps.push(hits[i].timestamp - hits[i - 1].timestamp);
     return {
-      avgGap: mean(gaps),
       medGap: median(gaps),
-      stdGap: stddev(gaps),
       madGap: mad(gaps),
-      last: hits[hits.length - 1].timestamp,
-      count: hits.length
+      last: hits.at(-1)?.timestamp ?? null,
+      count: hits.length,
+      allGapsPositive: gaps.length > 0 && gaps.every((gap) => gap > 0)
     };
   }
-  function detectBigOpportunity(rounds, now) {
+  function poissonWindowProbability(lambdaPerMs, horizonMs) {
+    if (!finite(lambdaPerMs) || lambdaPerMs < 0 || !finite(horizonMs) || horizonMs < 0) return null;
+    return -Math.expm1(-lambdaPerMs * horizonMs);
+  }
+  function additionalFromNormalized(rounds, now) {
     const sorted = [...rounds].sort((a, b) => a.timestamp - b.timestamp);
-    const candidates = [];
     const mega = gapAnalysis(sorted, 100);
-    if (mega.count >= 5 && mega.last && mega.medGap > 0) {
+    let cycleCandidate = null;
+    let clusterCandidate = null;
+    if (mega.count >= 5 && mega.last !== null && mega.medGap > 0) {
       const expected = mega.last + mega.medGap;
       const drift = expected - now;
-      const tol = clamp(mega.madGap * 1.4826 || mega.medGap * 0.35, 2 * MIN, 12 * MIN);
+      const tolerance = clamp(mega.madGap * 1.4826 || mega.medGap * 0.35, 2 * MIN, 12 * MIN);
       const sinceLast = now - mega.last;
-      const stable = mega.madGap > 0 && mega.madGap < mega.medGap * 0.5;
-      if (stable && (Math.abs(drift) <= tol * 0.7 || sinceLast >= mega.medGap * 0.9)) {
-        const driftScore = clamp(1 - Math.abs(drift) / Math.max(tol, 1), 0, 1);
-        const sampleBoost = Math.min(10, mega.count);
-        const conf = clamp(55 + sampleBoost + driftScore * 12, 55, 82);
-        candidates.push({
-          expectedAt: drift > 0 ? expected : now + Math.max(2 * MIN, tol * 0.4),
-          windowMs: clamp(tol, 3 * MIN, 10 * MIN),
+      const stable = mega.allGapsPositive && mega.madGap < mega.medGap * 0.5;
+      if (stable && (Math.abs(drift) <= tolerance * 0.7 || sinceLast >= mega.medGap * 0.9)) {
+        const driftScore = clamp(1 - Math.abs(drift) / Math.max(tolerance, 1), 0, 1);
+        cycleCandidate = {
+          signal: "cycle",
+          expectedAt: Math.ceil(drift > 0 ? expected : now + Math.max(2 * MIN, tolerance * 0.4)),
+          windowMs: Math.ceil(clamp(tolerance, 3 * MIN, 10 * MIN)),
           estimatedCoef: 100,
-          confidence: Math.round(conf),
+          heuristicScore: Math.round(clamp(55 + Math.min(10, mega.count) + driftScore * 12, 55, 82)),
           reason: `Cycle 100x≈${(mega.medGap / MIN).toFixed(1)}min — dernier il y a ${(sinceLast / MIN).toFixed(1)}min (${mega.count} évts)`
-        });
+        };
       }
     }
     const recent = sorted.slice(-80);
-    let big20 = 0, big50 = 0;
-    for (const r of recent) {
-      if (r.coefficient >= 20) big20++;
-      if (r.coefficient >= 50) big50++;
-    }
+    const big20 = recent.filter((round) => round.coefficient >= 20).length;
+    const big50 = recent.filter((round) => round.coefficient >= 50).length;
     if (big50 >= 3 && big20 >= 6) {
-      const conf = clamp(55 + big50 * 5 + big20, 55, 82);
-      candidates.push({
+      clusterCandidate = {
+        signal: "cluster",
         expectedAt: now + 3 * MIN,
         windowMs: 6 * MIN,
         estimatedCoef: 120,
-        confidence: Math.round(conf),
-        reason: `Cluster chaud : ${big20}×≥20x + ${big50}×≥50x sur 80 tours`
-      });
+        heuristicScore: Math.round(clamp(55 + big50 * 5 + big20, 55, 82)),
+        reason: `Cluster : ${big20}×≥20x + ${big50}×≥50x sur ${recent.length} tours`
+      };
     }
-    const allMega = sorted.filter((r) => r.coefficient >= 100);
-    if (allMega.length >= 4 && mega.last && sorted.length >= 80) {
-      const sinceLast = now - mega.last;
-      const span = sorted[sorted.length - 1].timestamp - sorted[0].timestamp;
-      const lambda = span > 0 ? allMega.length / span : 0;
-      if (lambda > 0) {
-        const overdueProb = 1 - Math.exp(-lambda * sinceLast);
-        if (overdueProb >= 0.75) {
-          const eta = clamp(1 / lambda, 9e4, 8 * MIN);
-          const conf = clamp(50 + overdueProb * 30, 50, 80);
-          candidates.push({
-            expectedAt: now + eta,
-            windowMs: clamp(eta * 0.8, 3 * MIN, 7 * MIN),
-            estimatedCoef: 100,
-            confidence: Math.round(conf),
-            reason: `Hazard Poisson : P(retard)=${(overdueProb * 100).toFixed(0)}% (λ⁻¹≈${(1 / lambda / MIN).toFixed(1)}min)`
-          });
-        }
-      }
+    let poisson = null;
+    const span = sorted.length ? sorted[sorted.length - 1].timestamp - sorted[0].timestamp : 0;
+    if (mega.count >= 4 && sorted.length >= 80 && span > 0) {
+      const lambdaPerMs = mega.count / span;
+      poisson = {
+        model: "stationary-poisson-assumption",
+        evidenceStatus: "assumption-only-not-calibrated",
+        eventCount: mega.count,
+        observedSpanMs: span,
+        lambdaPerMs,
+        horizonMs: POISSON_HORIZON_MS,
+        nextWindowProbabilityUnderStationaryModel: poissonWindowProbability(lambdaPerMs, POISSON_HORIZON_MS)
+      };
     }
-    if (!candidates.length) return null;
-    candidates.sort((a, b) => b.confidence - a.confidence);
-    const top = candidates[0];
-    if (candidates.length < 2 && top.confidence < 75) return null;
-    if (candidates.length >= 2) {
-      top.confidence = Math.min(92, top.confidence + 5);
+    const diagnostics = {
+      analyzedAt: now,
+      candidateCount: Number(cycleCandidate !== null) + Number(clusterCandidate !== null),
+      cycleCandidate,
+      clusterCandidate,
+      overlap: null,
+      decision: "insufficient-candidates",
+      poisson
+    };
+    if (!cycleCandidate || !clusterCandidate) return { bigOpportunity: null, diagnostics };
+    const start2 = Math.max(cycleCandidate.expectedAt, clusterCandidate.expectedAt);
+    const end = Math.min(cycleCandidate.expectedAt + cycleCandidate.windowMs, clusterCandidate.expectedAt + clusterCandidate.windowMs);
+    if (end <= start2) {
+      diagnostics.decision = "disjoint-windows";
+      return { bigOpportunity: null, diagnostics };
     }
-    return top;
+    diagnostics.overlap = { start: start2, end };
+    diagnostics.decision = "overlapping-heuristics";
+    return {
+      bigOpportunity: {
+        expectedAt: start2,
+        windowMs: end - start2,
+        estimatedCoef: Math.min(cycleCandidate.estimatedCoef, clusterCandidate.estimatedCoef),
+        heuristicScore: Math.min(cycleCandidate.heuristicScore, clusterCandidate.heuristicScore),
+        generatedAt: now,
+        expiresAt: end,
+        evidenceStatus: EVIDENCE_STATUS,
+        reason: `${cycleCandidate.reason} ; ${clusterCandidate.reason} — fenêtres communes ; indices corrélés non validés`
+      },
+      diagnostics
+    };
   }
-  function generatePrediction(rounds, previous, now = Date.now()) {
-    rounds = orderedAnalysisRounds(rounds, rounds.length, now);
-    if (!analysisIsFresh(rounds, now)) return null;
-    if (rounds.length < 20) return null;
-    if (previous) {
-      const holdUntil = Math.max(
-        previous.estimatedAt + previous.windowMs,
-        previous.generatedAt + MIN_HOLD_MS
-      );
-      if (now < holdUntil) {
-        return previous;
-      }
-    }
-    const sorted = [...rounds].sort((a, b) => b.timestamp - a.timestamp);
-    const coefs = sorted.map((r) => r.coefficient);
-    const avgAll = mean(coefs);
+  function validPreviousOpportunity(previous, now) {
+    if (!isRecord(previous) || !isRecord(previous.bigOpportunity)) return null;
+    const value = previous.bigOpportunity;
+    if (value.evidenceStatus !== EVIDENCE_STATUS || !finite(value.estimatedCoef) || value.estimatedCoef < 100 || !finite(value.heuristicScore) || value.heuristicScore < 0 || value.heuristicScore > 100 || !validTimestamp(value.generatedAt) || value.generatedAt > now || !validTimestamp(value.expectedAt) || value.expectedAt < value.generatedAt + 3 * MIN || !finite(value.windowMs) || !Number.isSafeInteger(value.windowMs) || value.windowMs <= 0 || value.windowMs > 6 * MIN || !validTimestamp(value.expiresAt) || value.expiresAt !== value.expectedAt + value.windowMs || value.expiresAt > value.generatedAt + 9 * MIN || now >= value.expiresAt || typeof value.reason !== "string" || !value.reason.trim()) return null;
+    return {
+      expectedAt: value.expectedAt,
+      windowMs: value.windowMs,
+      estimatedCoef: value.estimatedCoef,
+      heuristicScore: value.heuristicScore,
+      generatedAt: value.generatedAt,
+      expiresAt: value.expiresAt,
+      evidenceStatus: EVIDENCE_STATUS,
+      reason: value.reason
+    };
+  }
+  function validPrevious(previous, now) {
+    if (!isRecord(previous) || previous.evidenceStatus !== EVIDENCE_STATUS || !finite(previous.estimatedCoef) || previous.estimatedCoef < 1 || !finite(previous.heuristicScore) || previous.heuristicScore < 0 || previous.heuristicScore > 100 || !validTimestamp(previous.generatedAt) || previous.generatedAt > now || !validTimestamp(previous.estimatedAt) || previous.estimatedAt < previous.generatedAt + 9e4 || previous.estimatedAt > previous.generatedAt + 3 * MIN || !finite(previous.windowMs) || !Number.isSafeInteger(previous.windowMs) || previous.windowMs < 9e4 || previous.windowMs > 3 * MIN || typeof previous.pattern !== "string" || !previous.pattern.trim() || typeof previous.basis !== "string" || !previous.basis.trim()) return null;
+    return {
+      estimatedCoef: previous.estimatedCoef,
+      estimatedAt: previous.estimatedAt,
+      windowMs: previous.windowMs,
+      generatedAt: previous.generatedAt,
+      pattern: previous.pattern,
+      basis: previous.basis,
+      heuristicScore: previous.heuristicScore,
+      evidenceStatus: EVIDENCE_STATUS
+    };
+  }
+  function primaryFromNormalized(sorted, now) {
+    const coefs = sorted.map((round) => round.coefficient);
     const medAll = median(coefs);
     const geoAll = geoMean(coefs);
     const last20 = coefs.slice(0, 20);
     const last50 = coefs.slice(0, 50);
-    const avg20 = mean(last20);
     const avg50 = mean(last50);
     const ema20 = emaNewestFirst(last20, 0.25);
     const ema50 = emaNewestFirst(last50, 0.12);
     const sd50 = stddev(last50);
     const mad50 = mad(last50);
-    const goldenC = gapAnalysis(sorted, 10);
-    const sinceGolden = goldenC.last ? now - goldenC.last : Infinity;
-    const hourBuckets = bucketBy(sorted, (r) => new Date(r.timestamp).getUTCHours());
-    const minuteBuckets = bucketBy(sorted, (r) => new Date(r.timestamp).getUTCMinutes());
+    const golden = gapAnalysis(sorted, 10);
+    const sinceGolden = golden.last === null ? Infinity : now - golden.last;
+    const hourBuckets = bucketBy(sorted, (round) => new Date(round.timestamp).getUTCHours());
+    const minuteBuckets = bucketBy(sorted, (round) => new Date(round.timestamp).getUTCMinutes());
     const nowDate = new Date(now);
     const hb = hourBuckets.get(nowDate.getUTCHours());
-    const nextMinute = (nowDate.getUTCMinutes() + 2) % 60;
-    const mbNext = minuteBuckets.get(nextMinute);
-    const last15 = coefs.slice(0, 15);
-    const lowStreak = last15.length === 15 && last15.every((c) => c < 2);
-    const recentBig = sorted.slice(0, 30).filter((r) => r.coefficient >= 20);
-    const bigOpportunity = detectBigOpportunity(rounds, now);
-    if (goldenC.medGap > 0 && goldenC.last) {
-      const expected = goldenC.last + goldenC.medGap;
-      const drift = expected - now;
-      const tol = clamp(goldenC.madGap * 1.4826 || goldenC.medGap * 0.55, 6e4, 4 * MIN);
-      const cycleStable = goldenC.count >= 8 && goldenC.madGap > 0 && goldenC.madGap < goldenC.medGap * 0.6;
-      const tightDrift = Math.abs(drift) <= tol * 0.6;
-      if (cycleStable && tightDrift) {
-        const bigDensity = recentBig.length;
-        const divisor = bigDensity >= 3 ? 2 : bigDensity >= 1 ? 3 : 4;
-        const baseGolden = safeMax(sorted.slice(0, 80).map((r) => r.coefficient));
-        const estimated2 = clamp(baseGolden / divisor, 2, 20);
-        const cycleScore = clamp(60 - Math.abs(drift) / tol * 15, 40, 62);
+    const mbNext = minuteBuckets.get((nowDate.getUTCMinutes() + 2) % 60);
+    const lowStreak = coefs.slice(0, 15).length === 15 && coefs.slice(0, 15).every((coefficient) => coefficient < 2);
+    const recentBig = sorted.slice(0, 30).filter((round) => round.coefficient >= 20);
+    const finish = (value) => ({ ...value, generatedAt: now, evidenceStatus: EVIDENCE_STATUS });
+    if (golden.medGap > 0 && golden.last !== null) {
+      const drift = golden.last + golden.medGap - now;
+      const tolerance = clamp(golden.madGap * 1.4826 || golden.medGap * 0.55, MIN, 4 * MIN);
+      const stable = golden.count >= 8 && golden.allGapsPositive && golden.madGap < golden.medGap * 0.6;
+      if (stable && Math.abs(drift) <= tolerance * 0.6) {
+        const divisor = recentBig.length >= 3 ? 2 : recentBig.length >= 1 ? 3 : 4;
+        const estimated2 = clamp(safeMax(sorted.slice(0, 80).map((round) => round.coefficient)) / divisor, 2, 20);
+        const cycleScore = clamp(60 - Math.abs(drift) / tolerance * 15, 40, 62);
         const hourBoost = hb && hb.avg > geoAll ? 3 : 0;
-        const sampleBoost = clamp(goldenC.count / 20, 0, 4);
-        const reliability2 = Math.round(clamp(cycleScore + hourBoost + sampleBoost, 40, 68));
-        return {
+        const sampleBoost = clamp(golden.count / 20, 0, 4);
+        return finish({
           estimatedCoef: +estimated2.toFixed(2),
-          confidence: reliability2 >= 66 ? "Moyen" : "Faible",
-          reliability: reliability2,
-          estimatedAt: drift > 0 ? now + Math.max(drift, 9e4) : now + 2 * MIN,
-          windowMs: clamp(goldenC.medGap * 0.25, 9e4, 3 * MIN),
+          heuristicScore: Math.round(clamp(cycleScore + hourBoost + sampleBoost, 40, 68)),
+          estimatedAt: Math.ceil(drift > 0 ? now + Math.max(drift, 9e4) : now + 2 * MIN),
+          windowMs: Math.ceil(clamp(golden.medGap * 0.25, 9e4, 3 * MIN)),
           pattern: "Cycle des cotes d'or détecté",
-          basis: `Cycle médian ${(goldenC.medGap / MIN).toFixed(1)} min — dernier ${(sinceGolden / MIN).toFixed(1)} min — MAD ${(goldenC.madGap / MIN).toFixed(2)}min`,
-          generatedAt: now,
-          bigOpportunity
-        };
+          basis: `Cycle médian ${(golden.medGap / MIN).toFixed(1)} min — dernier ${(sinceGolden / MIN).toFixed(1)} min — MAD ${(golden.madGap / MIN).toFixed(2)}min`
+        });
       }
     }
-    if (lowStreak) {
-      const estimated2 = clamp(geoAll * 2.5 + medAll, 2.5, 15);
-      const reliability2 = Math.round(clamp(70 + Math.min(15, (now - sorted[14].timestamp) / 6e4), 65, 92));
-      return {
-        estimatedCoef: +estimated2.toFixed(2),
-        confidence: reliability2 >= 82 ? "Élevé" : "Moyen",
-        reliability: reliability2,
-        estimatedAt: now + 9e4,
-        windowMs: 2 * MIN,
-        pattern: "Série basse — rebond statistique",
-        basis: `15 tours <2x — moy géo ${geoAll.toFixed(2)}x, médiane ${medAll.toFixed(2)}x`,
-        generatedAt: now,
-        bigOpportunity
-      };
-    }
+    if (lowStreak) return finish({
+      estimatedCoef: +clamp(geoAll * 2.5 + medAll, 2.5, 15).toFixed(2),
+      heuristicScore: Math.round(clamp(70 + Math.min(15, (now - sorted[14].timestamp) / MIN), 65, 92)),
+      estimatedAt: now + 9e4,
+      windowMs: 2 * MIN,
+      pattern: "Série basse — heuristique de rebond non validée",
+      basis: `15 tours <2x — moy géo ${geoAll.toFixed(2)}x, médiane ${medAll.toFixed(2)}x`
+    });
     if (recentBig.length >= 3) {
-      const avgBig = geoMean(recentBig.map((r) => r.coefficient));
+      const averageBig = geoMean(recentBig.map((round) => round.coefficient));
       const divisor = recentBig.length >= 5 ? 3 : recentBig.length >= 4 ? 4 : 5;
-      const estimated2 = clamp(avgBig / divisor, 2, 12);
-      const reliability2 = Math.min(78, 60 + recentBig.length * 3);
-      return {
-        estimatedCoef: +estimated2.toFixed(2),
-        confidence: reliability2 >= 72 ? "Élevé" : "Moyen",
-        reliability: reliability2,
+      return finish({
+        estimatedCoef: +clamp(averageBig / divisor, 2, 12).toFixed(2),
+        heuristicScore: Math.min(78, 60 + recentBig.length * 3),
         estimatedAt: now + 2 * MIN,
         windowMs: 2.5 * MIN,
         pattern: `${recentBig.length} cotes ≥20x récentes`,
-        basis: `Moy. géo grosses cotes ${avgBig.toFixed(2)}x ÷ ${divisor}`,
-        generatedAt: now,
-        bigOpportunity
-      };
+        basis: `Moy. géo grosses cotes ${averageBig.toFixed(2)}x ÷ ${divisor}`
+      });
     }
     const recent60 = sorted.slice(0, 60);
-    const midZone = recent60.filter((r) => r.coefficient >= 5 && r.coefficient < 10);
-    const smallShare60 = recent60.length ? recent60.filter((r) => r.coefficient < 2).length / recent60.length : 0;
+    const midZone = recent60.filter((round) => round.coefficient >= 5 && round.coefficient < 10);
+    const smallShare60 = recent60.filter((round) => round.coefficient < 2).length / recent60.length;
     if (midZone.length >= 3) {
-      const midGeo = geoMean(midZone.map((r) => r.coefficient));
+      const midGeo = geoMean(midZone.map((round) => round.coefficient));
       const cautious = smallShare60 > 0.55 || sd50 > avg50 * 1.4;
       const target = cautious ? clamp(midGeo * 0.45, 2, 4.5) : clamp(midGeo * 0.7, 3, 7);
-      const reliability2 = Math.round(
-        clamp(64 + midZone.length * 4 + (cautious ? -6 : 6), 58, 90)
-      );
-      return {
+      return finish({
         estimatedCoef: +target.toFixed(2),
-        confidence: reliability2 >= 82 ? "Élevé" : reliability2 >= 68 ? "Moyen" : "Faible",
-        reliability: reliability2,
+        heuristicScore: Math.round(clamp(64 + midZone.length * 4 + (cautious ? -6 : 6), 58, 90)),
         estimatedAt: now + 2 * MIN,
         windowMs: 2.5 * MIN,
-        pattern: cautious ? `Phase mixte — ${midZone.length} cotes 5x-9x sur base fragile` : `Phase favorable — ${midZone.length} cotes 5x-9x récentes`,
-        basis: `Zone 5x-9x géo ${midGeo.toFixed(2)}x — <2x: ${(smallShare60 * 100).toFixed(0)}% — σ50 ${sd50.toFixed(2)}`,
-        generatedAt: now,
-        bigOpportunity
-      };
+        pattern: cautious ? `Phase mixte — ${midZone.length} cotes 5x-9x sur base fragile` : `Heuristique — ${midZone.length} cotes 5x-9x récentes`,
+        basis: `Zone 5x-9x géo ${midGeo.toFixed(2)}x — <2x: ${(smallShare60 * 100).toFixed(0)}% — σ50 ${sd50.toFixed(2)}`
+      });
     }
     const hourFactor = hb && hb.count >= 5 ? hb.avg / Math.max(geoAll, 0.1) : 1;
     const minuteFactor = mbNext && mbNext.count >= 5 ? mbNext.avg / Math.max(geoAll, 0.1) : 1;
@@ -508,28 +611,45 @@
     const fragile = smallShare60 > 0.6 || sd50 > avg50 * 1.6;
     if (fragile) estimated = Math.min(estimated, 3.2);
     else if (smallShare60 > 0.45) estimated = Math.min(estimated, 5);
-    const sampleScore = clamp(rounds.length / 25, 0, 28);
+    const sampleScore = clamp(sorted.length / 25, 0, 28);
     const biasScore = clamp(Math.abs(hourFactor - 1) * 42, 0, 22);
     const minuteScore = clamp(Math.abs(minuteFactor - 1) * 32, 0, 16);
     const stabilityBoost = mad50 > 0 && mad50 < avg50 * 0.6 ? 5 : 0;
-    const fragilePenalty = fragile ? -8 : 0;
-    const reliability = Math.round(clamp(52 + sampleScore + biasScore + minuteScore + stabilityBoost + fragilePenalty, 50, 92));
-    const etaOffset = 2 * MIN + (60 - nowDate.getUTCSeconds()) * 1e3 % 45e3;
-    return {
+    return finish({
       estimatedCoef: +estimated.toFixed(2),
-      confidence: reliability >= 82 ? "Élevé" : reliability >= 66 ? "Moyen" : "Faible",
-      reliability,
-      estimatedAt: now + etaOffset,
+      heuristicScore: Math.round(clamp(52 + sampleScore + biasScore + minuteScore + stabilityBoost + (fragile ? -8 : 0), 50, 92)),
+      estimatedAt: Math.ceil((now + 12e4) / MIN) * MIN,
       windowMs: 2.5 * MIN,
-      pattern: hourFactor > 1.1 ? "Plage horaire favorable" : hourFactor < 0.9 ? "Plage horaire faible" : "Analyse multi-signaux",
-      basis: `EMA20 ${ema20.toFixed(2)}x — H${nowDate.getUTCHours()}h UTC: géo ${hb?.avg.toFixed(2) ?? "—"}x (${hb?.count ?? 0}) — MAD ${mad50.toFixed(2)} — σ ${sd50.toFixed(2)} — ${rounds.length} tours`,
-      generatedAt: now,
-      bigOpportunity
+      pattern: hourFactor > 1.1 ? "Plage horaire — moyenne supérieure" : hourFactor < 0.9 ? "Plage horaire — moyenne inférieure" : "Analyse multi-signaux",
+      basis: `EMA20 ${ema20.toFixed(2)}x — H${nowDate.getUTCHours()}h UTC: géo ${hb?.avg.toFixed(2) ?? "—"}x (${hb?.count ?? 0}) — MAD ${mad50.toFixed(2)} — σ ${sd50.toFixed(2)} — ${sorted.length} tours`
+    });
+  }
+  function generatePrediction(rounds, previous = null, now = Date.now()) {
+    const normalized = normalizeWithDiagnostics(rounds, now);
+    const segment = newestContiguousSegment(normalized.rounds);
+    if (!normalized.diagnostics.fresh || segment.rounds.length < MIN_ROUNDS) return null;
+    const additional = additionalFromNormalized(segment.rounds, now);
+    const prior = validPrevious(previous, now);
+    const priorAdditional = validPreviousOpportunity(previous, now);
+    const primaryHeld = prior !== null && now < Math.max(prior.estimatedAt + prior.windowMs, prior.generatedAt + MIN_HOLD_MS);
+    const primary = primaryHeld ? prior : primaryFromNormalized(segment.rounds, now);
+    return {
+      ...primary,
+      // Publication holds independently; diagnostics above always analyze the current observation segment.
+      bigOpportunity: priorAdditional ?? additional.bigOpportunity,
+      diagnostics: {
+        analyzedAt: now,
+        primaryHeld,
+        additionalHeld: priorAdditional !== null,
+        normalization: normalized.diagnostics,
+        continuity: segment.diagnostics,
+        additional: additional.diagnostics
+      }
     };
   }
 
   // ../modules/public-forecast.mjs
-  var ARCHIVE_PROFILE2 = Object.freeze({ low: 2, cycle: 10, cluster: 20, confirmation: 50, midMin: 5, midMax: 10, opportunity: 100 });
+  var ARCHIVE_PROFILE = Object.freeze({ low: 2, cycle: 10, cluster: 20, confirmation: 50, midMin: 5, midMax: 10, opportunity: 100 });
   var $ = (t) => t.length ? t.reduce((s, e) => s + e, 0) / t.length : 0;
   var E = (t) => {
     if (!t.length) return 0;
@@ -582,13 +702,13 @@
   }
 
   // ../modules/signal-validation.mjs
-  function m2(s, i = 300, e = 1 / 0) {
+  function m(s, i = 300, e = 1 / 0) {
     const n = /* @__PURE__ */ new Set();
     return [...s].sort((t, a) => a.timestamp - t.timestamp).filter(
       (t) => !Number.isFinite(t.coefficient) || t.coefficient < 1 || !Number.isFinite(t.timestamp) || t.timestamp <= 0 || t.timestamp > e || t.id && n.has(t.id) ? false : (t.id && n.add(t.id), true)
     ).slice(0, i);
   }
-  var ze = m2;
+  var ze = m;
   function Te(n, o, i, u) {
     const l = i + u, a = n.filter(
       (s) => Number.isFinite(s.coefficient) && s.coefficient >= 1 && Number.isFinite(s.timestamp) && s.timestamp >= i && s.timestamp <= l
@@ -615,23 +735,38 @@
       (d) => d.timestamp >= a.timestamp && d.timestamp <= s.timestamp
     ), r = Math.min(18e4, Math.max(6e4, u * 3e3));
     return !Number.isFinite(r) || t.some(
-      (d, f2) => f2 > 0 && d.timestamp - (t[f2 - 1]?.timestamp ?? d.timestamp) > r
+      (d, f) => f > 0 && d.timestamp - (t[f - 1]?.timestamp ?? d.timestamp) > r
     ) ? null : { target: n.target, status: "failed", coefficient: c.best, at: n.end };
   }
 
-  // ../window-model.mjs
+  // src/window-model-v2.mjs
+  var MODEL = "hardened-dynamic-windows-v4";
   var TARGETS = Object.freeze(["primary", "big"]);
-  var MODEL = "supplied-dynamic-windows-v3";
-  var RESULT_GRACE_MS = 18e4;
+  var RESULT_GRACE_MS = MAX_FRESH_AGE_MS;
   var MINUTE = 6e4;
   function normalize(rounds, now = Date.now()) {
-    const ids = /* @__PURE__ */ new Set();
-    return [...rounds].filter((r) => r && Number.isFinite(r.coefficient) && r.coefficient >= 1 && Number.isFinite(r.timestamp) && r.timestamp > 0 && r.timestamp <= now).sort((a, b) => b.timestamp - a.timestamp || String(a.id ?? "").localeCompare(String(b.id ?? ""))).filter((r) => {
-      const id = String(r.id ?? `${r.timestamp}:${r.coefficient}`);
-      if (ids.has(id)) return false;
-      ids.add(id);
-      return true;
-    });
+    return normalizeRounds(rounds, now);
+  }
+  function currentSegment(rows) {
+    let count = rows.length, boundaryGapMs = null;
+    for (let i = 1; i < rows.length; i++) {
+      const gap = rows[i - 1].timestamp - rows[i].timestamp;
+      if (gap > MAX_FRESH_AGE_MS) {
+        count = i;
+        boundaryGapMs = gap;
+        break;
+      }
+    }
+    return {
+      rows: rows.slice(0, count),
+      diagnostics: {
+        gapThresholdMs: MAX_FRESH_AGE_MS,
+        currentSegmentCount: count,
+        discardedOlderSegmentRows: rows.length - count,
+        boundaryGapMs,
+        status: boundaryGapMs === null ? "no-large-gap-observed" : "continuity-unknown-before-gap"
+      }
+    };
   }
   function wilson(hits, n) {
     if (!n) return [0, 1];
@@ -640,15 +775,26 @@
     const radius = z * Math.sqrt(p * (1 - p) / n + z * z / (4 * n * n)) / d;
     return [Math.max(0, center - radius), Math.min(1, center + radius)];
   }
-  function analyze(rounds, now = Date.now()) {
-    const rows = normalize(rounds, now), values = rows.map((r) => r.coefficient);
+  function analyzeHistory(input, rows, now, raw) {
+    const segment = currentSegment(rows), values = segment.rows.map((r) => r.coefficient);
     const recent = values.slice(0, 50), last = rows[0];
-    const gaps = rows.slice(0, 101).slice(1).map((r, i) => rows[i].timestamp - r.timestamp).filter((gap) => gap > 0 && gap <= RESULT_GRACE_MS);
-    const fresh = !!last && now - last.timestamp <= RESULT_GRACE_MS;
+    const gaps = segment.rows.slice(0, 101).slice(1).map((r, i) => segment.rows[i].timestamp - r.timestamp).filter((gap) => gap > 0);
+    const fresh = !!last && now - last.timestamp <= MAX_FRESH_AGE_MS;
+    const inputCount = Array.isArray(input) ? input.length : 0;
+    const normalization = {
+      inputCount,
+      acceptedCount: rows.length,
+      rejectedCount: inputCount - rows.length,
+      freshestAgeMs: last ? now - last.timestamp : null,
+      fresh,
+      ...raw?.diagnostics.normalization
+    };
     return {
       model: MODEL,
+      evidenceStatus: EVIDENCE_STATUS,
       n: rows.length,
-      ready: rows.length >= 20 && fresh,
+      continuityCount: segment.rows.length,
+      ready: fresh && segment.rows.length >= MIN_ROUNDS,
       fresh,
       lastId: last?.id,
       lastAt: last?.timestamp,
@@ -661,96 +807,139 @@
       deviation50: te(recent),
       geometricMean: O(values),
       targets: [2, 5, 10, 20, 50, 100].map((target) => {
-        const intervals = ae(rows, target);
+        const intervals = ae(segment.rows, target), sampleSize = values.length;
         return {
           target,
           count: intervals.count,
-          probability: rows.length ? intervals.count / rows.length : 0,
-          range: wilson(intervals.count, rows.length),
+          sampleSize,
+          historicalFrequency: sampleSize ? intervals.count / sampleSize : 0,
+          range: wilson(intervals.count, sampleSize),
+          rangeKind: "historical-wilson-interval",
           recentRate: values.length ? values.slice(0, 100).filter((v) => v >= target).length / Math.min(100, values.length) : 0,
           medianGapMs: intervals.medGap,
           lastHitAt: intervals.last,
           intervals,
-          profile: ARCHIVE_PROFILE2
+          profile: ARCHIVE_PROFILE
         };
-      })
+      }),
+      diagnostics: {
+        analyzedAt: now,
+        primaryHeld: false,
+        additionalHeld: false,
+        ...raw?.diagnostics,
+        normalization,
+        continuity: segment.diagnostics,
+        additional: raw?.diagnostics.additional ?? null
+      }
     };
+  }
+  function analyze(rounds, now = Date.now()) {
+    const rows = normalize(rounds, now);
+    return analyzeHistory(rounds, rows, now, generatePrediction(rounds, null, now));
   }
   var RULES = Object.freeze({
     cycle: "Цикл достижения цели",
     "low-streak": "Серия ниже цели",
     "hot-cluster": "Кластер достижений цели",
     "mid-mixed": "Смешанная фаза",
-    "mid-favorable": "Благоприятная фаза",
-    "hour-favorable": "Благоприятный часовой профиль",
-    "hour-weak": "Слабый часовой профиль",
+    "mid-favorable": "Эвристика средней зоны",
+    "hour-profile": "Часовой профиль",
     "multi-signal": "Многосигнальный расчёт",
-    "opportunity-cycle": "Окно по циклу цели",
-    "opportunity-cluster": "Окно по кластеру цели",
-    "opportunity-poisson-delay": "Окно по интервалам цели"
+    "big-opportunity": "Пересечение двух эвристических окон"
   });
   function ruleOf(pattern) {
     if (pattern.startsWith("Cycle")) return "cycle";
     if (pattern.startsWith("Série")) return "low-streak";
     if (pattern.includes("cotes ≥")) return "hot-cluster";
     if (pattern.startsWith("Phase mixte")) return "mid-mixed";
-    if (pattern.startsWith("Phase favorable")) return "mid-favorable";
-    if (pattern === "Plage horaire favorable") return "hour-favorable";
-    if (pattern === "Plage horaire faible") return "hour-weak";
+    if (pattern.startsWith("Heuristique")) return "mid-favorable";
+    if (pattern.startsWith("Plage horaire")) return "hour-profile";
     return "multi-signal";
   }
-  function forecastForTarget(rounds, channel = "primary", previous = null, now = Date.now()) {
-    if (!TARGETS.includes(channel)) return null;
-    const rows = normalize(rounds, now);
-    if (rows.length < 20 || now - rows[0].timestamp > RESULT_GRACE_MS) return null;
-    if (previous?.model === MODEL && previous.channel === channel && validWindow(previous) && now < Math.max(previous.end, previous.generatedAt + MINUTE)) return previous;
-    const raw = generatePrediction(rows, null, now);
+  function validWindow(x) {
+    if (!x || x.model !== MODEL || !TARGETS.includes(x.channel) || x.evidenceStatus !== EVIDENCE_STATUS || x.scoreKind !== "heuristic" || !Number.isFinite(x.target) || x.target < (x.channel === "big" ? 100 : 1) || !Number.isFinite(x.heuristicScore) || x.heuristicScore < 0 || x.heuristicScore > 100 || ![x.generatedAt, x.start, x.end, x.windowMs].every(Number.isSafeInteger) || x.generatedAt < 9466848e5 || x.start <= x.generatedAt || x.end <= x.start || x.end - x.start !== x.windowMs) return false;
+    return x.channel === "big" ? x.start >= x.generatedAt + 3 * MINUTE && x.windowMs <= 6 * MINUTE && x.end <= x.generatedAt + 9 * MINUTE : x.start >= x.generatedAt + 9e4 && x.start <= x.generatedAt + 3 * MINUTE && x.windowMs >= 9e4 && x.windowMs <= 3 * MINUTE;
+  }
+  function acceptedWindow(x, now = Infinity) {
+    return validWindow(x) && Number.isSafeInteger(x.acceptedAt) && x.acceptedAt >= x.generatedAt && x.acceptedAt < x.start && x.acceptedAt <= now && ["pending", "hit", "miss", "unknown"].includes(x.status);
+  }
+  function primaryRaw(entry) {
+    const raw = entry?.raw;
+    return entry?.channel === "primary" && validWindow(entry) && raw && raw.evidenceStatus === EVIDENCE_STATUS && raw.generatedAt === entry.generatedAt && raw.estimatedAt === entry.start && raw.windowMs === entry.windowMs && raw.estimatedCoef === entry.target && raw.heuristicScore === entry.heuristicScore ? raw : null;
+  }
+  function bigRaw(entry) {
+    const big = entry?.raw?.bigOpportunity;
+    return entry?.channel === "big" && validWindow(entry) && big && big.evidenceStatus === EVIDENCE_STATUS && big.generatedAt === entry.generatedAt && big.expectedAt === entry.start && big.windowMs === entry.windowMs && big.expiresAt === entry.end && big.estimatedCoef === entry.target && big.heuristicScore === entry.heuristicScore ? big : null;
+  }
+  function previousState(primaryEntry, bigEntry) {
+    const primary = primaryRaw(primaryEntry), big = bigRaw(bigEntry);
+    return {
+      ...primary ? {
+        estimatedCoef: primary.estimatedCoef,
+        estimatedAt: primary.estimatedAt,
+        windowMs: primary.windowMs,
+        generatedAt: primary.generatedAt,
+        heuristicScore: primary.heuristicScore,
+        evidenceStatus: primary.evidenceStatus,
+        pattern: primary.pattern,
+        basis: primary.basis
+      } : {},
+      bigOpportunity: big ? { ...big } : null
+    };
+  }
+  function forecastFromRaw(raw, channel, analysis) {
     if (!raw) return null;
     const big = raw.bigOpportunity;
     if (channel === "big" && !big) return null;
-    const target = channel === "big" ? big.estimatedCoef : raw.estimatedCoef;
+    const source = channel === "big" ? big : raw;
+    const target = source.estimatedCoef;
     const start2 = channel === "big" ? big.expectedAt : raw.estimatedAt;
-    const windowMs = channel === "big" ? big.windowMs : raw.windowMs;
-    const pattern = channel === "big" ? big.reason : raw.pattern;
-    const rule = channel === "big" ? "big-opportunity" : ruleOf(pattern);
-    return {
+    const rule = channel === "big" ? "big-opportunity" : ruleOf(raw.pattern);
+    const forecast = {
       model: MODEL,
       channel,
       target,
       estimatedCoef: target,
-      generatedAt: raw.generatedAt,
+      generatedAt: source.generatedAt,
       start: start2,
-      end: start2 + windowMs,
+      end: start2 + source.windowMs,
       estimatedAt: start2,
-      windowMs,
-      score: channel === "big" ? big.confidence : raw.reliability,
-      confidence: channel === "big" ? null : raw.confidence,
+      windowMs: source.windowMs,
+      heuristicScore: source.heuristicScore,
+      evidenceStatus: EVIDENCE_STATUS,
       scoreKind: "heuristic",
       rule,
-      pattern: RULES[rule] || pattern,
+      pattern: RULES[rule],
       basis: channel === "big" ? big.reason : raw.basis,
       opportunity: big,
       raw,
       diagnostics: {
-        profile: ARCHIVE_PROFILE2,
-        sampleSize: rows.length,
-        dataCutoff: rows[0].timestamp,
-        cycle: ae(rows, 10)
+        ...raw.diagnostics,
+        profile: ARCHIVE_PROFILE,
+        sampleSize: analysis.n,
+        continuityCount: analysis.continuityCount,
+        dataCutoff: analysis.lastAt,
+        cycle: analysis.targets.find((x) => x.target === 10).intervals
       }
     };
+    return validWindow(forecast) ? forecast : null;
   }
-  function validWindow(x) {
-    return x && x.model === MODEL && TARGETS.includes(x.channel) && Number.isFinite(x.target) && x.target >= 1 && [x.generatedAt, x.start, x.end].every(Number.isFinite) && x.generatedAt > 0 && x.start > x.generatedAt && x.end > x.start && x.end - x.start <= 12 * MINUTE;
+  function latestFor(journal, channel) {
+    return journal.reduce((latest, entry) => entry.channel === channel && (!latest || entry.acceptedAt >= latest.acceptedAt) ? entry : latest, null);
   }
-  function advanceJournal(journal, rounds, stats, now = Date.now(), enabled = true, coverage = { online: true, lastSuccessAt: now }) {
-    const rows = normalize(rounds, now);
-    let changed = false;
-    const eligible = journal.filter((x) => validWindow(x) && Number.isFinite(x.acceptedAt) && x.acceptedAt < x.start && x.acceptedAt <= now && ["pending", "hit", "miss", "unknown"].includes(x.status));
-    if (eligible.length !== journal.length) changed = true;
+  function advanceJournal(journal, rounds, _stats, now = Date.now(), enabled = true, coverage = { online: true, lastSuccessAt: now }) {
+    const rows = normalize(rounds, now), inputJournal = Array.isArray(journal) ? journal : [];
+    const eligible = inputJournal.filter((entry) => acceptedWindow(entry, now));
+    let changed = eligible.length !== inputJournal.length;
+    const raw = generatePrediction(rounds, previousState(
+      latestFor(eligible, "primary"),
+      latestFor(eligible, "big")
+    ), now);
+    const analysis = analyzeHistory(rounds, rows, now, raw);
     const next = eligible.map((entry) => {
       if (entry.status !== "pending") return entry;
       const result = We(entry, rows, now, entry.avgRoundSeconds || 30);
-      const freshFinalPoll = coverage.online && Number.isFinite(coverage.lastSuccessAt) && coverage.lastSuccessAt >= entry.end && now - coverage.lastSuccessAt <= RESULT_GRACE_MS && stats.fresh;
+      const freshFinalPoll = coverage?.online && Number.isFinite(coverage.lastSuccessAt) && coverage.lastSuccessAt >= entry.end && coverage.lastSuccessAt <= now && now - coverage.lastSuccessAt <= RESULT_GRACE_MS && analysis.fresh;
       if (result && (result.status === "validated" || freshFinalPoll)) {
         changed = true;
         return {
@@ -763,27 +952,34 @@
       }
       if (now > entry.end + RESULT_GRACE_MS) {
         changed = true;
-        return { ...entry, status: "unknown", actual: Te(rows, entry.target, entry.start, entry.end - entry.start).best, resolvedAt: now };
+        return {
+          ...entry,
+          status: "unknown",
+          actual: Te(rows, entry.target, entry.start, entry.windowMs).best,
+          resolvedAt: now
+        };
       }
       return entry;
     });
-    if (enabled && stats.ready) for (const channel of TARGETS) {
-      const latest = [...next].reverse().find((x) => x.channel === channel);
-      if (next.some((x) => x.channel === channel && x.status === "pending") || latest && now < Math.max(latest.end, latest.generatedAt + MINUTE)) continue;
-      const forecast = forecastForTarget(rows, channel, null, now);
-      if (!forecast) continue;
+    if (enabled && analysis.ready && raw) for (const channel of TARGETS) {
+      const latest = latestFor(next, channel);
+      if (next.some((entry) => entry.channel === channel && entry.status === "pending") || latest && now < Math.max(latest.end, latest.generatedAt + MINUTE)) continue;
+      const forecast = forecastFromRaw(raw, channel, analysis);
+      if (!forecast || forecast.generatedAt > now || now >= forecast.start) continue;
+      const segment = currentSegment(rows).rows;
       next.push({
         ...forecast,
         key: `${MODEL}:${channel}:${now}`,
         acceptedAt: now,
-        avgRoundSeconds: stats.avgRoundSeconds || 30,
-        sampleSize: stats.n,
-        historicalFrequency: rows.filter((x) => x.coefficient >= forecast.target).length / rows.length,
+        avgRoundSeconds: analysis.avgRoundSeconds || 30,
+        sampleSize: analysis.n,
+        historicalFrequency: segment.filter((r) => r.coefficient >= forecast.target).length / segment.length,
+        historicalSampleSize: segment.length,
         status: "pending"
       });
       changed = true;
     }
-    return { journal: next.slice(-200), changed };
+    return { journal: next.slice(-200), changed, analysis, diagnostics: analysis.diagnostics };
   }
 
   // ../scene.mjs
@@ -889,11 +1085,11 @@
         c.stroke(hemisphere);
         c.shadowBlur = 5;
         c.lineWidth = 0.8;
-        for (const [i, f2] of folds.entries()) {
+        for (const [i, f] of folds.entries()) {
           c.strokeStyle = i % 3 === 0 ? "#aca5fd99" : "#66d7ca99";
           c.beginPath();
-          c.moveTo(f2[0], f2[1]);
-          c.bezierCurveTo(...f2.slice(2));
+          c.moveTo(f[0], f[1]);
+          c.bezierCurveTo(...f.slice(2));
           c.stroke();
         }
         c.clip(hemisphere);
@@ -1095,6 +1291,26 @@
 .auto-panel{position:absolute;inset:var(--header-height) 0 0;background:#10091bf8;z-index:4;padding:10px;overflow:auto;overscroll-behavior:contain}.auto-panel p{font-size:9px;line-height:1.5;color:#c1aecb;margin:8px 0}.auto-panel button,.auto-panel select{font:10px -apple-system,sans-serif;color:#eadcf5;background:#372344;border:1px solid #c99fe34d;border-radius:7px;padding:7px 8px;min-height:30px}.auto-panel label{display:block;font-size:10px;margin:10px 0}.auto-panel select{width:100%;margin-top:4px}.auto-slot{margin:9px 0;display:flex;gap:6px;align-items:center}.auto-slot small{font-size:8px;overflow-wrap:anywhere}.auto-panel #auto-toggle{display:block;width:100%;background:#24473d;border-color:#68c5a3}.auto-panel #auto-toggle.armed{background:#713636;border-color:#eb8f8f}.auto-panel #auto-message{color:#d8c1f0}.auto-panel #auto-diagnostic{color:#ffd598;overflow-wrap:anywhere;user-select:text;-webkit-user-select:text}#auto-log{font:8px/1.6 ui-monospace,monospace;color:#aa96b6}#auto-log>div{border-top:1px solid #ffffff14;padding:5px 0}.launcher[data-auto=live]:after{content:'А';background:#d87660;color:#200a08;border-radius:4px;font-size:8px;padding:2px}.launcher[data-auto=test]:after{content:'Т';color:#e5ca83;font-size:8px}.picker{position:fixed;inset:0;pointer-events:none;z-index:20;font:12px/1.45 -apple-system,sans-serif;color:#f2e6ff}.pick-bar{position:fixed;left:8px;right:8px;top:calc(8px + env(safe-area-inset-top,0px));pointer-events:auto;padding:12px;background:#150c25f5;border:1px solid #d5b2ed88;border-radius:13px;box-shadow:0 5px 30px #0008}.pick-bar p{font-size:11px;margin:5px 0;color:#bba6cd}.pick-info{font-size:10px;color:#ffe0a4;overflow-wrap:anywhere;margin:7px 0}.pick-bar button{font:12px -apple-system,sans-serif;color:#f1e1ff;background:#694081;border:1px solid #e5bff266;border-radius:8px;padding:9px 12px;margin-right:8px}.pick-bar button:disabled{opacity:.4}.pick-cursor{position:fixed;width:50px;height:50px;border:2px solid #9ef8d5;border-radius:50%;display:grid;place-items:center;background:#153a2ca0;color:#b5ffe2;font:32px/1 sans-serif;pointer-events:auto;touch-action:none;user-select:none;-webkit-user-select:none;box-shadow:0 0 15px #80ffd74d}
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}`;
 
+  // ../modules/supplied-prediction.mjs
+  var ARCHIVE_PROFILE2 = Object.freeze({ low: 2, cycle: 10, cluster: 20, confirmation: 50, midMin: 5, midMax: 10, opportunity: 100 });
+
+  // ../window-model.mjs
+  var TARGETS2 = Object.freeze(["primary", "big"]);
+  var MODEL2 = "supplied-dynamic-windows-v3";
+  var RULES2 = Object.freeze({
+    cycle: "Цикл достижения цели",
+    "low-streak": "Серия ниже цели",
+    "hot-cluster": "Кластер достижений цели",
+    "mid-mixed": "Смешанная фаза",
+    "mid-favorable": "Благоприятная фаза",
+    "hour-favorable": "Благоприятный часовой профиль",
+    "hour-weak": "Слабый часовой профиль",
+    "multi-signal": "Многосигнальный расчёт",
+    "opportunity-cycle": "Окно по циклу цели",
+    "opportunity-cluster": "Окно по кластеру цели",
+    "opportunity-poisson-delay": "Окно по интервалам цели"
+  });
+
   // src/autobet.mjs
   var AUTO_KEY = "god-preditor-autobet-receipts-v1";
   var ACCEPT_WAIT_MS = 15e3;
@@ -1125,7 +1341,8 @@
     readReceipts,
     writeReceipts,
     onChange = () => {
-    }
+    },
+    model = MODEL2
   }) {
     let armed = false, mode = "test", generation = 0, busy = false, lock = null;
     let initialized = false, storageOK = false, armedAt = 0, previousNow = 0, previousMono = 0;
@@ -1250,7 +1467,7 @@
       try {
         for (const index of [0, 1]) {
           if (!armed || ticket !== generation) break;
-          const window2 = state.forecasts.find((x) => x?.model === MODEL && x.channel === "primary");
+          const window2 = state.forecasts.find((x) => x?.model === model && x.channel === "primary");
           if (!window2 || !Number.isFinite(window2.start) || !Number.isFinite(window2.end) || !(window2.acceptedAt < window2.start && window2.start < window2.end) || typeof window2.key !== "string") continue;
           const target = window2.target;
           if (!Number.isFinite(target) || target < 1) continue;
@@ -1290,7 +1507,7 @@
             break;
           }
           const currentTime = now(), currentState = context(), final = inspect(buttons[index]);
-          const latestWindow = currentState.forecasts.find((x) => x.channel === "primary");
+          const latestWindow = currentState.forecasts.find((x) => x.model === model && x.channel === "primary");
           if (!armed || ticket !== generation) break;
           if (!currentState.visible || !currentState.fresh || currentTime > Math.min(window2.end, window2.start + ACCEPT_WAIT_MS) || monotonic() - savedAt > 2e3 || final.state !== "ready" || latestWindow?.key !== window2.key || latestWindow.status !== "pending") {
             disarm("Авто выключено: условия изменились перед нажатием");
@@ -1458,7 +1675,8 @@
 
   // src/entry.mjs
   var ID = "god-preditor-safari-overlay";
-  var KEY = "god-preditor-safari-v1";
+  var KEY = "god-preditor-safari-v4";
+  var LEGACY_KEY = "god-preditor-safari-v1";
   var HOME = "https://miuiproking.github.io/luckyjet-telegram-mini-app/god-preditor-pro-vip/";
   var ASSETS = HOME + "assets/";
   var number = (n) => Number(n).toLocaleString("ru-RU", { maximumFractionDigits: 2 });
@@ -1471,7 +1689,7 @@
     if (window !== window.top && location.origin !== GAME_ORIGIN || !permittedPage(location) || document.getElementById(ID)) return;
     const host = document.createElement("div");
     host.id = ID;
-    host.dataset.version = "1.3.0";
+    host.dataset.version = "1.4.0";
     host.dataset.model = MODEL;
     for (const [k, v] of Object.entries({
       position: "fixed",
@@ -1486,7 +1704,7 @@
     root.innerHTML = `<style>${CSS}</style>
     <section class="panel" aria-label="GOD PREDITOR PRO VIP">
       <header class="handle" title="Перетащи панель за эту строку">
-        <div class="brand"><strong id="brand-text">GOD PREDITOR</strong><img id="brand-image" alt="GOD PREDITOR" hidden referrerpolicy="no-referrer"><small>PRO · VIP · SAFARI</small></div>
+        <div class="brand"><strong id="brand-text">GOD PREDITOR</strong><img id="brand-image" alt="GOD PREDITOR" hidden referrerpolicy="no-referrer"><small>PRO · VIP · 1.4</small></div>
         <div class="window-controls" role="group" aria-label="Управление окном">
           <button class="icon" id="size-up" aria-label="Увеличить окно" title="Увеличить окно">+</button>
           <button class="icon" id="size-down" aria-label="Уменьшить окно" title="Уменьшить окно">−</button>
@@ -1524,7 +1742,7 @@
     document.documentElement.append(host);
     const $2 = (selector) => root.querySelector(selector);
     const panel = $2(".panel"), launcher = $2(".launcher");
-    let rows = [], journal = [], selected = "primary", feed = null, status = "connecting", lastSuccessAt = null;
+    let rows = [], journal = [], legacyJournal = [], selected = "primary", feed = null, status = "connecting", lastSuccessAt = null;
     let destroyed = false, saveTimer = null, storageWarning = false, historyVersion = "", latestResult = "";
     let latestStats = analyze([]), cancelPicker = null, requestedAutoMode = "test";
     const ui = { x: 10, y: 115, width: 238, height: 390, opacity: 0.97, collapsed: false };
@@ -1540,9 +1758,10 @@
       return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
     }));
     const auto = createAutoBet({
+      model: MODEL,
       context: () => ({
         visible: !document.hidden && !destroyed,
-        fresh: frameSupport.ready() && status === "connected" && latestStats.ready && Date.now() - lastSuccessAt <= 12e3 && Date.now() - latestStats.lastAt <= 18e4,
+        fresh: frameSupport.ready() && sourceReady(status, latestStats, lastSuccessAt),
         forecasts: [current("primary")].filter(Boolean)
       }),
       inspect: inspectBetButton,
@@ -1641,7 +1860,7 @@
       clearTimeout(saveTimer);
       saveTimer = setTimeout(async () => {
         try {
-          await gm.setValue(KEY, { model: MODEL, rows: rows.slice(0, 2e3), journal: journal.slice(-100), selected, ui: { ...ui } });
+          await gm.setValue(KEY, { model: MODEL, rows: rows.slice(0, 2e3), journal: journal.slice(-100), legacyJournal: legacyJournal.slice(-200), selected, ui: { ...ui } });
         } catch {
           storageWarning = true;
         }
@@ -1732,7 +1951,7 @@
       const version = rows.length + ":" + rows[0]?.id;
       if (version === historyVersion) return;
       historyVersion = version;
-      $2("#history-count").textContent = `${rows.length} в рабочей истории · последние 100 · время по Киеву`;
+      $2("#history-count").textContent = `${rows.length} в рабочей истории · последние 100 · время по Киеву${legacyJournal.length ? " · прежних проверок: " + legacyJournal.length : ""}`;
       const fragment = document.createDocumentFragment();
       for (const row of rows.slice(0, 100)) {
         const line = document.createElement("div");
@@ -1752,8 +1971,10 @@
       latestStats = stats;
       const result = advanceJournal(journal, rows, stats, now, true, { online: status === "connected", lastSuccessAt });
       journal = result.journal;
+      host.dataset.ready = String(stats.ready);
+      host.dataset.continuityCount = String(stats.continuityCount);
       if (result.changed) saveSoon();
-      const forecast = current(selected), occupied = forecast && now <= forecast.end;
+      const forecast = current(selected), occupied = stats.ready && forecast && now <= forecast.end;
       $2("#status").className = "status" + (status === "error" ? " error" : !stats.fresh && rows.length ? " warn" : "");
       $2("#status").textContent = status === "error" ? host.dataset.error || "Ошибка связи · открой «Настроить»" : status === "connected" ? stats.fresh ? `● Supabase · ${rows.length} · Киев` : "● Связь есть · история устарела" : status === "paused" ? "Пауза в фоне" : "Подключение к нашему Supabase…";
       if (storageWarning) $2("#status").textContent += " · сохранение недоступно";
@@ -1772,9 +1993,9 @@
         }));
       }
       $2("#signal").textContent = stats.ready && occupied ? number(forecast.target) + "×" : stats.n && !stats.fresh ? "Пауза" : "—";
-      $2("#window").textContent = forecast && occupied ? `${clock(forecast.start)} — ${clock(forecast.end)}
+      $2("#window").textContent = !stats.ready ? "Пауза · нужно 20 свежих\nпоследовательных раундов" : forecast && occupied ? `${clock(forecast.start)} — ${clock(forecast.end)}
 Окно · Киев` : forecast?.status === "pending" ? "Проверяем покрытие окна" : selected === "big" && stats.ready ? "Дополнительного окна сейчас нет" : "Нужно 20 раундов\nи свежий поток";
-      $2("#note").textContent = forecast && occupied ? `${now < forecast.start ? "До окна " + duration(forecast.start - now) : "До конца " + duration(forecast.end - now)} · ${forecast.pattern} · ${forecast.score}/100` : "Балл правила не равен вероятности выигрыша";
+      $2("#note").textContent = forecast && occupied ? `${now < forecast.start ? "До окна " + duration(forecast.start - now) : "До конца " + duration(forecast.end - now)} · ${forecast.pattern} · балл ${forecast.heuristicScore}/100 · эксперимент` : "Балл правила не равен вероятности выигрыша";
       launcher.querySelector("span").textContent = stats.ready && occupied ? number(forecast.target) + "×" : "…";
       for (const button of root.querySelectorAll("[data-target]")) button.classList.toggle("active", button.dataset.target === selected);
       const completed = [...journal].reverse().find((x) => x.channel === selected && ["hit", "miss", "unknown"].includes(x.status));
@@ -1904,10 +2125,11 @@
     layout();
     render();
     try {
-      const saved = await gm.getValue(KEY, null);
+      const saved = await loadPanelState(gm, MODEL, { key: KEY, legacyKey: LEGACY_KEY });
       if (saved && !destroyed) {
         rows = mergeRounds([], Array.isArray(saved.rows) ? saved.rows : [], "Supabase · LuckyJet").rounds;
         journal = saved.model === MODEL && Array.isArray(saved.journal) ? saved.journal.slice(-100) : [];
+        legacyJournal = saved.legacyJournal;
         selected = saved.selected === "big" ? "big" : "primary";
         if (saved.ui && typeof saved.ui === "object") {
           for (const key of ["x", "y", "width", "height", "opacity"]) if (Number.isFinite(saved.ui[key])) ui[key] = saved.ui[key];

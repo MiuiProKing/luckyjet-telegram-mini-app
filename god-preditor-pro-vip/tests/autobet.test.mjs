@@ -8,7 +8,7 @@ function fixture(options = {}) {
   let time=T,mono=0,stored=options.stored||[],writes=0,releases=0;
   const clicked=[], buttons=[{element:{},state:'ready'},{element:{},state:'ready'}];
   const context={visible:true,fresh:true,forecasts:[7.35].map(target=>({model:MODEL,channel:'primary',key:'window-'+target,target,acceptedAt:T-1000,start:T+1000,end:T+30000,status:'pending'}))};
-  const controller=createAutoBet({now:()=>time,monotonic:()=>mono,context:()=>context,
+  const controller=createAutoBet({model:options?.model??MODEL,now:()=>time,monotonic:()=>mono,context:()=>context,
     inspect:b=>({state:b?.state||'missing',reason:b?.state||'not selected'}),
     click:b=>{clicked.push(buttons.indexOf(b));if(options.ack!==false)b.state='busy';},
     acquireLock:async()=>options.lock===false?null:{release(){releases++;}},
@@ -84,4 +84,13 @@ test('uncertain button acknowledgement stops the session and never retries the s
   assert.match(f.controller.state.message,/не подтверждён/);
   const restored=await prepared({stored:f.stored});await restored.controller.arm('live');restored.advance(1000);await restored.controller.tick();
   assert.equal(restored.clicked.length,0);
+});
+
+test('explicit Safari model identity accepts only matching v4 windows',async()=>{
+ const model='hardened-dynamic-windows-v4';
+ const f=await prepared({model});f.context.forecasts.forEach(x=>x.model=model);
+ assert.equal(await f.controller.arm('test'),true);f.advance(1000);await f.controller.tick();
+ assert.match(f.controller.state.message,/ТЕСТ 2/);assert.equal(f.clicked.length,0);
+ const legacy=await prepared({model});await legacy.controller.arm('test');legacy.advance(1000);await legacy.controller.tick();
+ assert.doesNotMatch(legacy.controller.state.message,/ТЕСТ [12]:/);assert.equal(legacy.clicked.length,0);
 });

@@ -6,7 +6,12 @@ ROOT=Path(__file__).resolve().parents[2];CODE=(ROOT/'safari/god-preditor.user.js
 NOW=int(time.time()*1000)
 def iso(t):return datetime.fromtimestamp(t/1000,timezone.utc).isoformat()
 raw=[{'id':'q'+str(i),'source_seq':i+1,'coefficient':1.1,'round_timestamp':iso(NOW-(42-i)*20000),'estimated':False,'origin':'QA'} for i in range(43)]
-seed={'model':'supplied-dynamic-windows-v3','rows':[],'journal':[{'model':'supplied-dynamic-windows-v3','key':'qa-'+str(t),'channel':'primary','target':t,'estimatedCoef':t,'generatedAt':NOW-60000,'acceptedAt':NOW-60000,'start':NOW+30000,'end':NOW+150000,'windowMs':120000,'score':75,'pattern':'Серия ниже цели','status':'pending','avgRoundSeconds':20} for t in [3.68]],'selected':'primary','ui':{}}
+# v4 fixture uses the real public schema; these are mock values, not wagers.
+model='hardened-dynamic-windows-v4'
+evidence='experimental-unvalidated'
+prediction={'estimatedCoef':3.85,'estimatedAt':NOW+30000,'windowMs':120000,'generatedAt':NOW-60000,'heuristicScore':75,'evidenceStatus':evidence,'pattern':'Серия ниже цели','basis':'No-money test fixture','bigOpportunity':None}
+seed={'model':model,'rows':[],'journal':[{'model':model,'key':'qa-primary','channel':'primary','target':3.85,'estimatedCoef':3.85,'generatedAt':NOW-60000,'acceptedAt':NOW-60000,'start':NOW+30000,'end':NOW+150000,'windowMs':120000,'heuristicScore':75,'scoreKind':'heuristic','evidenceStatus':evidence,'pattern':'Серия ниже цели','status':'pending','avgRoundSeconds':20,'raw':prediction}],'selected':'primary','ui':{}}
+
 HTML='''<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:0;background:#141020;color:white;font:16px sans-serif;height:1000px}.bet{position:fixed;top:620px;width:145px;height:60px;border:1px solid #67c383;background:#194735;color:white;border-radius:12px}#bet0{left:15px}#bet1{right:15px}</style><h1>Isolated no-money fixture</h1><button class="bet" id="bet0">Ставка 1</button><button class="bet" id="bet1">Ставка 2</button><script>window.counts=[0,0];for(let i=0;i<2;i++)document.querySelector('#bet'+i).onclick=e=>{counts[i]++;e.target.textContent='Отменить';};</script>'''
 with sync_playwright() as p:
  b=p.chromium.launch(headless=True,args=['--no-sandbox'])
@@ -14,14 +19,14 @@ with sync_playwright() as p:
   context=b.new_context(viewport={'width':390,'height':844},is_mobile=True,has_touch=True)
   page=context.new_page();page.route('https://one-vv3016.com/**',lambda r:r.fulfill(status=200,content_type='text/html',body='<meta name=viewport content="width=device-width,initial-scale=1"><style>body{margin:0}iframe{width:100vw;height:844px;border:0}</style><iframe src="https://1play.gamedev-tech.cc/mock"></iframe>'));page.route('https://1play.gamedev-tech.cc/**',lambda r:r.fulfill(status=200,content_type='text/html',body=HTML))
   page.clock.install(time=datetime.fromtimestamp(NOW/1000,timezone.utc))
-  js='window.__rows='+json.dumps(raw)+';window.__store={"god-preditor-safari-v1":'+json.dumps(seed)+'};'
+  js='window.__rows='+json.dumps(raw)+';window.__store={"god-preditor-safari-v4":'+json.dumps(seed)+'};'
   js+='''window.GM={getValue:async(k,f)=>structuredClone(__store[k]??f),setValue:async(k,v)=>{__store[k]=structuredClone(v)},xmlHttpRequest:d=>{const response={status:200,responseText:JSON.stringify(__rows)};const task=Promise.resolve(response).then(r=>{d.onload?.(r);return r});task.abort=()=>d.onabort?.();return task;}};'''
   page.add_init_script(js);page.goto('https://one-vv3016.com/casino/play/v_1wingames:luckyjet?p=tmgj',wait_until='domcontentloaded');page.add_script_tag(content=CODE)
   frame=page.frames[1];frame.add_script_tag(content=CODE)
   page.wait_for_timeout(650)
   assert page.locator('#god-preditor-safari-overlay').count()==0
   page=frame
-  page.wait_for_function('document.querySelector("#god-preditor-safari-overlay")?.shadowRoot.querySelector("#signal").textContent==="3,68×"')
+  page.wait_for_function('document.querySelector("#god-preditor-safari-overlay")?.shadowRoot.querySelector("#signal").textContent==="3,85×"')
   return context,page,page.locator('#god-preditor-safari-overlay')
  def drag_to(page,locator,x,y):
   c=page.page.context.new_cdp_session(page.page);r=locator.bounding_box();sx=r['x']+r['width']/2;sy=r['y']+r['height']/2
