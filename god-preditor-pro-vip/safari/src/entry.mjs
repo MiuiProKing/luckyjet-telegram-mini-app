@@ -21,7 +21,7 @@ async function start(gm) {
   // Exact casino/game hosts; each frame accesses only its own document.
   if ((window !== window.top && location.origin !== GAME_ORIGIN) || !permittedPage(location) || document.getElementById(ID)) return;
   const host = document.createElement('div'); host.id = ID;
-  host.dataset.version = '1.2.0'; host.dataset.model = MODEL;
+  host.dataset.version = '1.3.0'; host.dataset.model = MODEL;
   for (const [k, v] of Object.entries({position: 'fixed', inset: '0 auto auto 0', width: '0', height: '0',
     'z-index': '2147483647', 'pointer-events': 'none', transform: 'none'})) host.style.setProperty(k, v, 'important');
   const root = host.attachShadow({mode: 'open'});
@@ -29,8 +29,12 @@ async function start(gm) {
     <section class="panel" aria-label="GOD PREDITOR PRO VIP">
       <header class="handle" title="Перетащи панель за эту строку">
         <div class="brand"><strong id="brand-text">GOD PREDITOR</strong><img id="brand-image" alt="GOD PREDITOR" hidden referrerpolicy="no-referrer"><small>PRO · VIP · SAFARI</small></div>
-        <button class="icon" id="minimize" aria-label="Свернуть панель">−</button>
-        <button class="icon" id="close" aria-label="Скрыть до перезагрузки">×</button>
+        <div class="window-controls" role="group" aria-label="Управление окном">
+          <button class="icon" id="size-up" aria-label="Увеличить окно" title="Увеличить окно">+</button>
+          <button class="icon" id="size-down" aria-label="Уменьшить окно" title="Уменьшить окно">−</button>
+          <button class="icon" id="minimize" aria-label="Свернуть окно" title="Свернуть окно">▁</button>
+          <button class="icon" id="close" aria-label="Закрыть окно" title="Закрыть до перезагрузки">×</button>
+        </div>
       </header>
       <div class="body">
         <div class="status" id="status" role="status">Подключение к нашему Supabase…</div>
@@ -41,7 +45,7 @@ async function start(gm) {
         <div class="note" id="note"></div>
         <div class="targets" aria-label="Цель"><button data-target="primary">Основной</button><button data-target="big">Доп. окно</button></div>
         <div class="result" id="result" role="status"><img id="result-image" hidden alt="" referrerpolicy="no-referrer"><span id="result-label">Проверка по окну</span></div>
-        <div class="tools" id="tools" hidden><button id="retry">Обновить связь</button><button id="opacity">Прозрачность</button><button id="reset">Сбросить размер</button><p class="hint">Перетащи за заголовок. Угол ↘ меняет размер. × скрывает до перезагрузки. Данные — наш Supabase.</p></div>
+        <div class="tools" id="tools" hidden><button id="retry">Обновить связь</button><button id="opacity">Прозрачность</button><button id="reset">Сбросить размер</button><p class="hint">Кнопки + и − вверху меняют размер. Перетащи за заголовок. Угол ↘ тоже меняет размер. × скрывает до перезагрузки. Данные — наш Supabase.</p></div>
       </div>
       <footer class="footer"><button class="link" id="history-open">История</button><button class="link" id="auto-open">Авто</button><button class="link" id="tools-open">Настроить</button><a class="link" href="${HOME}" target="_blank" rel="noopener noreferrer">Страница ↗</a><button class="grip" id="resize" aria-label="Изменить размер панели">↘</button></footer>
       <section class="history" hidden><div class="history-head"><b>Полученные коэффициенты</b><button class="icon" id="history-close" aria-label="Закрыть историю">×</button></div><small id="history-count"></small><div class="history-list"></div></section>
@@ -145,7 +149,6 @@ async function start(gm) {
   }
   function collapse(value) {ui.collapsed = value; layout(); saveSoon();}
 
-  let ignoreLauncherClick = false;
   function movable(element, resize = false) {
     let active = null;
     element.addEventListener('pointerdown', event => {
@@ -153,7 +156,6 @@ async function start(gm) {
       if (event.button !== 0) return;
       event.preventDefault(); element.setPointerCapture(event.pointerId);
       active = {id: event.pointerId, x: event.clientX, y: event.clientY, left: ui.x, top: ui.y, width: ui.width, height: ui.height, moved: false};
-      ignoreLauncherClick = false;
     });
     element.addEventListener('pointermove', event => {
       if (!active || event.pointerId !== active.id) return;
@@ -161,18 +163,28 @@ async function start(gm) {
       if (Math.abs(dx) + Math.abs(dy) > 4) active.moved = true;
       if (resize) {
         const v = viewport();
-        ui.width = clamp(active.width + dx, 190, v.width - 16);
+        ui.width = clamp(active.width + dx, 218, v.width - 16);
         ui.height = clamp(active.height + dy, 265, v.height - 16);
       } else {ui.x = active.left + dx; ui.y = active.top + dy;}
       layout();
     });
-    const finish = () => {if (!active) return; ignoreLauncherClick = active.moved && element === launcher; active = null; saveSoon();};
+    const finish = event => {if (!active) return; const reopen = element === launcher && !active.moved && event.type === 'pointerup'; active = null; saveSoon(); if (reopen && event.isTrusted) collapse(false);};
     element.addEventListener('pointerup', finish); element.addEventListener('pointercancel', finish);
     element.addEventListener('lostpointercapture', finish);
   }
+  launcher.addEventListener('click', event => {if (event.isTrusted && event.detail === 0) collapse(false);});
   movable($('.handle')); movable(launcher); movable($('#resize'), true);
+  function changeSize(direction) {
+    const v = viewport();
+    const width = Math.min(ui.width, v.width - 16), height = Math.min(ui.height, v.height - 16);
+    ui.width = clamp(width + direction * 30, 218, v.width - 16);
+    ui.height = clamp(height + direction * 45, 265, v.height - 16);
+    layout(); saveSoon();
+  }
+  $('#size-up').onclick = () => changeSize(1);
+  $('#size-down').onclick = () => changeSize(-1);
   $('#minimize').onclick = () => collapse(true);
-  launcher.onclick = () => {if (!ignoreLauncherClick) collapse(false); ignoreLauncherClick = false;};
+
   $('#tools-open').onclick = () => {$('#tools').hidden = !$('#tools').hidden;};
   $('#opacity').onclick = () => {ui.opacity = ui.opacity > .94 ? .82 : ui.opacity > .8 ? .68 : .97; layout(); saveSoon();};
   $('#reset').onclick = () => {Object.assign(ui, {x: 10, y: 115, width: 238, height: 390, opacity: .97}); layout(); saveSoon();};
@@ -300,7 +312,7 @@ async function start(gm) {
       selected = saved.selected === 'big' ? 'big' : 'primary';
       if (saved.ui && typeof saved.ui === 'object') {
         for (const key of ['x', 'y', 'width', 'height', 'opacity']) if (Number.isFinite(saved.ui[key])) ui[key] = saved.ui[key];
-        ui.width = clamp(ui.width, 190, 600); ui.height = clamp(ui.height, 265, 700); ui.opacity = clamp(ui.opacity, .6, 1);
+        ui.width = clamp(ui.width, 218, 600); ui.height = clamp(ui.height, 265, 700); ui.opacity = clamp(ui.opacity, .6, 1);
         ui.collapsed = saved.ui.collapsed === true;
       }
       layout(); render();
