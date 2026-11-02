@@ -4,14 +4,20 @@ import {fileURLToPath} from 'node:url';
 import path from 'node:path';
 
 const directory = path.dirname(fileURLToPath(import.meta.url));
+// Compile the supplied algorithm without editing its arithmetic.
+const prediction = await build({absWorkingDir: directory, entryPoints: [path.join(directory, '../modules/supplied/prediction.ts')], bundle: true, format: 'esm', platform: 'browser', target: ['safari15'], write: false, charset: 'utf8', legalComments: 'none'});
+const predictionPath = path.join(directory, '../modules/supplied-prediction.mjs');
+if (process.argv.includes('--check')) {
+  if (await readFile(predictionPath, 'utf8') !== prediction.outputFiles[0].text) throw Error('Supplied prediction module differs from source');
+} else await writeFile(predictionPath, prediction.outputFiles[0].text);
 const header = `// ==UserScript==
 // @name         GOD PREDITOR PRO VIP — LuckyJet Safari
 // @namespace    https://miuiproking.github.io/luckyjet-telegram-mini-app/god-preditor-pro-vip/
-// @version      1.1.0
-// @description  Панель 1,50× / 2×. Автонажатия выключены до явного включения и выбора двух кнопок.
+// @version      1.2.0
+// @description  Динамический расчёт из присланного файла. Автонажатия выключены до явного включения и выбора двух кнопок.
 // @match        https://one-vv3016.com/*
 // @match        https://miuiproking.github.io/luckyjet-telegram-mini-app/god-preditor-pro-vip/safari/preview.html
-// @noframes
+// @match        https://1play.gamedev-tech.cc/*
 // @run-at       document-idle
 // @inject-into  content
 // @grant        GM.xmlHttpRequest
@@ -32,7 +38,7 @@ const result = await build({
   write: false, charset: 'utf8', legalComments: 'none', minify: false,
 });
 const contents = header + result.outputFiles[0].text;
-const outputs = ['god-preditor.user.js', 'god-preditor-1.1.user.js'].map(name => path.join(directory, name));
+const outputs = ['god-preditor.user.js', 'god-preditor-1.2.user.js'].map(name => path.join(directory, name));
 if (process.argv.includes('--check')) {
   for (const output of outputs) if (await readFile(output, 'utf8') !== contents) throw Error('Userscript bundle differs from source; run npm run build');
   console.log('Userscript bundle matches source');

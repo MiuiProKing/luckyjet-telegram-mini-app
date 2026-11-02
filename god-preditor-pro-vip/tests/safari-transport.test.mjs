@@ -53,13 +53,13 @@ test('the real feed adapter accepts confirmed provider timestamps via GM and ret
   finally{feed.stop();}
 });
 test('only the requested casino host and the explicit preview page can mount the overlay', () => {
-  for(const url of ['https://one-vv3016.com/casino/play/v_1wingames:luckyjet?p=tmgj','https://miuiproking.github.io/luckyjet-telegram-mini-app/god-preditor-pro-vip/safari/preview.html'])assert.equal(permittedPage(new URL(url)),true);
+  for(const url of ['https://1play.gamedev-tech.cc/game', 'https://one-vv3016.com/casino/play/v_1wingames:luckyjet?p=tmgj','https://miuiproking.github.io/luckyjet-telegram-mini-app/god-preditor-pro-vip/safari/preview.html'])assert.equal(permittedPage(new URL(url)),true);
   for(const url of ['http://one-vv3016.com/','https://one-vv3016.com.example.com/','https://other-casino.com/','https://miuiproking.github.io/other/'])assert.equal(permittedPage(new URL(url)),false);
 });
 test('installable file is self-contained, frame restricted and declares only its required GM permissions', async () => {
   const source=await readFile(new URL('../safari/god-preditor.user.js',import.meta.url),'utf8');
   assert.ok(source.startsWith('// ==UserScript=='));
-  assert.match(source,/@inject-into\s+content/);assert.match(source,/@noframes/);
+  assert.match(source,/@inject-into\s+content/);assert.doesNotMatch(source,/@noframes/);assert.match(source,/@match\s+https:\/\/1play\.gamedev-tech\.cc\/\*/);
   const grants=[...source.matchAll(/^\/\/ @grant\s+(.*)$/gm)].map(m=>m[1]);
   assert.deepEqual(grants,['GM.xmlHttpRequest','GM.getValue','GM.setValue']);
   assert.doesNotMatch(source,/@require\s/);assert.doesNotMatch(source,/\beval\s*\(|new Function\s*\(/);

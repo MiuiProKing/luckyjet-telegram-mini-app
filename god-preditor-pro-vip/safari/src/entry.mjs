@@ -1,3 +1,5 @@
+import {activate} from './activation.mjs';
+import {installFrameSupport, GAME_ORIGIN} from './frame-support.mjs';
 import {SUPABASE_CONFIG} from '../../supabase-config.mjs';
 import {createSupabaseFeed} from '../../supabase-feed.mjs';
 import {mergeRounds} from '../../data.mjs';
@@ -16,10 +18,10 @@ const clock = t => new Date(t).toLocaleTimeString('ru-RU', {timeZone: 'Europe/Ky
 const duration = ms => {const n = Math.max(0, Math.ceil(ms / 1000)); return `${Math.floor(n / 60).toString().padStart(2, '0')}:${(n % 60).toString().padStart(2, '0')}`;};
 
 async function start(gm) {
-  // Exact host allowlist, top frame only; no game frames or other websites.
-  if (window !== window.top || !permittedPage(location) || document.getElementById(ID)) return;
+  // Exact casino/game hosts; each frame accesses only its own document.
+  if ((window !== window.top && location.origin !== GAME_ORIGIN) || !permittedPage(location) || document.getElementById(ID)) return;
   const host = document.createElement('div'); host.id = ID;
-  host.dataset.version = '1.1.0'; host.dataset.model = MODEL;
+  host.dataset.version = '1.2.0'; host.dataset.model = MODEL;
   for (const [k, v] of Object.entries({position: 'fixed', inset: '0 auto auto 0', width: '0', height: '0',
     'z-index': '2147483647', 'pointer-events': 'none', transform: 'none'})) host.style.setProperty(k, v, 'important');
   const root = host.attachShadow({mode: 'open'});
@@ -37,7 +39,7 @@ async function start(gm) {
         <div class="signal" id="signal">—</div>
         <div class="window" id="window">Получаем историю</div>
         <div class="note" id="note"></div>
-        <div class="targets" aria-label="Цель"><button data-target="1.5">1,50×</button><button data-target="2">2×</button></div>
+        <div class="targets" aria-label="Цель"><button data-target="primary">Основной</button><button data-target="big">Доп. окно</button></div>
         <div class="result" id="result" role="status"><img id="result-image" hidden alt="" referrerpolicy="no-referrer"><span id="result-label">Проверка по окну</span></div>
         <div class="tools" id="tools" hidden><button id="retry">Обновить связь</button><button id="opacity">Прозрачность</button><button id="reset">Сбросить размер</button><p class="hint">Перетащи за заголовок. Угол ↘ меняет размер. × скрывает до перезагрузки. Данные — наш Supabase.</p></div>
       </div>
@@ -45,13 +47,13 @@ async function start(gm) {
       <section class="history" hidden><div class="history-head"><b>Полученные коэффициенты</b><button class="icon" id="history-close" aria-label="Закрыть историю">×</button></div><small id="history-count"></small><div class="history-list"></div></section>
       <section class="auto-panel" hidden><div class="history-head"><b id="auto-title">Авто выключено</b><button class="icon" id="auto-close" aria-label="Закрыть настройки авто">×</button></div>
         <p>Суммы и автозабирание выставь в игре сам. Скрипт их не меняет.</p>
-        <div class="auto-slot"><button id="pick-0">Выбрать поле 1</button><small id="slot-0">1 → 1,50× · не выбрана</small></div>
-        <div class="auto-slot"><button id="pick-1">Выбрать поле 2</button><small id="slot-1">2 → 2× · не выбрана</small></div>
-        <button id="auto-check">Проверить без нажатий</button>
+        <div class="auto-slot"><button id="pick-0">Выбрать поле 1</button><small id="slot-0">1 · не выбрана</small></div>
+        <div class="auto-slot"><button id="pick-1">Выбрать поле 2</button><small id="slot-1">2 · не выбрана</small></div>
+        <p>Обе кнопки — по времени основного прогноза. Суммы и автозабирание проверь в игре перед включением.</p><button id="auto-check">Проверить без нажатий</button>
         <label>Режим <select id="auto-mode"><option value="test">Тест без ставок</option><option value="live">Автонажатия</option></select></label>
         <button id="auto-toggle">Включить тест</button>
         <p id="auto-message" role="status">Авто выключено</p>
-        <p class="hint">Каждое поле: один раз в начале своего окна. Если «Ставка» недоступна 15 секунд — пропуск. Фон, перезагрузка или ошибка выключают режим. Новая привязка нужна после перезагрузки игры.</p>
+        <p class="hint">Оба поля: по одному нажатию в начале основного окна. Если «Ставка» недоступна 15 секунд — пропуск. Фон, перезагрузка или ошибка выключают режим. Новая привязка нужна после перезагрузки игры.</p>
         <p class="hint">Результат окна не подтверждает выигрыш твоей ставки. Отправленное нажатие проверяй в самой игре.</p>
         <p id="auto-diagnostic"></p><div id="auto-log"></div>
       </section>
@@ -60,16 +62,19 @@ async function start(gm) {
   document.documentElement.append(host);
   const $ = selector => root.querySelector(selector);
   const panel = $('.panel'), launcher = $('.launcher');
-  let rows = [], journal = [], selected = 1.5, feed = null, status = 'connecting', lastSuccessAt = null;
+  let rows = [], journal = [], selected = 'primary', feed = null, status = 'connecting', lastSuccessAt = null;
   let destroyed = false, saveTimer = null, storageWarning = false, historyVersion = '', latestResult = '';
   let latestStats = analyze([]), cancelPicker = null, requestedAutoMode = 'test';
   const ui = {x: 10, y: 115, width: 238, height: 390, opacity: .97, collapsed: false};
   const scene = mountScene($('canvas'), {compact: true});
-  const current = target => [...journal].reverse().find(x => x.target === target && x.model === MODEL);
+  const current = target => [...journal].reverse().find(x => x.channel === target && x.model === MODEL);
+  let closeOverlay = () => {};
+  const selectedButtons = [null, null];
+  const frameSupport = installFrameSupport(window, () => {if (window === window.top && !destroyed) closeOverlay();}, () => selectedButtons.filter(Boolean).map(b => {const r = b.element.getBoundingClientRect(); return {x:r.left+r.width/2, y:r.top+r.height/2};}));
   const auto = createAutoBet({
     context: () => ({visible: !document.hidden && !destroyed,
-      fresh: status === 'connected' && latestStats.ready && Date.now() - lastSuccessAt <= 12000 && Date.now() - latestStats.lastAt <= 180000,
-      forecasts: [current(1.5), current(2)].filter(Boolean)}),
+      fresh: frameSupport.ready() && status === 'connected' && latestStats.ready && Date.now() - lastSuccessAt <= 12000 && Date.now() - latestStats.lastAt <= 180000,
+      forecasts: [current('primary')].filter(Boolean)}),
     inspect: inspectBetButton, click: clickSelectedBet,
     acquireLock: () => acquireAutoLock(navigator.locks),
     readReceipts: () => gm.getValue(AUTO_KEY, []),
@@ -85,7 +90,7 @@ async function start(gm) {
     $('#auto-open').textContent = state.armed ? state.mode === 'live' ? 'Авто ON' : 'Тест ON' : 'Авто';
     launcher.dataset.auto = state.armed ? state.mode : 'off';
     const checks = auto.checks();
-    checks.forEach((checked, i) => {$('#slot-' + i).textContent = `${i + 1} → ${i === 0 ? '1,50' : '2'}× · ${checked.state === 'ready' ? 'готова' : checked.reason}`;});
+    checks.forEach((checked, i) => {$('#slot-' + i).textContent = `${i + 1} → основной прогноз · ${checked.state === 'ready' ? 'готова' : checked.reason}`;});
     $('#auto-log').replaceChildren(...state.logs.slice(-5).map(entry => {
       const line = document.createElement('div'); line.textContent = clock(entry.at) + ' · ' + entry.text; return line;
     }));
@@ -98,24 +103,24 @@ async function start(gm) {
     requestedAutoMode = event.target.value === 'live' ? 'live' : 'test';
     auto.disarm('Режим изменён — запуск выключен');
   };
-  $('#auto-toggle').onclick = event => {
+  activate($('#auto-toggle'), event => {
     if (auto.state.armed) {auto.disarm(); return;}
     if (!event.isTrusted) return;
     void auto.arm(requestedAutoMode);
-  };
-  for (const index of [0, 1]) $('#pick-' + index).onclick = event => {
+  });
+  for (const index of [0, 1]) activate($('#pick-' + index), event => {
     if (!event.isTrusted) return;
     auto.disarm('Выбор кнопки — авто выключено');
     panel.hidden = true; launcher.hidden = true;
     cancelPicker = pickButton(root, index, selection => {
       cancelPicker = null; layout(); $('.auto-panel').hidden = false;
       if (selection.element) {
-        try {auto.setButton(index, selection); $('#auto-diagnostic').textContent = '';}
+        try {auto.setButton(index, selection); selectedButtons[index] = selection; frameSupport.invalidate(); $('#auto-diagnostic').textContent = '';}
         catch (error) {$('#auto-diagnostic').textContent = error.message;}
       } else $('#auto-diagnostic').textContent = selection.error || 'Выбор отменён';
       renderAuto();
     });
-  };
+  });
 
   const viewport = () => ({left: visualViewport?.offsetLeft || 0, top: visualViewport?.offsetTop || 0,
     width: visualViewport?.width || innerWidth, height: visualViewport?.height || innerHeight});
@@ -171,7 +176,7 @@ async function start(gm) {
   $('#tools-open').onclick = () => {$('#tools').hidden = !$('#tools').hidden;};
   $('#opacity').onclick = () => {ui.opacity = ui.opacity > .94 ? .82 : ui.opacity > .8 ? .68 : .97; layout(); saveSoon();};
   $('#reset').onclick = () => {Object.assign(ui, {x: 10, y: 115, width: 238, height: 390, opacity: .97}); layout(); saveSoon();};
-  for (const button of root.querySelectorAll('[data-target]')) button.onclick = () => {selected = Number(button.dataset.target); saveSoon(); render();};
+  for (const button of root.querySelectorAll('[data-target]')) button.onclick = () => {selected = button.dataset.target; saveSoon(); render();};
   $('#history-open').onclick = () => {$('.history').hidden = false; renderHistory();};
   $('#history-close').onclick = () => {$('.history').hidden = true;};
 
@@ -210,14 +215,14 @@ async function start(gm) {
         const time = document.createElement('time'); time.textContent = clock(row.timestamp); chip.append(value, time); return chip;
       }));
     }
-    $('#signal').textContent = stats.ready && occupied ? `${selected === 1.5 ? '1,50' : '2,00'}×` : stats.n && !stats.fresh ? 'Пауза' : '—';
+    $('#signal').textContent = stats.ready && occupied ? number(forecast.target) + '×' : stats.n && !stats.fresh ? 'Пауза' : '—';
     $('#window').textContent = forecast && occupied ? `${clock(forecast.start)} — ${clock(forecast.end)}\nОкно · Киев` :
-      forecast?.status === 'pending' ? 'Проверяем покрытие окна' : 'Нужно 20 раундов\nи свежий поток';
+      forecast?.status === 'pending' ? 'Проверяем покрытие окна' : selected === 'big' && stats.ready ? 'Дополнительного окна сейчас нет' : 'Нужно 20 раундов\nи свежий поток';
     $('#note').textContent = forecast && occupied ?
       `${now < forecast.start ? 'До окна ' + duration(forecast.start - now) : 'До конца ' + duration(forecast.end - now)} · ${forecast.pattern} · ${forecast.score}/100` : 'Балл правила не равен вероятности выигрыша';
-    launcher.querySelector('span').textContent = stats.ready && occupied ? number(selected) + '×' : '…';
-    for (const button of root.querySelectorAll('[data-target]')) button.classList.toggle('active', Number(button.dataset.target) === selected);
-    const completed = [...journal].reverse().find(x => x.target === selected && ['hit', 'miss', 'unknown'].includes(x.status));
+    launcher.querySelector('span').textContent = stats.ready && occupied ? number(forecast.target) + '×' : '…';
+    for (const button of root.querySelectorAll('[data-target]')) button.classList.toggle('active', button.dataset.target === selected);
+    const completed = [...journal].reverse().find(x => x.channel === selected && ['hit', 'miss', 'unknown'].includes(x.status));
     const key = completed ? completed.key + completed.status : '';
     if (key !== latestResult) {
       latestResult = key; $('#result').className = 'result ' + (completed?.status || '');
@@ -267,9 +272,9 @@ async function start(gm) {
   observer.observe(document.documentElement, {childList: true});
   const tick = setInterval(() => {if (!document.hidden) render();}, 1000);
   const autoTick = setInterval(() => {void auto.tick().catch(() => auto.disarm('Ошибка авто — режим выключен'));}, 250);
-  $('#close').onclick = () => {
+  closeOverlay = $('#close').onclick = () => {
     auto.disarm('Панель закрыта — авто выключено'); cancelPicker?.();
-    destroyed = true; clearInterval(tick); clearInterval(autoTick); clearTimeout(saveTimer); feed?.stop(); scene.destroy(); observer.disconnect();
+    destroyed = true; if (window !== window.top) frameSupport.stop(); clearInterval(tick); clearInterval(autoTick); clearTimeout(saveTimer); feed?.stop(); scene.destroy(); observer.disconnect();
     document.removeEventListener('visibilitychange', onVisibility);
     window.removeEventListener('pagehide', onPageHide); window.removeEventListener('pageshow', onPageShow);
     window.removeEventListener('resize', onResize); visualViewport?.removeEventListener('resize', onResize); visualViewport?.removeEventListener('scroll', onResize);
@@ -282,13 +287,17 @@ async function start(gm) {
   $('.vip').src = ASSETS + 'vip-original.webp';
   $('.vip').onerror = event => {event.target.hidden = true;};
   $('#result-image').onerror = () => {$('#result-image').hidden = true;};
+  for (const button of root.querySelectorAll('button')) {
+    if (button === launcher || !button.onclick) continue;
+    const handler = button.onclick; button.onclick = null; activate(button, handler);
+  }
   layout(); render();
   try {
     const saved = await gm.getValue(KEY, null);
     if (saved && !destroyed) {
       rows = mergeRounds([], Array.isArray(saved.rows) ? saved.rows : [], 'Supabase · LuckyJet').rounds;
       journal = saved.model === MODEL && Array.isArray(saved.journal) ? saved.journal.slice(-100) : [];
-      selected = saved.selected === 2 ? 2 : 1.5;
+      selected = saved.selected === 'big' ? 'big' : 'primary';
       if (saved.ui && typeof saved.ui === 'object') {
         for (const key of ['x', 'y', 'width', 'height', 'opacity']) if (Number.isFinite(saved.ui[key])) ui[key] = saved.ui[key];
         ui.width = clamp(ui.width, 190, 600); ui.height = clamp(ui.height, 265, 700); ui.opacity = clamp(ui.opacity, .6, 1);

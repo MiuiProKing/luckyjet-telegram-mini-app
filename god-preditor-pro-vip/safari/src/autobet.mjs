@@ -2,7 +2,7 @@ import {MODEL} from '../../window-model.mjs';
 
 export const AUTO_KEY = 'god-preditor-autobet-receipts-v1';
 export const ACCEPT_WAIT_MS = 15000;
-const TARGETS = [1.5, 2];
+
 
 export async function acquireAutoLock(locks) {
   if (!locks?.request) throw Error('Авто недоступно: Safari не поддерживает блокировку вкладок');
@@ -95,11 +95,13 @@ export function createAutoBet({now = Date.now, monotonic = () => performance.now
     busy = true;
     const ticket = generation;
     try {
-      for (const [index, target] of TARGETS.entries()) {
+      for (const index of [0, 1]) {
         if (!armed || ticket !== generation) break;
-        const window = state.forecasts.find(x => x?.model === MODEL && x.target === target);
+        const window = state.forecasts.find(x => x?.model === MODEL && x.channel === 'primary');
         if (!window || !Number.isFinite(window.start) || !Number.isFinite(window.end) ||
             !(window.acceptedAt < window.start && window.start < window.end) || typeof window.key !== 'string') continue;
+        const target = window.target;
+        if (!Number.isFinite(target) || target < 1) continue;
         const id = `${window.key}:${index}`, seen = mode + ':' + id;
         if (consumed.has(seen)) continue;
         if (window.start < armedAt || window.status !== 'pending') {consumed.add(seen); continue;}
@@ -119,7 +121,7 @@ export function createAutoBet({now = Date.now, monotonic = () => performance.now
         try {await writeReceipts(receipts);}
         catch {disarm('Авто выключено: отметка нажатия не сохранилась'); break;}
         const currentTime = now(), currentState = context(), final = inspect(buttons[index]);
-        const latestWindow = currentState.forecasts.find(x => x.target === target);
+        const latestWindow = currentState.forecasts.find(x => x.channel === 'primary');
         if (!armed || ticket !== generation) break;
         if (!currentState.visible || !currentState.fresh || currentTime > Math.min(window.end, window.start + ACCEPT_WAIT_MS) ||
             monotonic() - savedAt > 2000 || final.state !== 'ready' ||

@@ -1,16 +1,17 @@
+import {generatePrediction} from './modules/supplied-prediction.mjs';
 import {
-  forecastBasic, targetProfile, mean, median, emaNewestFirst,
+  ARCHIVE_PROFILE, mean, median, emaNewestFirst,
   geometricMean, deviation, medianDeviation, eventIntervals, temporalBins,
 } from './modules/public-forecast.mjs';
 import {bestInWindow, resolveWindow} from './modules/signal-validation.mjs';
 
-export const TARGETS = Object.freeze([1.5, 2]);
-export const MODEL = 'archive-small-windows-v2';
+export const TARGETS = Object.freeze(['primary', 'big']);
+export const MODEL = 'supplied-dynamic-windows-v3';
 export const RESULT_GRACE_MS = 180000;
 const MINUTE = 60000;
 
 // Provider timestamps, stable ties, unique IDs and no future input. Coefficients
-// above 2 remain observations; only the forecast targets are restricted.
+// above 2 remain observations; all original forecast thresholds remain unchanged.
 export function normalize(rounds, now = Date.now()) {
   const ids = new Set();
   return [...rounds].filter(r => r && Number.isFinite(r.coefficient) && r.coefficient >= 1 &&
@@ -45,7 +46,7 @@ export function analyze(rounds, now = Date.now()) {
     ema50: emaNewestFirst(recent, .12), median50: median(recent),
     mad50: medianDeviation(recent), deviation50: deviation(recent),
     geometricMean: geometricMean(values),
-    targets: TARGETS.map(target => {
+    targets: [2, 5, 10, 20, 50, 100].map(target => {
       const intervals = eventIntervals(rows, target);
       return {
         target, count: intervals.count,
@@ -53,7 +54,7 @@ export function analyze(rounds, now = Date.now()) {
         range: wilson(intervals.count, rows.length),
         recentRate: values.length ? values.slice(0, 100).filter(v => v >= target).length / Math.min(100, values.length) : 0,
         medianGapMs: intervals.medGap, lastHitAt: intervals.last,
-        intervals, profile: targetProfile(target),
+        intervals, profile: ARCHIVE_PROFILE,
       };
     }),
   };
@@ -83,59 +84,36 @@ function ruleOf(pattern) {
   return 'multi-signal';
 }
 
-export function forecastForTarget(rounds, target, previous = null, now = Date.now()) {
-  const profile = targetProfile(target), rows = normalize(rounds, now);
+export function forecastForTarget(rounds, channel = 'primary', previous = null, now = Date.now()) {
+  if (!TARGETS.includes(channel)) return null;
+  const rows = normalize(rounds, now);
   if (rows.length < 20 || now - rows[0].timestamp > RESULT_GRACE_MS) return null;
-  if (previous?.model === MODEL && previous.target === target && validWindow(previous) &&
+  if (previous?.model === MODEL && previous.channel === channel && validWindow(previous) &&
       now < Math.max(previous.end, previous.generatedAt + MINUTE)) return previous;
-  const raw = forecastBasic(rows, null, now, profile);
+  const raw = generatePrediction(rows, null, now);
   if (!raw) return null;
-  const values = rows.map(r => r.coefficient), cycle = eventIntervals(rows, target);
-  const hours = temporalBins(rows, r => new Date(r.timestamp).getUTCHours(), profile);
-  const minutes = temporalBins(rows, r => new Date(r.timestamp).getUTCMinutes(), profile);
-  const utc = new Date(now), rule = ruleOf(raw.pattern);
-  const opportunity = raw.bigOpportunity ? {
-    target, estimatedCoef: target, start: raw.bigOpportunity.expectedAt,
-    end: raw.bigOpportunity.expectedAt + raw.bigOpportunity.windowMs,
-    windowMs: raw.bigOpportunity.windowMs, score: raw.bigOpportunity.confidence,
-    rule: raw.bigOpportunity.reason.startsWith('Cycle') ? 'cycle' :
-      raw.bigOpportunity.reason.startsWith('Cluster') ? 'cluster' : 'poisson-delay',
-    // This is the archive's heuristic delay score, not a calibrated probability.
-  } : null;
-  // The archived UI has a separate "big opportunity" card. The minimal UI
-  // has one slot per selected target: retain both calculations and freeze the
-  // higher heuristic score, with no conversion of that score to probability.
-  const useOpportunity = opportunity && opportunity.score > raw.reliability;
-  const chosenRule = useOpportunity ? `opportunity-${opportunity.rule}` : rule;
+  const big = raw.bigOpportunity;
+  if (channel === 'big' && !big) return null;
+  const target = channel === 'big' ? big.estimatedCoef : raw.estimatedCoef;
+  const start = channel === 'big' ? big.expectedAt : raw.estimatedAt;
+  const windowMs = channel === 'big' ? big.windowMs : raw.windowMs;
+  const pattern = channel === 'big' ? big.reason : raw.pattern;
+  const rule = channel === 'big' ? 'big-opportunity' : ruleOf(pattern);
   return {
-    model: MODEL, target, estimatedCoef: target, generatedAt: now,
-    start: useOpportunity ? opportunity.start : raw.estimatedAt,
-    end: useOpportunity ? opportunity.end : raw.estimatedAt + raw.windowMs,
-    estimatedAt: useOpportunity ? opportunity.start : raw.estimatedAt,
-    windowMs: useOpportunity ? opportunity.windowMs : raw.windowMs,
-    score: useOpportunity ? opportunity.score : raw.reliability,
-    scoreKind: 'heuristic', rule: chosenRule, pattern: RULES[chosenRule],
-    basis: `Цель ${target.toFixed(2)}× · цикл ${(cycle.medGap / 1000).toFixed(1)} с · MAD интервала ${(cycle.madGap / 1000).toFixed(1)} с`,
-    opportunity,
-    diagnostics: {
-      profile, sampleSize: rows.length, dataCutoff: rows[0].timestamp, cycle,
-      basicWindow: {rule, start: raw.estimatedAt, end: raw.estimatedAt + raw.windowMs, score: raw.reliability},
-      ema20: emaNewestFirst(values.slice(0, 20), .25),
-      ema50: emaNewestFirst(values.slice(0, 50), .12),
-      geometricMean: geometricMean(values), median: median(values),
-      deviation50: deviation(values.slice(0, 50)), mad50: medianDeviation(values.slice(0, 50)),
-      lowRate60: values.slice(0, 60).filter(v => v < target).length / Math.min(60, values.length),
-      lowStreak15: values.slice(0, 15).every(v => v < target),
-      clusterCount30: values.slice(0, 30).filter(v => v >= profile.cluster).length,
-      middleCount60: values.slice(0, 60).filter(v => v >= profile.midMin && v < profile.midMax).length,
-      utcHour: utc.getUTCHours(), utcMinuteAhead: (utc.getUTCMinutes() + 2) % 60,
-      hourBins: [...hours.entries()], minuteBins: [...minutes.entries()],
-    },
+    model: MODEL, channel, target, estimatedCoef: target, generatedAt: raw.generatedAt,
+    start, end: start + windowMs, estimatedAt: start, windowMs,
+    score: channel === 'big' ? big.confidence : raw.reliability,
+    confidence: channel === 'big' ? null : raw.confidence,
+    scoreKind: 'heuristic', rule, pattern: RULES[rule] || pattern,
+    basis: channel === 'big' ? big.reason : raw.basis,
+    opportunity: big, raw,
+    diagnostics: {profile: ARCHIVE_PROFILE, sampleSize: rows.length,
+      dataCutoff: rows[0].timestamp, cycle: eventIntervals(rows, 10)},
   };
 }
 
 function validWindow(x) {
-  return x && x.model === MODEL && TARGETS.includes(x.target) &&
+  return x && x.model === MODEL && TARGETS.includes(x.channel) && Number.isFinite(x.target) && x.target >= 1 &&
     [x.generatedAt, x.start, x.end].every(Number.isFinite) && x.generatedAt > 0 &&
     x.start > x.generatedAt && x.end > x.start && x.end - x.start <= 12 * MINUTE;
 }
@@ -165,17 +143,17 @@ export function advanceJournal(journal, rounds, stats, now = Date.now(), enabled
     }
     return entry;
   });
-  if (enabled && stats.ready) for (const target of TARGETS) {
-    const latest = [...next].reverse().find(x => x.target === target);
+  if (enabled && stats.ready) for (const channel of TARGETS) {
+    const latest = [...next].reverse().find(x => x.channel === channel);
     // An early success keeps its original window occupied. No overlapping or
     // retroactively generated windows and no post-hoc updates of their score.
-    if (next.some(x => x.target === target && x.status === 'pending') ||
+    if (next.some(x => x.channel === channel && x.status === 'pending') ||
         (latest && now < Math.max(latest.end, latest.generatedAt + MINUTE))) continue;
-    const forecast = forecastForTarget(rows, target, null, now);
+    const forecast = forecastForTarget(rows, channel, null, now);
     if (!forecast) continue;
-    next.push({...forecast, key: `${MODEL}:${target}:${now}`, acceptedAt: now,
+    next.push({...forecast, key: `${MODEL}:${channel}:${now}`, acceptedAt: now,
       avgRoundSeconds: stats.avgRoundSeconds || 30, sampleSize: stats.n,
-      historicalFrequency: stats.targets.find(x => x.target === target)?.probability ?? 0,
+      historicalFrequency: rows.filter(x => x.coefficient >= forecast.target).length / rows.length,
       status: 'pending'});
     changed = true;
   }

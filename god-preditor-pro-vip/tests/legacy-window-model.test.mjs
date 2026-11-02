@@ -2,7 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {forecastBasic, targetProfile, forecastOpportunity} from '../modules/public-forecast.mjs';
 import {forecastArchive} from './fixtures/archive-forecast.mjs';
-import {MODEL, analyze, normalize, forecastForTarget, advanceJournal, summary} from '../window-model.mjs';
+import {MODEL, analyze, normalize, forecastForTarget, advanceJournal, summary} from '../legacy-window-model.mjs';
 import {mergeRounds} from '../data.mjs';
 
 const NOW = Date.UTC(2026, 10, 1, 12, 10, 17);

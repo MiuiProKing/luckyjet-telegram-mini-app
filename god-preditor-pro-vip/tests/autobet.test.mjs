@@ -7,7 +7,7 @@ const T = 1900000000000;
 function fixture(options = {}) {
   let time=T,mono=0,stored=options.stored||[],writes=0,releases=0;
   const clicked=[], buttons=[{element:{},state:'ready'},{element:{},state:'ready'}];
-  const context={visible:true,fresh:true,forecasts:[1.5,2].map(target=>({model:MODEL,key:'window-'+target,target,acceptedAt:T-1000,start:T+1000,end:T+30000,status:'pending'}))};
+  const context={visible:true,fresh:true,forecasts:[7.35].map(target=>({model:MODEL,channel:'primary',key:'window-'+target,target,acceptedAt:T-1000,start:T+1000,end:T+30000,status:'pending'}))};
   const controller=createAutoBet({now:()=>time,monotonic:()=>mono,context:()=>context,
     inspect:b=>({state:b?.state||'missing',reason:b?.state||'not selected'}),
     click:b=>{clicked.push(buttons.indexOf(b));if(options.ack!==false)b.state='busy';},
@@ -34,7 +34,7 @@ test('auto starts OFF and dry-run never dispatches a click or writes a financial
 test('live mode reserves durably before exactly one action per field and window',async()=>{
   const f=await prepared();assert.equal(await f.controller.arm('live'),true);f.advance(1000);
   await f.controller.tick();assert.deepEqual(f.clicked,[0,1]);assert.equal(f.stored.length,2);
-  assert.ok(f.stored.every(x=>x.state==='reserved'&&[1.5,2].includes(x.target)));
+  assert.ok(f.stored.every(x=>x.state==='reserved'&&x.target===7.35));
   for(let i=0;i<10;i++){f.advance(250);await f.controller.tick();}
   assert.deepEqual(f.clicked,[0,1]);assert.equal(f.controller.state.armed,true);
   f.controller.disarm();assert.equal(f.releases,1);
