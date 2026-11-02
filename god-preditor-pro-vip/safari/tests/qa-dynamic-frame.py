@@ -37,7 +37,7 @@ with sync_playwright() as p:
    host.locator('.pick-confirm').tap();assert page.evaluate('counts')==[0,0]
   host.locator('#auto-check').tap();assert page.evaluate('counts')==[0,0]
  # A trusted native selection and explicit live toggle are required.
- context,page,host=make();drag_to(page,host.locator('.handle'),155,175);configure(page,host)
+ context,page,host=make();drag_to(page,host.locator('.brand'),155,175);configure(page,host)
  host.locator('#auto-mode').evaluate('(s)=>{s.value="live";s.dispatchEvent(new Event("change",{bubbles:true}))}')
  assert host.locator('#auto-mode').input_value()=='test'
  host.locator('#auto-mode').focus();page.page.keyboard.press('ArrowDown');page.page.keyboard.press('Enter')
