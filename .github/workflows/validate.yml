@@ -13,6 +13,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Verify Safari userscript bundle
+        run: |
+          npm ci --ignore-scripts --prefix god-preditor-pro-vip/safari
+          npm run check --prefix god-preditor-pro-vip/safari
+          node --check god-preditor-pro-vip/safari/god-preditor.user.js
       - name: Check JavaScript syntax
         run: |
           set -e
