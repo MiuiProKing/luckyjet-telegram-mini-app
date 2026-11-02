@@ -1,16 +1,18 @@
+import {sourceReady} from './freshness.mjs';
+import {loadPanelState} from './storage.mjs';
 import {activate} from './activation.mjs';
 import {installFrameSupport, GAME_ORIGIN} from './frame-support.mjs';
 import {SUPABASE_CONFIG} from '../../supabase-config.mjs';
 import {createSupabaseFeed} from '../../supabase-feed.mjs';
 import {mergeRounds} from '../../data.mjs';
-import {MODEL, analyze, advanceJournal} from '../../window-model.mjs';
+import {MODEL, analyze, advanceJournal} from './window-model-v2.mjs';
 import {mountScene} from '../../scene.mjs';
 import {createExtensionFetch, permittedPage} from './transport.mjs';
 import {CSS} from './style.mjs';
 import {AUTO_KEY, createAutoBet, acquireAutoLock} from './autobet.mjs';
 import {pickButton, inspectBetButton, clickSelectedBet} from './betting-dom.mjs';
 
-const ID = 'god-preditor-safari-overlay', KEY = 'god-preditor-safari-v1';
+const ID = 'god-preditor-safari-overlay', KEY = 'god-preditor-safari-v4', LEGACY_KEY = 'god-preditor-safari-v1';
 const HOME = 'https://miuiproking.github.io/luckyjet-telegram-mini-app/god-preditor-pro-vip/';
 const ASSETS = HOME + 'assets/';
 const number = n => Number(n).toLocaleString('ru-RU', {maximumFractionDigits: 2});
@@ -21,14 +23,14 @@ async function start(gm) {
   // Exact casino/game hosts; each frame accesses only its own document.
   if ((window !== window.top && location.origin !== GAME_ORIGIN) || !permittedPage(location) || document.getElementById(ID)) return;
   const host = document.createElement('div'); host.id = ID;
-  host.dataset.version = '1.3.0'; host.dataset.model = MODEL;
+  host.dataset.version = '1.4.0'; host.dataset.model = MODEL;
   for (const [k, v] of Object.entries({position: 'fixed', inset: '0 auto auto 0', width: '0', height: '0',
     'z-index': '2147483647', 'pointer-events': 'none', transform: 'none'})) host.style.setProperty(k, v, 'important');
   const root = host.attachShadow({mode: 'open'});
   root.innerHTML = `<style>${CSS}</style>
     <section class="panel" aria-label="GOD PREDITOR PRO VIP">
       <header class="handle" title="Перетащи панель за эту строку">
-        <div class="brand"><strong id="brand-text">GOD PREDITOR</strong><img id="brand-image" alt="GOD PREDITOR" hidden referrerpolicy="no-referrer"><small>PRO · VIP · SAFARI</small></div>
+        <div class="brand"><strong id="brand-text">GOD PREDITOR</strong><img id="brand-image" alt="GOD PREDITOR" hidden referrerpolicy="no-referrer"><small>PRO · VIP · 1.4</small></div>
         <div class="window-controls" role="group" aria-label="Управление окном">
           <button class="icon" id="size-up" aria-label="Увеличить окно" title="Увеличить окно">+</button>
           <button class="icon" id="size-down" aria-label="Уменьшить окно" title="Уменьшить окно">−</button>
@@ -66,7 +68,7 @@ async function start(gm) {
   document.documentElement.append(host);
   const $ = selector => root.querySelector(selector);
   const panel = $('.panel'), launcher = $('.launcher');
-  let rows = [], journal = [], selected = 'primary', feed = null, status = 'connecting', lastSuccessAt = null;
+  let rows = [], journal = [], legacyJournal = [], selected = 'primary', feed = null, status = 'connecting', lastSuccessAt = null;
   let destroyed = false, saveTimer = null, storageWarning = false, historyVersion = '', latestResult = '';
   let latestStats = analyze([]), cancelPicker = null, requestedAutoMode = 'test';
   const ui = {x: 10, y: 115, width: 238, height: 390, opacity: .97, collapsed: false};
@@ -76,8 +78,9 @@ async function start(gm) {
   const selectedButtons = [null, null];
   const frameSupport = installFrameSupport(window, () => {if (window === window.top && !destroyed) closeOverlay();}, () => selectedButtons.filter(Boolean).map(b => {const r = b.element.getBoundingClientRect(); return {x:r.left+r.width/2, y:r.top+r.height/2};}));
   const auto = createAutoBet({
+    model: MODEL,
     context: () => ({visible: !document.hidden && !destroyed,
-      fresh: frameSupport.ready() && status === 'connected' && latestStats.ready && Date.now() - lastSuccessAt <= 12000 && Date.now() - latestStats.lastAt <= 180000,
+      fresh: frameSupport.ready() && sourceReady(status, latestStats, lastSuccessAt),
       forecasts: [current('primary')].filter(Boolean)}),
     inspect: inspectBetButton, click: clickSelectedBet,
     acquireLock: () => acquireAutoLock(navigator.locks),
@@ -143,7 +146,7 @@ async function start(gm) {
     if (destroyed) return;
     clearTimeout(saveTimer);
     saveTimer = setTimeout(async () => {
-      try {await gm.setValue(KEY, {model: MODEL, rows: rows.slice(0, 2000), journal: journal.slice(-100), selected, ui: {...ui}});}
+      try {await gm.setValue(KEY, {model: MODEL, rows: rows.slice(0, 2000), journal: journal.slice(-100), legacyJournal: legacyJournal.slice(-200), selected, ui: {...ui}});}
       catch {storageWarning = true;}
     }, 500);
   }
@@ -196,7 +199,7 @@ async function start(gm) {
     const version = rows.length + ':' + rows[0]?.id;
     if (version === historyVersion) return;
     historyVersion = version;
-    $('#history-count').textContent = `${rows.length} в рабочей истории · последние 100 · время по Киеву`;
+    $('#history-count').textContent = `${rows.length} в рабочей истории · последние 100 · время по Киеву${legacyJournal.length ? " · прежних проверок: " + legacyJournal.length : ""}`;
     const fragment = document.createDocumentFragment();
     for (const row of rows.slice(0, 100)) {
       const line = document.createElement('div'); line.className = 'row';
@@ -211,8 +214,8 @@ async function start(gm) {
     const now = Date.now(), stats = analyze(rows, now);
     latestStats = stats;
     const result = advanceJournal(journal, rows, stats, now, true, {online: status === 'connected', lastSuccessAt});
-    journal = result.journal; if (result.changed) saveSoon();
-    const forecast = current(selected), occupied = forecast && now <= forecast.end;
+    journal = result.journal; host.dataset.ready = String(stats.ready); host.dataset.continuityCount = String(stats.continuityCount); if (result.changed) saveSoon();
+    const forecast = current(selected), occupied = stats.ready && forecast && now <= forecast.end;
     $('#status').className = 'status' + (status === 'error' ? ' error' : !stats.fresh && rows.length ? ' warn' : '');
     $('#status').textContent = status === 'error' ? (host.dataset.error || 'Ошибка связи · открой «Настроить»') :
       status === 'connected' ? (stats.fresh ? `● Supabase · ${rows.length} · Киев` : '● Связь есть · история устарела') :
@@ -228,10 +231,10 @@ async function start(gm) {
       }));
     }
     $('#signal').textContent = stats.ready && occupied ? number(forecast.target) + '×' : stats.n && !stats.fresh ? 'Пауза' : '—';
-    $('#window').textContent = forecast && occupied ? `${clock(forecast.start)} — ${clock(forecast.end)}\nОкно · Киев` :
+    $('#window').textContent = !stats.ready ? 'Пауза · нужно 20 свежих\nпоследовательных раундов' : forecast && occupied ? `${clock(forecast.start)} — ${clock(forecast.end)}\nОкно · Киев` :
       forecast?.status === 'pending' ? 'Проверяем покрытие окна' : selected === 'big' && stats.ready ? 'Дополнительного окна сейчас нет' : 'Нужно 20 раундов\nи свежий поток';
     $('#note').textContent = forecast && occupied ?
-      `${now < forecast.start ? 'До окна ' + duration(forecast.start - now) : 'До конца ' + duration(forecast.end - now)} · ${forecast.pattern} · ${forecast.score}/100` : 'Балл правила не равен вероятности выигрыша';
+      `${now < forecast.start ? 'До окна ' + duration(forecast.start - now) : 'До конца ' + duration(forecast.end - now)} · ${forecast.pattern} · балл ${forecast.heuristicScore}/100 · эксперимент` : 'Балл правила не равен вероятности выигрыша';
     launcher.querySelector('span').textContent = stats.ready && occupied ? number(forecast.target) + '×' : '…';
     for (const button of root.querySelectorAll('[data-target]')) button.classList.toggle('active', button.dataset.target === selected);
     const completed = [...journal].reverse().find(x => x.channel === selected && ['hit', 'miss', 'unknown'].includes(x.status));
@@ -305,10 +308,11 @@ async function start(gm) {
   }
   layout(); render();
   try {
-    const saved = await gm.getValue(KEY, null);
+    const saved = await loadPanelState(gm, MODEL, {key: KEY, legacyKey: LEGACY_KEY});
     if (saved && !destroyed) {
       rows = mergeRounds([], Array.isArray(saved.rows) ? saved.rows : [], 'Supabase · LuckyJet').rounds;
       journal = saved.model === MODEL && Array.isArray(saved.journal) ? saved.journal.slice(-100) : [];
+      legacyJournal = saved.legacyJournal;
       selected = saved.selected === 'big' ? 'big' : 'primary';
       if (saved.ui && typeof saved.ui === 'object') {
         for (const key of ['x', 'y', 'width', 'height', 'opacity']) if (Number.isFinite(saved.ui[key])) ui[key] = saved.ui[key];

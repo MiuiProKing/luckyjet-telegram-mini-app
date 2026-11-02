@@ -18,7 +18,7 @@ export async function acquireAutoLock(locks) {
 // This controller contains no casino selectors or network calls. The adapter
 // can act only on the two button objects explicitly selected in this session.
 export function createAutoBet({now = Date.now, monotonic = () => performance.now(),
-  context, inspect, click, acquireLock, readReceipts, writeReceipts, onChange = () => {}}) {
+  context, inspect, click, acquireLock, readReceipts, writeReceipts, onChange = () => {}, model = MODEL}) {
   let armed = false, mode = 'test', generation = 0, busy = false, lock = null;
   let initialized = false, storageOK = false, armedAt = 0, previousNow = 0, previousMono = 0;
   let receipts = [], message = 'Авто выключено', logs = [];
@@ -97,7 +97,7 @@ export function createAutoBet({now = Date.now, monotonic = () => performance.now
     try {
       for (const index of [0, 1]) {
         if (!armed || ticket !== generation) break;
-        const window = state.forecasts.find(x => x?.model === MODEL && x.channel === 'primary');
+        const window = state.forecasts.find(x => x?.model === model && x.channel === 'primary');
         if (!window || !Number.isFinite(window.start) || !Number.isFinite(window.end) ||
             !(window.acceptedAt < window.start && window.start < window.end) || typeof window.key !== 'string') continue;
         const target = window.target;
@@ -121,7 +121,7 @@ export function createAutoBet({now = Date.now, monotonic = () => performance.now
         try {await writeReceipts(receipts);}
         catch {disarm('Авто выключено: отметка нажатия не сохранилась'); break;}
         const currentTime = now(), currentState = context(), final = inspect(buttons[index]);
-        const latestWindow = currentState.forecasts.find(x => x.channel === 'primary');
+        const latestWindow = currentState.forecasts.find(x => x.model === model && x.channel === 'primary');
         if (!armed || ticket !== generation) break;
         if (!currentState.visible || !currentState.fresh || currentTime > Math.min(window.end, window.start + ACCEPT_WAIT_MS) ||
             monotonic() - savedAt > 2000 || final.state !== 'ready' ||
