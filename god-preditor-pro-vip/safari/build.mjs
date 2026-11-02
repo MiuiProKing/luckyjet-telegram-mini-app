@@ -7,8 +7,8 @@ const directory = path.dirname(fileURLToPath(import.meta.url));
 const header = `// ==UserScript==
 // @name         GOD PREDITOR PRO VIP — LuckyJet Safari
 // @namespace    https://miuiproking.github.io/luckyjet-telegram-mini-app/god-preditor-pro-vip/
-// @version      1.0.0
-// @description  Перемещаемая панель 1,50× / 2× с нашим Supabase. Только отображение; ставки вручную в игре.
+// @version      1.1.0
+// @description  Панель 1,50× / 2×. Автонажатия выключены до явного включения и выбора двух кнопок.
 // @match        https://one-vv3016.com/*
 // @match        https://miuiproking.github.io/luckyjet-telegram-mini-app/god-preditor-pro-vip/safari/preview.html
 // @noframes
@@ -22,7 +22,8 @@ const header = `// ==UserScript==
 
 // Generated from the same source model, feed and scene as the main page.
 // Build: npm ci && npm run build (inside god-preditor-pro-vip/safari).
-// No remote JavaScript, credential reads, game inspection or betting actions.
+// No remote JavaScript or credential reads. Live mode may click ONLY the two
+// user-selected bet buttons; default is OFF, test mode never clicks them.
 `;
 const result = await build({
   absWorkingDir: directory,
@@ -31,11 +32,11 @@ const result = await build({
   write: false, charset: 'utf8', legalComments: 'none', minify: false,
 });
 const contents = header + result.outputFiles[0].text;
-const output = path.join(directory, 'god-preditor.user.js');
+const outputs = ['god-preditor.user.js', 'god-preditor-1.1.user.js'].map(name => path.join(directory, name));
 if (process.argv.includes('--check')) {
-  if (await readFile(output, 'utf8') !== contents) throw Error('Userscript bundle differs from source; run npm run build');
+  for (const output of outputs) if (await readFile(output, 'utf8') !== contents) throw Error('Userscript bundle differs from source; run npm run build');
   console.log('Userscript bundle matches source');
 } else {
-  await writeFile(output, contents);
+  for (const output of outputs) await writeFile(output, contents);
   console.log(`Built god-preditor.user.js (${Buffer.byteLength(contents)} bytes)`);
 }

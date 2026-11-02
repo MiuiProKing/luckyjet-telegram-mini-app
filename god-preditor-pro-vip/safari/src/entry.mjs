@@ -5,6 +5,8 @@ import {MODEL, analyze, advanceJournal} from '../../window-model.mjs';
 import {mountScene} from '../../scene.mjs';
 import {createExtensionFetch, permittedPage} from './transport.mjs';
 import {CSS} from './style.mjs';
+import {AUTO_KEY, createAutoBet, acquireAutoLock} from './autobet.mjs';
+import {pickButton, inspectBetButton, clickSelectedBet} from './betting-dom.mjs';
 
 const ID = 'god-preditor-safari-overlay', KEY = 'god-preditor-safari-v1';
 const HOME = 'https://miuiproking.github.io/luckyjet-telegram-mini-app/god-preditor-pro-vip/';
@@ -17,7 +19,7 @@ async function start(gm) {
   // Exact host allowlist, top frame only; no game frames or other websites.
   if (window !== window.top || !permittedPage(location) || document.getElementById(ID)) return;
   const host = document.createElement('div'); host.id = ID;
-  host.dataset.version = '1.0.0'; host.dataset.model = MODEL;
+  host.dataset.version = '1.1.0'; host.dataset.model = MODEL;
   for (const [k, v] of Object.entries({position: 'fixed', inset: '0 auto auto 0', width: '0', height: '0',
     'z-index': '2147483647', 'pointer-events': 'none', transform: 'none'})) host.style.setProperty(k, v, 'important');
   const root = host.attachShadow({mode: 'open'});
@@ -39,8 +41,20 @@ async function start(gm) {
         <div class="result" id="result" role="status"><img id="result-image" hidden alt="" referrerpolicy="no-referrer"><span id="result-label">Проверка по окну</span></div>
         <div class="tools" id="tools" hidden><button id="retry">Обновить связь</button><button id="opacity">Прозрачность</button><button id="reset">Сбросить размер</button><p class="hint">Перетащи за заголовок. Угол ↘ меняет размер. × скрывает до перезагрузки. Данные — наш Supabase.</p></div>
       </div>
-      <footer class="footer"><button class="link" id="history-open">История</button><button class="link" id="tools-open">Настроить</button><a class="link" href="${HOME}" target="_blank" rel="noopener noreferrer">Страница ↗</a><button class="grip" id="resize" aria-label="Изменить размер панели">↘</button></footer>
+      <footer class="footer"><button class="link" id="history-open">История</button><button class="link" id="auto-open">Авто</button><button class="link" id="tools-open">Настроить</button><a class="link" href="${HOME}" target="_blank" rel="noopener noreferrer">Страница ↗</a><button class="grip" id="resize" aria-label="Изменить размер панели">↘</button></footer>
       <section class="history" hidden><div class="history-head"><b>Полученные коэффициенты</b><button class="icon" id="history-close" aria-label="Закрыть историю">×</button></div><small id="history-count"></small><div class="history-list"></div></section>
+      <section class="auto-panel" hidden><div class="history-head"><b id="auto-title">Авто выключено</b><button class="icon" id="auto-close" aria-label="Закрыть настройки авто">×</button></div>
+        <p>Суммы и автозабирание выставь в игре сам. Скрипт их не меняет.</p>
+        <div class="auto-slot"><button id="pick-0">Выбрать поле 1</button><small id="slot-0">1 → 1,50× · не выбрана</small></div>
+        <div class="auto-slot"><button id="pick-1">Выбрать поле 2</button><small id="slot-1">2 → 2× · не выбрана</small></div>
+        <button id="auto-check">Проверить без нажатий</button>
+        <label>Режим <select id="auto-mode"><option value="test">Тест без ставок</option><option value="live">Автонажатия</option></select></label>
+        <button id="auto-toggle">Включить тест</button>
+        <p id="auto-message" role="status">Авто выключено</p>
+        <p class="hint">Каждое поле: один раз в начале своего окна. Если «Ставка» недоступна 15 секунд — пропуск. Фон, перезагрузка или ошибка выключают режим. Новая привязка нужна после перезагрузки игры.</p>
+        <p class="hint">Результат окна не подтверждает выигрыш твоей ставки. Отправленное нажатие проверяй в самой игре.</p>
+        <p id="auto-diagnostic"></p><div id="auto-log"></div>
+      </section>
     </section>
     <button class="launcher" hidden aria-label="Открыть панель GOD PREDITOR">GP <span>—</span></button>`;
   document.documentElement.append(host);
@@ -48,9 +62,60 @@ async function start(gm) {
   const panel = $('.panel'), launcher = $('.launcher');
   let rows = [], journal = [], selected = 1.5, feed = null, status = 'connecting', lastSuccessAt = null;
   let destroyed = false, saveTimer = null, storageWarning = false, historyVersion = '', latestResult = '';
+  let latestStats = analyze([]), cancelPicker = null, requestedAutoMode = 'test';
   const ui = {x: 10, y: 115, width: 238, height: 390, opacity: .97, collapsed: false};
   const scene = mountScene($('canvas'), {compact: true});
   const current = target => [...journal].reverse().find(x => x.target === target && x.model === MODEL);
+  const auto = createAutoBet({
+    context: () => ({visible: !document.hidden && !destroyed,
+      fresh: status === 'connected' && latestStats.ready && Date.now() - lastSuccessAt <= 12000 && Date.now() - latestStats.lastAt <= 180000,
+      forecasts: [current(1.5), current(2)].filter(Boolean)}),
+    inspect: inspectBetButton, click: clickSelectedBet,
+    acquireLock: () => acquireAutoLock(navigator.locks),
+    readReceipts: () => gm.getValue(AUTO_KEY, []),
+    writeReceipts: receipts => gm.setValue(AUTO_KEY, receipts),
+    onChange: renderAuto,
+  });
+  function renderAuto() {
+    const state = auto.state;
+    $('#auto-title').textContent = state.armed ? (state.mode === 'live' ? 'Автонажатия включены' : 'Тест включён') : 'Авто выключено';
+    $('#auto-message').textContent = state.message;
+    $('#auto-toggle').textContent = state.armed ? 'Выключить' : requestedAutoMode === 'live' ? 'Включить автонажатия' : 'Включить тест';
+    $('#auto-toggle').classList.toggle('armed', state.armed);
+    $('#auto-open').textContent = state.armed ? state.mode === 'live' ? 'Авто ON' : 'Тест ON' : 'Авто';
+    launcher.dataset.auto = state.armed ? state.mode : 'off';
+    const checks = auto.checks();
+    checks.forEach((checked, i) => {$('#slot-' + i).textContent = `${i + 1} → ${i === 0 ? '1,50' : '2'}× · ${checked.state === 'ready' ? 'готова' : checked.reason}`;});
+    $('#auto-log').replaceChildren(...state.logs.slice(-5).map(entry => {
+      const line = document.createElement('div'); line.textContent = clock(entry.at) + ' · ' + entry.text; return line;
+    }));
+  }
+  $('#auto-open').onclick = () => {$('.auto-panel').hidden = false; renderAuto();};
+  $('#auto-close').onclick = () => {$('.auto-panel').hidden = true;};
+  $('#auto-check').onclick = () => {auto.checkOnly();};
+  $('#auto-mode').onchange = event => {
+    if (!event.isTrusted) {event.target.value = requestedAutoMode; return;}
+    requestedAutoMode = event.target.value === 'live' ? 'live' : 'test';
+    auto.disarm('Режим изменён — запуск выключен');
+  };
+  $('#auto-toggle').onclick = event => {
+    if (auto.state.armed) {auto.disarm(); return;}
+    if (!event.isTrusted) return;
+    void auto.arm(requestedAutoMode);
+  };
+  for (const index of [0, 1]) $('#pick-' + index).onclick = event => {
+    if (!event.isTrusted) return;
+    auto.disarm('Выбор кнопки — авто выключено');
+    panel.hidden = true; launcher.hidden = true;
+    cancelPicker = pickButton(root, index, selection => {
+      cancelPicker = null; layout(); $('.auto-panel').hidden = false;
+      if (selection.element) {
+        try {auto.setButton(index, selection); $('#auto-diagnostic').textContent = '';}
+        catch (error) {$('#auto-diagnostic').textContent = error.message;}
+      } else $('#auto-diagnostic').textContent = selection.error || 'Выбор отменён';
+      renderAuto();
+    });
+  };
 
   const viewport = () => ({left: visualViewport?.offsetLeft || 0, top: visualViewport?.offsetTop || 0,
     width: visualViewport?.width || innerWidth, height: visualViewport?.height || innerHeight});
@@ -127,6 +192,7 @@ async function start(gm) {
   function render() {
     if (destroyed) return;
     const now = Date.now(), stats = analyze(rows, now);
+    latestStats = stats;
     const result = advanceJournal(journal, rows, stats, now, true, {online: status === 'connected', lastSuccessAt});
     journal = result.journal; if (result.changed) saveSoon();
     const forecast = current(selected), occupied = forecast && now <= forecast.end;
@@ -158,9 +224,10 @@ async function start(gm) {
       $('#result-image').hidden = !completed || completed.status === 'unknown';
       if (completed && completed.status !== 'unknown') $('#result-image').src = ASSETS + `result-${completed.status}.webp`;
     }
-    $('#result-label').textContent = completed ? (completed.status === 'hit' ? 'ЗАШЛО' : completed.status === 'miss' ? 'НЕ ЗАШЛО' : 'НЕТ ДАННЫХ') +
+    $('#result-label').textContent = completed ? (completed.status === 'hit' ? 'ЦЕЛЬ В ОКНЕ' : completed.status === 'miss' ? 'НИЖЕ ЦЕЛИ В ОКНЕ' : 'НЕТ ДАННЫХ') +
       (completed.actual != null ? ' · макс. окна ' + number(completed.actual) + '×' : '') : 'Проверка: достижение цели в окне';
     if (!$('.history').hidden) renderHistory();
+    if (!$('.auto-panel').hidden) renderAuto();
   }
   const fetchImpl = createExtensionFetch(gm, SUPABASE_CONFIG);
   function startFeed() {
@@ -178,6 +245,7 @@ async function start(gm) {
       onStatus(s) {
         if (destroyed) return;
         status = s.state; if (s.lastSuccess) lastSuccessAt = s.lastSuccess;
+        if (s.state === 'error') auto.disarm('Ошибка связи — авто выключено');
         if (s.message) host.dataset.error = s.message;
         render();
       },
@@ -186,10 +254,10 @@ async function start(gm) {
   }
   $('#retry').onclick = startFeed;
   const onVisibility = () => {
-    if (document.hidden) {feed?.stop(); feed = null; status = 'paused'; scene.setPaused(true);}
+    if (document.hidden) {auto.disarm('Safari ушёл в фон — авто выключено'); cancelPicker?.(); feed?.stop(); feed = null; status = 'paused'; scene.setPaused(true);}
     else {layout(); startFeed();}
   };
-  const onPageHide = () => {feed?.stop(); feed = null; scene.setPaused(true);};
+  const onPageHide = () => {auto.disarm('Страница закрыта — авто выключено'); cancelPicker?.(); feed?.stop(); feed = null; scene.setPaused(true);};
   const onPageShow = event => {if (event.persisted && !document.hidden) {layout(); startFeed();}};
   const onResize = () => layout();
   document.addEventListener('visibilitychange', onVisibility);
@@ -198,8 +266,10 @@ async function start(gm) {
   const observer = new MutationObserver(() => {if (!destroyed && !document.documentElement.contains(host)) document.documentElement.append(host);});
   observer.observe(document.documentElement, {childList: true});
   const tick = setInterval(() => {if (!document.hidden) render();}, 1000);
+  const autoTick = setInterval(() => {void auto.tick().catch(() => auto.disarm('Ошибка авто — режим выключен'));}, 250);
   $('#close').onclick = () => {
-    destroyed = true; clearInterval(tick); clearTimeout(saveTimer); feed?.stop(); scene.destroy(); observer.disconnect();
+    auto.disarm('Панель закрыта — авто выключено'); cancelPicker?.();
+    destroyed = true; clearInterval(tick); clearInterval(autoTick); clearTimeout(saveTimer); feed?.stop(); scene.destroy(); observer.disconnect();
     document.removeEventListener('visibilitychange', onVisibility);
     window.removeEventListener('pagehide', onPageHide); window.removeEventListener('pageshow', onPageShow);
     window.removeEventListener('resize', onResize); visualViewport?.removeEventListener('resize', onResize); visualViewport?.removeEventListener('scroll', onResize);
@@ -227,6 +297,7 @@ async function start(gm) {
       layout(); render();
     }
   } catch {storageWarning = true;}
+  await auto.initialize();
   startFeed();
 }
 
