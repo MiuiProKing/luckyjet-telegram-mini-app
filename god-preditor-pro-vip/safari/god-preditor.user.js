@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         GOD PREDITOR PRO VIP — LuckyJet Safari
 // @namespace    https://miuiproking.github.io/luckyjet-telegram-mini-app/god-preditor-pro-vip/
-// @version      1.0.0
-// @description  Перемещаемая панель 1,50× / 2× с нашим Supabase. Только отображение; ставки вручную в игре.
+// @version      1.1.0
+// @description  Панель 1,50× / 2×. Автонажатия выключены до явного включения и выбора двух кнопок.
 // @match        https://one-vv3016.com/*
 // @match        https://miuiproking.github.io/luckyjet-telegram-mini-app/god-preditor-pro-vip/safari/preview.html
 // @noframes
@@ -16,7 +16,8 @@
 
 // Generated from the same source model, feed and scene as the main page.
 // Build: npm ci && npm run build (inside god-preditor-pro-vip/safari).
-// No remote JavaScript, credential reads, game inspection or betting actions.
+// No remote JavaScript or credential reads. Live mode may click ONLY the two
+// user-selected bet buttons; default is OFF, test mode never clicks them.
 (() => {
   // ../supabase-config.mjs
   var SUPABASE_CONFIG = Object.freeze({
@@ -910,7 +911,389 @@
 :host{all:initial;color-scheme:dark!important}*{box-sizing:border-box}button,a{touch-action:manipulation}button{font:inherit;color:inherit;cursor:pointer}button:focus-visible,a:focus-visible{outline:2px solid #71efd9;outline-offset:2px}[hidden]{display:none!important}
 .panel{position:fixed;display:flex;flex-direction:column;pointer-events:auto;overflow:hidden;min-width:190px;min-height:220px;border:1px solid #a77beb70;border-radius:18px;background:#090716f2;color:#eae4fa;box-shadow:0 10px 40px #0008;backdrop-filter:blur(15px);-webkit-backdrop-filter:blur(15px);font:11px/1.4 -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;isolation:isolate;text-align:left}
 .handle{display:flex;align-items:center;gap:4px;min-height:39px;padding:6px 7px 6px 10px;background:#171125;touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab}.handle:active{cursor:grabbing}.brand{flex:1;min-width:0}.brand strong{font-size:11px;font-weight:900;letter-spacing:.5px;color:#d9a4ff}.brand img{display:block;width:145px;max-width:100%;height:auto}.brand small{display:block;font-size:7px;color:#ab93bd;letter-spacing:1px}.icon{display:grid;place-items:center;flex:0 0 25px;width:25px;height:25px;padding:0;border:1px solid #bc90eb35;border-radius:8px;background:#ffffff08;font-size:16px}.body{min-height:0;overflow:auto;overscroll-behavior:contain;scrollbar-width:thin;flex:1;display:flex;flex-direction:column;padding:7px 10px 10px;gap:6px}.status{font-size:8px;color:#90ddbd;min-height:12px;overflow-wrap:anywhere}.status.error{color:#ff9fa8}.status.warn{color:#d1baa1}.recent{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:3px}.chip{padding:4px 0;text-align:center;border-radius:7px;background:#ffffff05;border:1px solid #ffffff0e;overflow:hidden}.chip b{font:700 10px ui-monospace,monospace;color:#d7a4ff;white-space:nowrap}.chip.low b{color:#80d5ff}.chip time{display:block;font:6px ui-monospace,monospace;color:#9b89a8;margin-top:3px}.neural{position:relative;min-height:65px;flex:1 0 95px;max-height:190px;border-radius:10px;overflow:hidden;background:radial-gradient(ellipse,#12372e44,transparent 70%)}canvas{display:block;width:100%;height:100%;position:absolute;inset:0;pointer-events:none}.vip{position:absolute;right:3px;top:1px;width:31px;max-height:18px;object-fit:contain}.signal{text-align:center;font:900 30px/1.1 ui-monospace,monospace;color:#f0d0ff;letter-spacing:-1px;overflow-wrap:anywhere}.window{text-align:center;font:9px/1.4 ui-monospace,monospace;white-space:pre-line;color:#e8dcf7;min-height:26px}.note{text-align:center;font-size:8px;line-height:1.5;color:#ac99bf;min-height:12px;overflow-wrap:anywhere}.targets{display:flex;justify-content:center;gap:8px}.targets button{padding:5px 12px;min-height:27px;border:1px solid #b979eb38;border-radius:7px;background:#140d22;color:#c5a5d9;font-size:10px}.targets button.active{background:#53306e66;border-color:#d4a4ee;color:#fff}.result{min-height:22px;display:flex;align-items:center;justify-content:center;gap:6px;font-size:9px;text-align:center;color:#b8a9c6}.result.hit{color:#a2e8ac}.result.miss{color:#ff9ca8}.result img{width:26px;height:26px;object-fit:contain}.result strong{font-size:19px}.footer{display:flex;justify-content:space-between;align-items:center;padding:0 10px 7px;gap:4px}.link{color:#bc9ed6;font-size:8px;background:transparent;border:0;padding:4px;text-decoration:none}.grip{width:27px;height:27px;border:0;background:transparent;color:#baa2c8;font-size:18px;touch-action:none;cursor:nwse-resize;flex:0 0 27px}.tools{border-top:1px solid #ffffff14;padding-top:6px;display:flex;gap:5px;flex-wrap:wrap;font-size:9px}.tools button{border:1px solid #bf8be535;border-radius:6px;background:#ffffff07;padding:5px 8px;min-height:27px}.hint{font-size:8px;color:#aa9cb4;margin:0}.history{position:absolute;inset:39px 0 0;background:#0d091bf5;z-index:3;display:flex;flex-direction:column;padding:10px}.history-head{display:flex;align-items:center;justify-content:space-between;gap:6px}.history-head b{font-size:11px}.history small{font-size:8px;color:#ac9cbb;margin:5px 0}.history-list{overflow:auto;flex:1;margin-top:5px;overscroll-behavior:contain}.row{display:flex;justify-content:space-between;gap:5px;padding:7px 2px;border-bottom:1px solid #ffffff10;font:10px ui-monospace,monospace}.row time{font-size:8px;color:#9b8aaa}.launcher{position:fixed;display:flex;align-items:center;gap:5px;pointer-events:auto;min-width:55px;min-height:41px;border:1px solid #aa78d8b0;border-radius:14px;background:#120b20eb;box-shadow:0 5px 20px #0008;color:#f2d0ff;font:900 12px -apple-system,sans-serif;touch-action:none;user-select:none;-webkit-user-select:none;padding:8px}.launcher span{font:700 10px ui-monospace,monospace;color:#8af3ce}
+
+.auto-panel{position:absolute;inset:39px 0 0;background:#10091bf8;z-index:4;padding:10px;overflow:auto;overscroll-behavior:contain}.auto-panel p{font-size:9px;line-height:1.5;color:#c1aecb;margin:8px 0}.auto-panel button,.auto-panel select{font:10px -apple-system,sans-serif;color:#eadcf5;background:#372344;border:1px solid #c99fe34d;border-radius:7px;padding:7px 8px;min-height:30px}.auto-panel label{display:block;font-size:10px;margin:10px 0}.auto-panel select{width:100%;margin-top:4px}.auto-slot{margin:9px 0;display:flex;gap:6px;align-items:center}.auto-slot small{font-size:8px;overflow-wrap:anywhere}.auto-panel #auto-toggle{display:block;width:100%;background:#24473d;border-color:#68c5a3}.auto-panel #auto-toggle.armed{background:#713636;border-color:#eb8f8f}.auto-panel #auto-message{color:#d8c1f0}.auto-panel #auto-diagnostic{color:#ffd598;overflow-wrap:anywhere;user-select:text;-webkit-user-select:text}#auto-log{font:8px/1.6 ui-monospace,monospace;color:#aa96b6}#auto-log>div{border-top:1px solid #ffffff14;padding:5px 0}.launcher[data-auto=live]:after{content:'А';background:#d87660;color:#200a08;border-radius:4px;font-size:8px;padding:2px}.launcher[data-auto=test]:after{content:'Т';color:#e5ca83;font-size:8px}.picker{position:fixed;inset:0;pointer-events:none;z-index:20;font:12px/1.45 -apple-system,sans-serif;color:#f2e6ff}.pick-bar{position:fixed;left:8px;right:8px;top:calc(8px + env(safe-area-inset-top,0px));pointer-events:auto;padding:12px;background:#150c25f5;border:1px solid #d5b2ed88;border-radius:13px;box-shadow:0 5px 30px #0008}.pick-bar p{font-size:11px;margin:5px 0;color:#bba6cd}.pick-info{font-size:10px;color:#ffe0a4;overflow-wrap:anywhere;margin:7px 0}.pick-bar button{font:12px -apple-system,sans-serif;color:#f1e1ff;background:#694081;border:1px solid #e5bff266;border-radius:8px;padding:9px 12px;margin-right:8px}.pick-bar button:disabled{opacity:.4}.pick-cursor{position:fixed;width:50px;height:50px;border:2px solid #9ef8d5;border-radius:50%;display:grid;place-items:center;background:#153a2ca0;color:#b5ffe2;font:32px/1 sans-serif;pointer-events:auto;touch-action:none;user-select:none;-webkit-user-select:none;box-shadow:0 0 15px #80ffd74d}
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}`;
+
+  // src/autobet.mjs
+  var AUTO_KEY = "god-preditor-autobet-receipts-v1";
+  var ACCEPT_WAIT_MS = 15e3;
+  var TARGETS2 = [1.5, 2];
+  async function acquireAutoLock(locks) {
+    if (!locks?.request) throw Error("Авто недоступно: Safari не поддерживает блокировку вкладок");
+    return new Promise((resolve, reject) => {
+      locks.request("god-preditor-autobet-session-v1", { mode: "exclusive", ifAvailable: true }, async (lock) => {
+        if (!lock) {
+          resolve(null);
+          return;
+        }
+        let release;
+        const held = new Promise((done) => {
+          release = done;
+        });
+        resolve({ release });
+        await held;
+      }).catch(reject);
+    });
+  }
+  function createAutoBet({
+    now = Date.now,
+    monotonic = () => performance.now(),
+    context,
+    inspect,
+    click,
+    acquireLock,
+    readReceipts,
+    writeReceipts,
+    onChange = () => {
+    }
+  }) {
+    let armed = false, mode = "test", generation = 0, busy = false, lock = null;
+    let initialized = false, storageOK = false, armedAt = 0, previousNow = 0, previousMono = 0;
+    let receipts = [], message = "Авто выключено", logs = [];
+    const buttons = [null, null], consumed = /* @__PURE__ */ new Set(), acknowledgements = [];
+    const notify = (text) => {
+      if (text && text !== message) {
+        message = text;
+        logs.push({ at: now(), text });
+        logs = logs.slice(-15);
+      }
+      onChange();
+    };
+    function disarm(reason = "Авто выключено") {
+      generation++;
+      armed = false;
+      lock?.release();
+      lock = null;
+      acknowledgements.length = 0;
+      notify(reason);
+    }
+    async function initialize() {
+      try {
+        const saved = await readReceipts();
+        receipts = Array.isArray(saved) ? saved.filter((x) => x && typeof x.id === "string" && x.id.length < 500).slice(-200) : [];
+        for (const entry of receipts) consumed.add("live:" + entry.id);
+        storageOK = true;
+      } catch {
+        notify("Хранилище недоступно: только тест без нажатий");
+      }
+      initialized = true;
+      onChange();
+    }
+    function setButton(index, button) {
+      disarm("Привязка изменена — авто выключено");
+      if (![0, 1].includes(index)) throw Error("Неизвестное поле");
+      if (buttons[1 - index]?.element === button?.element) throw Error("Нужны две разные кнопки");
+      buttons[index] = button;
+      onChange();
+    }
+    function checks() {
+      return buttons.map((button) => button ? inspect(button) : { state: "missing", reason: "Кнопка не выбрана" });
+    }
+    function checkOnly() {
+      const states = checks();
+      notify(states.map((s, i) => `${i + 1}: ${s.state === "ready" ? "готова" : s.reason}`).join(" · ") + " · нажатий нет");
+      return states;
+    }
+    async function arm(nextMode = "test") {
+      disarm();
+      if (!initialized) {
+        notify("Дождись загрузки настроек");
+        return false;
+      }
+      mode = nextMode === "live" ? "live" : "test";
+      const states = checks();
+      if (states.some((s) => !["ready", "waiting"].includes(s.state))) {
+        checkOnly();
+        return false;
+      }
+      if (!context().fresh) {
+        notify("Нет свежей связи с Supabase");
+        return false;
+      }
+      if (mode === "live" && !storageOK) {
+        notify("Без сохранения отметок автонажатия недоступны");
+        return false;
+      }
+      const ticket = generation;
+      if (mode === "live") {
+        try {
+          const obtained = await acquireLock();
+          if (ticket !== generation) {
+            obtained?.release();
+            return false;
+          }
+          if (!obtained) {
+            notify("Авто уже включено в другой вкладке");
+            return false;
+          }
+          lock = obtained;
+        } catch (error) {
+          notify(error.message);
+          return false;
+        }
+      }
+      if (!context().fresh || !context().visible) {
+        disarm("Вкладка или связь не готовы");
+        return false;
+      }
+      armed = true;
+      armedAt = previousNow = now();
+      previousMono = monotonic();
+      notify(mode === "live" ? "Авто включено · по одному нажатию на поле и окно" : "Тест включён · реальные кнопки не нажимаются");
+      return true;
+    }
+    async function tick() {
+      if (!armed || busy) return;
+      const time = now(), mono = monotonic(), state = context();
+      if (!state.visible || !state.fresh) {
+        disarm("Авто выключено: фон или потеря свежей связи");
+        return;
+      }
+      if (time - previousNow > 3500 || Math.abs(time - previousNow - (mono - previousMono)) > 1500) {
+        disarm("Авто выключено: таймер задержался или изменились часы");
+        return;
+      }
+      previousNow = time;
+      previousMono = mono;
+      for (let i = acknowledgements.length - 1; i >= 0; i--) {
+        const ack = acknowledgements[i], checked = inspect(ack.button);
+        if (checked.state === "busy") {
+          notify(`Поле ${ack.index + 1}: кнопка изменилась после нажатия; повторения нет`);
+          acknowledgements.splice(i, 1);
+        } else if (checked.state === "unsafe" || time > ack.until) {
+          disarm(`Поле ${ack.index + 1}: результат нажатия не подтверждён · проверь игру`);
+          return;
+        }
+      }
+      busy = true;
+      const ticket = generation;
+      try {
+        for (const [index, target] of TARGETS2.entries()) {
+          if (!armed || ticket !== generation) break;
+          const window2 = state.forecasts.find((x) => x?.model === MODEL && x.target === target);
+          if (!window2 || !Number.isFinite(window2.start) || !Number.isFinite(window2.end) || !(window2.acceptedAt < window2.start && window2.start < window2.end) || typeof window2.key !== "string") continue;
+          const id = `${window2.key}:${index}`, seen = mode + ":" + id;
+          if (consumed.has(seen)) continue;
+          if (window2.start < armedAt || window2.status !== "pending") {
+            consumed.add(seen);
+            continue;
+          }
+          if (time < window2.start) continue;
+          if (time > Math.min(window2.end, window2.start + ACCEPT_WAIT_MS)) {
+            consumed.add(seen);
+            notify(`Поле ${index + 1}: время приёма пропущено · без нажатия`);
+            continue;
+          }
+          const checked = inspect(buttons[index]);
+          if (checked.state === "waiting") {
+            notify(`Поле ${index + 1}: жду доступную «Ставку», не более 15 секунд`);
+            continue;
+          }
+          if (checked.state !== "ready") {
+            disarm(`Поле ${index + 1}: ${checked.reason}`);
+            break;
+          }
+          consumed.add(seen);
+          if (mode === "test") {
+            notify(`ТЕСТ ${index + 1}: здесь было бы нажатие ${target.toFixed(2)}× · кнопка не нажата`);
+            continue;
+          }
+          receipts.push({ id, target, at: time, state: "reserved" });
+          receipts = receipts.slice(-200);
+          const savedAt = monotonic();
+          try {
+            await writeReceipts(receipts);
+          } catch {
+            disarm("Авто выключено: отметка нажатия не сохранилась");
+            break;
+          }
+          const currentTime = now(), currentState = context(), final = inspect(buttons[index]);
+          const latestWindow = currentState.forecasts.find((x) => x.target === target);
+          if (!armed || ticket !== generation) break;
+          if (!currentState.visible || !currentState.fresh || currentTime > Math.min(window2.end, window2.start + ACCEPT_WAIT_MS) || monotonic() - savedAt > 2e3 || final.state !== "ready" || latestWindow?.key !== window2.key || latestWindow.status !== "pending") {
+            disarm("Авто выключено: условия изменились перед нажатием");
+            break;
+          }
+          try {
+            click(buttons[index]);
+          } catch {
+            disarm(`Поле ${index + 1}: нажатие не выполнено · повторения нет`);
+            break;
+          }
+          acknowledgements.push({ index, button: buttons[index], until: currentTime + 2500 });
+          notify(`Поле ${index + 1}: нажатие отправлено · проверь подтверждение в игре`);
+        }
+      } finally {
+        busy = false;
+      }
+    }
+    return {
+      initialize,
+      setButton,
+      checks,
+      checkOnly,
+      arm,
+      disarm,
+      tick,
+      get state() {
+        return { armed, mode, message, logs: [...logs], configured: buttons.map(Boolean), initialized };
+      }
+    };
+  }
+
+  // src/betting-dom.mjs
+  var BUSY = /забра|забрати|cash[\s-]?out|collect|cancel|отмен|скасув|очікуван|ожидан|waiting|placed|accepted|принят/iu;
+  var BET = /^(?:сделать\s+ставку|зробити\s+ставку|ставка|поставить|place\s+bet|bet)(?:$|\s|[\d₴$€])/iu;
+  var labelOf = (element) => String(element.innerText || element.getAttribute("aria-label") || element.textContent || "").normalize("NFKC").replace(/\s+/g, " ").trim();
+  var originOf = (frame) => {
+    try {
+      return new URL(frame.src, frame.ownerDocument.baseURI).origin;
+    } catch {
+      return "неизвестный домен";
+    }
+  };
+  function hitBetButton(document2, x, y) {
+    let doc = document2, px = x, py = y;
+    for (let depth = 0; depth < 10; depth++) {
+      let element = doc.elementsFromPoint(px, py).find((item) => item.id !== "god-preditor-safari-overlay");
+      for (let i = 0; i < 8 && element?.shadowRoot; i++) {
+        const child = element.shadowRoot.elementFromPoint?.(px, py);
+        if (!child || child === element) break;
+        element = child;
+      }
+      if (element?.localName === "iframe") {
+        let child;
+        try {
+          child = element.contentDocument;
+        } catch {
+        }
+        if (!child) return { error: "Игра в отдельном фрейме. Нужен доступ к домену: " + originOf(element), frameOrigin: originOf(element) };
+        const r = element.getBoundingClientRect();
+        px = (px - r.left) * element.offsetWidth / r.width - element.clientLeft;
+        py = (py - r.top) * element.offsetHeight / r.height - element.clientTop;
+        doc = child;
+        continue;
+      }
+      const button = element?.closest?.('button,[role="button"]');
+      if (!button || !button.click || button.getRootNode().host?.id === "god-preditor-safari-overlay") return { error: "Наведи центр прицела на саму кнопку «Ставка»" };
+      const label = labelOf(button);
+      if (!BET.test(label) || BUSY.test(label)) return { error: "Это не доступная «Ставка»: " + label.slice(0, 70) };
+      return { element: button, document: doc, label };
+    }
+    return { error: "Слишком глубокое вложение игрового поля" };
+  }
+  function inspectBetButton(selected) {
+    const element = selected?.element, doc = selected?.document;
+    if (!element || !doc || !element.isConnected) return { state: "unsafe", reason: "кнопка исчезла, выбери её заново" };
+    try {
+      if (doc.defaultView.document !== doc) return { state: "unsafe", reason: "игра перезагрузилась" };
+      const label = labelOf(element), style = doc.defaultView.getComputedStyle(element), rect = element.getBoundingClientRect();
+      if (!rect.width || !rect.height || style.visibility !== "visible" || style.display === "none") return { state: "unsafe", reason: "кнопка скрыта" };
+      if (BUSY.test(label)) return { state: "busy", reason: "поле занято: это не «Ставка»", label };
+      if (!BET.test(label)) return { state: "unsafe", reason: "подпись кнопки изменилась", label };
+      if (element.disabled || element.matches(":disabled") || element.getAttribute("aria-disabled") === "true" || style.pointerEvents === "none")
+        return { state: "waiting", reason: "игра пока не принимает ставку", label };
+      let currentDoc = doc, x = rect.left + rect.width / 2, y = rect.top + rect.height / 2;
+      const hit = currentDoc.elementFromPoint(x, y);
+      const root = element.getRootNode();
+      const inside = element.contains(hit) || root.host && root.host === hit;
+      if (!inside) return { state: "waiting", reason: "кнопка перекрыта — отодвинь панель", label };
+      while (currentDoc.defaultView !== currentDoc.defaultView.top) {
+        const frame = currentDoc.defaultView.frameElement;
+        if (!frame || frame.contentDocument !== currentDoc) return { state: "unsafe", reason: "доступ к игровому фрейму изменился" };
+        const r = frame.getBoundingClientRect();
+        x = r.left + (x + frame.clientLeft) * r.width / frame.offsetWidth;
+        y = r.top + (y + frame.clientTop) * r.height / frame.offsetHeight;
+        currentDoc = frame.ownerDocument;
+        if (currentDoc.elementFromPoint(x, y) !== frame) return { state: "waiting", reason: "игровое поле перекрыто", label };
+      }
+      return { state: "ready", reason: "готова", label };
+    } catch {
+      return { state: "unsafe", reason: "доступ к кнопке закрыт браузером" };
+    }
+  }
+  function clickSelectedBet(selected) {
+    if (inspectBetButton(selected).state !== "ready") throw Error("Кнопка уже недоступна");
+    selected.document.defaultView.HTMLElement.prototype.click.call(selected.element);
+  }
+  function pickButton(root, index, done) {
+    const doc = root.host.ownerDocument, win = doc.defaultView;
+    const picker = doc.createElement("div");
+    picker.className = "picker";
+    picker.innerHTML = `<div class="pick-bar"><b>Выбрать поле ${index + 1}</b><p>Перетащи прицел на «Ставка», затем нажми «Выбрать». Ставка сейчас не отправляется.</p><div class="pick-info"></div><button class="pick-confirm" disabled>Выбрать</button><button class="pick-cancel">Отмена</button></div><div class="pick-cursor" role="button" aria-label="Прицел выбора кнопки">＋</div>`;
+    root.append(picker);
+    const cursor = picker.querySelector(".pick-cursor"), info = picker.querySelector(".pick-info"), confirm = picker.querySelector(".pick-confirm");
+    let point = { x: win.innerWidth / 2, y: win.innerHeight * 0.7 }, candidate = null, drag = null, stopped = false;
+    function update() {
+      cursor.style.left = point.x - 25 + "px";
+      cursor.style.top = point.y - 25 + "px";
+      candidate = hitBetButton(doc, point.x, point.y);
+      info.textContent = candidate.error || candidate.label.slice(0, 85);
+      confirm.disabled = !!candidate.error;
+    }
+    cursor.addEventListener("pointerdown", (e) => {
+      e.preventDefault();
+      cursor.setPointerCapture(e.pointerId);
+      drag = { id: e.pointerId, dx: point.x - e.clientX, dy: point.y - e.clientY };
+    });
+    cursor.addEventListener("pointermove", (e) => {
+      if (!drag || drag.id !== e.pointerId) return;
+      point = { x: Math.max(25, Math.min(win.innerWidth - 25, e.clientX + drag.dx)), y: Math.max(25, Math.min(win.innerHeight - 25, e.clientY + drag.dy)) };
+      update();
+    });
+    cursor.addEventListener("pointerup", () => {
+      drag = null;
+    });
+    cursor.addEventListener("pointercancel", () => {
+      drag = null;
+    });
+    const timer = setInterval(update, 300);
+    const finish = (value) => {
+      if (stopped) return;
+      stopped = true;
+      clearInterval(timer);
+      picker.style.opacity = "0";
+      picker.style.pointerEvents = "auto";
+      picker.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+      }, true);
+      setTimeout(() => {
+        picker.remove();
+        done(value);
+      }, 400);
+    };
+    function activate(button, action) {
+      let pointer = null;
+      button.addEventListener("pointerdown", (event) => {
+        if (!event.isTrusted || event.button !== 0 || button.disabled) return;
+        event.preventDefault();
+        pointer = event.pointerId;
+        button.setPointerCapture(pointer);
+      });
+      button.addEventListener("pointerup", (event) => {
+        if (!event.isTrusted || event.pointerId !== pointer || button.disabled) return;
+        pointer = null;
+        const rect = button.getBoundingClientRect();
+        if (event.clientX >= rect.left && event.clientX <= rect.right && event.clientY >= rect.top && event.clientY <= rect.bottom) action();
+      });
+      button.addEventListener("pointercancel", () => {
+        pointer = null;
+      });
+      button.onclick = (event) => {
+        if (event.isTrusted && !button.disabled) action();
+      };
+    }
+    activate(picker.querySelector(".pick-cancel"), () => finish({ error: info.textContent, cancelled: true }));
+    activate(confirm, () => {
+      if (stopped) return;
+      update();
+      if (!candidate.error) finish(candidate);
+    });
+    update();
+    return () => finish({ cancelled: true });
+  }
 
   // src/entry.mjs
   var ID = "god-preditor-safari-overlay";
@@ -927,7 +1310,7 @@
     if (window !== window.top || !permittedPage(location) || document.getElementById(ID)) return;
     const host = document.createElement("div");
     host.id = ID;
-    host.dataset.version = "1.0.0";
+    host.dataset.version = "1.1.0";
     host.dataset.model = MODEL;
     for (const [k, v] of Object.entries({
       position: "fixed",
@@ -957,8 +1340,20 @@
         <div class="result" id="result" role="status"><img id="result-image" hidden alt="" referrerpolicy="no-referrer"><span id="result-label">Проверка по окну</span></div>
         <div class="tools" id="tools" hidden><button id="retry">Обновить связь</button><button id="opacity">Прозрачность</button><button id="reset">Сбросить размер</button><p class="hint">Перетащи за заголовок. Угол ↘ меняет размер. × скрывает до перезагрузки. Данные — наш Supabase.</p></div>
       </div>
-      <footer class="footer"><button class="link" id="history-open">История</button><button class="link" id="tools-open">Настроить</button><a class="link" href="${HOME}" target="_blank" rel="noopener noreferrer">Страница ↗</a><button class="grip" id="resize" aria-label="Изменить размер панели">↘</button></footer>
+      <footer class="footer"><button class="link" id="history-open">История</button><button class="link" id="auto-open">Авто</button><button class="link" id="tools-open">Настроить</button><a class="link" href="${HOME}" target="_blank" rel="noopener noreferrer">Страница ↗</a><button class="grip" id="resize" aria-label="Изменить размер панели">↘</button></footer>
       <section class="history" hidden><div class="history-head"><b>Полученные коэффициенты</b><button class="icon" id="history-close" aria-label="Закрыть историю">×</button></div><small id="history-count"></small><div class="history-list"></div></section>
+      <section class="auto-panel" hidden><div class="history-head"><b id="auto-title">Авто выключено</b><button class="icon" id="auto-close" aria-label="Закрыть настройки авто">×</button></div>
+        <p>Суммы и автозабирание выставь в игре сам. Скрипт их не меняет.</p>
+        <div class="auto-slot"><button id="pick-0">Выбрать поле 1</button><small id="slot-0">1 → 1,50× · не выбрана</small></div>
+        <div class="auto-slot"><button id="pick-1">Выбрать поле 2</button><small id="slot-1">2 → 2× · не выбрана</small></div>
+        <button id="auto-check">Проверить без нажатий</button>
+        <label>Режим <select id="auto-mode"><option value="test">Тест без ставок</option><option value="live">Автонажатия</option></select></label>
+        <button id="auto-toggle">Включить тест</button>
+        <p id="auto-message" role="status">Авто выключено</p>
+        <p class="hint">Каждое поле: один раз в начале своего окна. Если «Ставка» недоступна 15 секунд — пропуск. Фон, перезагрузка или ошибка выключают режим. Новая привязка нужна после перезагрузки игры.</p>
+        <p class="hint">Результат окна не подтверждает выигрыш твоей ставки. Отправленное нажатие проверяй в самой игре.</p>
+        <p id="auto-diagnostic"></p><div id="auto-log"></div>
+      </section>
     </section>
     <button class="launcher" hidden aria-label="Открыть панель GOD PREDITOR">GP <span>—</span></button>`;
     document.documentElement.append(host);
@@ -966,9 +1361,87 @@
     const panel = $2(".panel"), launcher = $2(".launcher");
     let rows = [], journal = [], selected = 1.5, feed = null, status = "connecting", lastSuccessAt = null;
     let destroyed = false, saveTimer = null, storageWarning = false, historyVersion = "", latestResult = "";
+    let latestStats = analyze([]), cancelPicker = null, requestedAutoMode = "test";
     const ui = { x: 10, y: 115, width: 238, height: 390, opacity: 0.97, collapsed: false };
     const scene = mountScene($2("canvas"), { compact: true });
     const current = (target) => [...journal].reverse().find((x) => x.target === target && x.model === MODEL);
+    const auto = createAutoBet({
+      context: () => ({
+        visible: !document.hidden && !destroyed,
+        fresh: status === "connected" && latestStats.ready && Date.now() - lastSuccessAt <= 12e3 && Date.now() - latestStats.lastAt <= 18e4,
+        forecasts: [current(1.5), current(2)].filter(Boolean)
+      }),
+      inspect: inspectBetButton,
+      click: clickSelectedBet,
+      acquireLock: () => acquireAutoLock(navigator.locks),
+      readReceipts: () => gm.getValue(AUTO_KEY, []),
+      writeReceipts: (receipts) => gm.setValue(AUTO_KEY, receipts),
+      onChange: renderAuto
+    });
+    function renderAuto() {
+      const state = auto.state;
+      $2("#auto-title").textContent = state.armed ? state.mode === "live" ? "Автонажатия включены" : "Тест включён" : "Авто выключено";
+      $2("#auto-message").textContent = state.message;
+      $2("#auto-toggle").textContent = state.armed ? "Выключить" : requestedAutoMode === "live" ? "Включить автонажатия" : "Включить тест";
+      $2("#auto-toggle").classList.toggle("armed", state.armed);
+      $2("#auto-open").textContent = state.armed ? state.mode === "live" ? "Авто ON" : "Тест ON" : "Авто";
+      launcher.dataset.auto = state.armed ? state.mode : "off";
+      const checks = auto.checks();
+      checks.forEach((checked, i) => {
+        $2("#slot-" + i).textContent = `${i + 1} → ${i === 0 ? "1,50" : "2"}× · ${checked.state === "ready" ? "готова" : checked.reason}`;
+      });
+      $2("#auto-log").replaceChildren(...state.logs.slice(-5).map((entry) => {
+        const line = document.createElement("div");
+        line.textContent = clock(entry.at) + " · " + entry.text;
+        return line;
+      }));
+    }
+    $2("#auto-open").onclick = () => {
+      $2(".auto-panel").hidden = false;
+      renderAuto();
+    };
+    $2("#auto-close").onclick = () => {
+      $2(".auto-panel").hidden = true;
+    };
+    $2("#auto-check").onclick = () => {
+      auto.checkOnly();
+    };
+    $2("#auto-mode").onchange = (event) => {
+      if (!event.isTrusted) {
+        event.target.value = requestedAutoMode;
+        return;
+      }
+      requestedAutoMode = event.target.value === "live" ? "live" : "test";
+      auto.disarm("Режим изменён — запуск выключен");
+    };
+    $2("#auto-toggle").onclick = (event) => {
+      if (auto.state.armed) {
+        auto.disarm();
+        return;
+      }
+      if (!event.isTrusted) return;
+      void auto.arm(requestedAutoMode);
+    };
+    for (const index of [0, 1]) $2("#pick-" + index).onclick = (event) => {
+      if (!event.isTrusted) return;
+      auto.disarm("Выбор кнопки — авто выключено");
+      panel.hidden = true;
+      launcher.hidden = true;
+      cancelPicker = pickButton(root, index, (selection) => {
+        cancelPicker = null;
+        layout();
+        $2(".auto-panel").hidden = false;
+        if (selection.element) {
+          try {
+            auto.setButton(index, selection);
+            $2("#auto-diagnostic").textContent = "";
+          } catch (error) {
+            $2("#auto-diagnostic").textContent = error.message;
+          }
+        } else $2("#auto-diagnostic").textContent = selection.error || "Выбор отменён";
+        renderAuto();
+      });
+    };
     const viewport = () => ({
       left: visualViewport?.offsetLeft || 0,
       top: visualViewport?.offsetTop || 0,
@@ -1092,6 +1565,7 @@
     function render() {
       if (destroyed) return;
       const now = Date.now(), stats = analyze(rows, now);
+      latestStats = stats;
       const result = advanceJournal(journal, rows, stats, now, true, { online: status === "connected", lastSuccessAt });
       journal = result.journal;
       if (result.changed) saveSoon();
@@ -1127,8 +1601,9 @@
         $2("#result-image").hidden = !completed || completed.status === "unknown";
         if (completed && completed.status !== "unknown") $2("#result-image").src = ASSETS + `result-${completed.status}.webp`;
       }
-      $2("#result-label").textContent = completed ? (completed.status === "hit" ? "ЗАШЛО" : completed.status === "miss" ? "НЕ ЗАШЛО" : "НЕТ ДАННЫХ") + (completed.actual != null ? " · макс. окна " + number(completed.actual) + "×" : "") : "Проверка: достижение цели в окне";
+      $2("#result-label").textContent = completed ? (completed.status === "hit" ? "ЦЕЛЬ В ОКНЕ" : completed.status === "miss" ? "НИЖЕ ЦЕЛИ В ОКНЕ" : "НЕТ ДАННЫХ") + (completed.actual != null ? " · макс. окна " + number(completed.actual) + "×" : "") : "Проверка: достижение цели в окне";
       if (!$2(".history").hidden) renderHistory();
+      if (!$2(".auto-panel").hidden) renderAuto();
     }
     const fetchImpl = createExtensionFetch(gm, SUPABASE_CONFIG);
     function startFeed() {
@@ -1149,6 +1624,7 @@
           if (destroyed) return;
           status = s.state;
           if (s.lastSuccess) lastSuccessAt = s.lastSuccess;
+          if (s.state === "error") auto.disarm("Ошибка связи — авто выключено");
           if (s.message) host.dataset.error = s.message;
           render();
         }
@@ -1158,6 +1634,8 @@
     $2("#retry").onclick = startFeed;
     const onVisibility = () => {
       if (document.hidden) {
+        auto.disarm("Safari ушёл в фон — авто выключено");
+        cancelPicker?.();
         feed?.stop();
         feed = null;
         status = "paused";
@@ -1168,6 +1646,8 @@
       }
     };
     const onPageHide = () => {
+      auto.disarm("Страница закрыта — авто выключено");
+      cancelPicker?.();
       feed?.stop();
       feed = null;
       scene.setPaused(true);
@@ -1192,9 +1672,15 @@
     const tick = setInterval(() => {
       if (!document.hidden) render();
     }, 1e3);
+    const autoTick = setInterval(() => {
+      void auto.tick().catch(() => auto.disarm("Ошибка авто — режим выключен"));
+    }, 250);
     $2("#close").onclick = () => {
+      auto.disarm("Панель закрыта — авто выключено");
+      cancelPicker?.();
       destroyed = true;
       clearInterval(tick);
+      clearInterval(autoTick);
       clearTimeout(saveTimer);
       feed?.stop();
       scene.destroy();
@@ -1245,6 +1731,7 @@
     } catch {
       storageWarning = true;
     }
+    await auto.initialize();
     startFeed();
   }
   if (typeof GM !== "undefined" && typeof GM.xmlHttpRequest === "function") {
