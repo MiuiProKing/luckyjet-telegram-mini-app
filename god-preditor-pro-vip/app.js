@@ -1,7 +1,7 @@
 import {SUPABASE_CONFIG} from './supabase-config.mjs';
 import {mapSupabaseRound,createSupabaseFeed} from './supabase-feed.mjs';
 import {mergeRounds,parsePayload,parseCSV} from './data.mjs';
-import {MODEL,analyze,advanceJournal,summary} from './window-model.mjs';
+import {MODEL,analyze,advanceJournal,summary} from './window-model.mjs?v=supplied-v3';
 import {mountScene} from './scene.mjs';
 import {createHistory} from './history.mjs';
 const $=s=>document.querySelector(s),KEY='neurojet-small-v1';
