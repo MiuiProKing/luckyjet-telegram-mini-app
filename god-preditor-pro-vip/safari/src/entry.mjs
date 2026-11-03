@@ -1,3 +1,5 @@
+import {createAutoCashout} from './autocashout.mjs';
+import {createLiveMultiplierMonitor, pickLiveMultiplier, inspectCashoutButton, clickCashoutButton} from './live-dom.mjs';
 import {sourceReady} from './freshness.mjs';
 import {loadPanelState} from './storage.mjs';
 import {activate} from './activation.mjs';
@@ -23,14 +25,14 @@ async function start(gm) {
   // Exact casino/game hosts; each frame accesses only its own document.
   if ((window !== window.top && location.origin !== GAME_ORIGIN) || !permittedPage(location) || document.getElementById(ID)) return;
   const host = document.createElement('div'); host.id = ID;
-  host.dataset.version = '1.4.0'; host.dataset.model = MODEL;
+  host.dataset.version = '1.5.0'; host.dataset.model = MODEL;
   for (const [k, v] of Object.entries({position: 'fixed', inset: '0 auto auto 0', width: '0', height: '0',
     'z-index': '2147483647', 'pointer-events': 'none', transform: 'none'})) host.style.setProperty(k, v, 'important');
   const root = host.attachShadow({mode: 'open'});
   root.innerHTML = `<style>${CSS}</style>
     <section class="panel" aria-label="GOD PREDITOR PRO VIP">
       <header class="handle" title="Перетащи панель за эту строку">
-        <div class="brand"><strong id="brand-text">GOD PREDITOR</strong><img id="brand-image" alt="GOD PREDITOR" hidden referrerpolicy="no-referrer"><small>PRO · VIP · 1.4</small></div>
+        <div class="brand"><strong id="brand-text">GOD PREDITOR</strong><img id="brand-image" alt="GOD PREDITOR" hidden referrerpolicy="no-referrer"><small>PRO · VIP · 1.5</small></div>
         <div class="window-controls" role="group" aria-label="Управление окном">
           <button class="icon" id="size-up" aria-label="Увеличить окно" title="Увеличить окно">+</button>
           <button class="icon" id="size-down" aria-label="Уменьшить окно" title="Уменьшить окно">−</button>
@@ -62,6 +64,16 @@ async function start(gm) {
         <p class="hint">Оба поля: по одному нажатию в начале основного окна. Если «Ставка» недоступна 15 секунд — пропуск. Фон, перезагрузка или ошибка выключают режим. Новая привязка нужна после перезагрузки игры.</p>
         <p class="hint">Результат окна не подтверждает выигрыш твоей ставки. Отправленное нажатие проверяй в самой игре.</p>
         <p id="auto-diagnostic"></p><div id="auto-log"></div>
+        <hr><b id="cashout-title">Автозабирание выключено</b>
+        <p>Сначала выбери живой счётчик в самом полёте. Из Supabase идут только завершённые раунды.</p>
+        <button id="pick-live">Выбрать живой коэффициент</button>
+        <p id="live-value" role="status">Счётчик не выбран</p>
+        <label>Забрать <select id="cashout-mode"><option value="test">Тест без нажатий</option><option value="live">Автонажатие «Забрать»</option></select></label>
+        <button id="cashout-toggle">Включить тест счётчика</button>
+        <p id="cashout-message" role="status">Выключено</p><div id="cashout-log"></div>
+        <p class="hint">Для авто сначала включи автоставки. Цель фиксируется отдельно для каждого поля при нашем нажатии «Ставка». После окончания раунда ждём новый прогноз; по старому повторной ставки нет. Ручная ставка не подхватывается.</p>
+        <p class="hint">Привязки должны быть в одном игровом документе. Если число нарисовано в Canvas, чтение не поддерживается. Совпадение игрового раунда пока определяется по интерфейсу и не проверено на твоей игре. Сначала тест. Нажатие по порогу может опоздать и не подтверждает выплату.</p>
+        <p class="hint">Суммы и штатный автовывод не меняются. Если в игре задан более низкий автовывод, он сработает раньше скрипта. Любое ручное нажатие выбранного поля прекращает автоотслеживание.</p>
       </section>
     </section>
     <button class="launcher" hidden aria-label="Открыть панель GOD PREDITOR">GP <span>—</span></button>`;
@@ -70,7 +82,10 @@ async function start(gm) {
   const panel = $('.panel'), launcher = $('.launcher');
   let rows = [], journal = [], legacyJournal = [], selected = 'primary', feed = null, status = 'connecting', lastSuccessAt = null;
   let destroyed = false, saveTimer = null, storageWarning = false, historyVersion = '', latestResult = '';
-  let latestStats = analyze([]), cancelPicker = null, requestedAutoMode = 'test';
+  let latestStats = analyze([]), cancelPicker = null, requestedAutoMode = 'test', requestedCashoutMode = 'test';
+  let cashout = null, liveSelection = null;
+  const liveMonitor = createLiveMultiplierMonitor();
+  const manualListeners = [null, null];
   const ui = {x: 10, y: 115, width: 238, height: 390, opacity: .97, collapsed: false};
   const scene = mountScene($('canvas'), {compact: true});
   const current = target => [...journal].reverse().find(x => x.channel === target && x.model === MODEL);
@@ -87,9 +102,64 @@ async function start(gm) {
     readReceipts: () => gm.getValue(AUTO_KEY, []),
     writeReceipts: receipts => gm.setValue(AUTO_KEY, receipts),
     onChange: renderAuto,
+    onBetDispatched: receipt => {if (cashout?.state.armed) cashout.onBetDispatched(receipt);},
+    beforeBet: ({index}) => cashout?.state.armed && cashout.state.mode === 'live' ? cashout.canTrackBet(index) : true,
   });
+  cashout = createAutoCashout({
+    context: () => ({visible: !document.hidden && !destroyed,
+      fresh: frameSupport.ready() && sourceReady(status, latestStats, lastSuccessAt),
+      autoBetArmed: auto.state.armed, autoBetMode: auto.state.mode,
+      buttonsConfigured: selectedButtons.every(Boolean) && selectedButtons[0]?.element !== selectedButtons[1]?.element &&
+        selectedButtons.every(button => button?.document === liveSelection?.document)}),
+    readMultiplier: () => liveMonitor.read(), inspectCashout: inspectCashoutButton, clickCashout: clickCashoutButton,
+    onChange: renderCashout,
+    onFatal: reason => auto.disarm('Автозабирание остановлено: ' + reason),
+  });
+  function renderCashout() {
+    if (!cashout || destroyed) return;
+    const state = cashout.state, sample = liveMonitor.read();
+    $('#cashout-title').textContent = state.armed ? (state.mode === 'live' ? 'Автозабирание включено' : 'Тест счётчика включён') : 'Автозабирание выключено';
+    $('#cashout-toggle').textContent = state.armed ? 'Выключить автозабирание' : requestedCashoutMode === 'live' ? 'Включить автозабирание' : 'Включить тест счётчика';
+    $('#cashout-toggle').classList.toggle('armed', state.armed);
+    $('#cashout-message').textContent = state.message;
+    $('#live-value').textContent = sample.state === 'ready' ? 'Сейчас ' + number(sample.value) + '× · возраст изменения ' + Math.max(0, Date.now() - sample.changedAt) + ' мс' : sample.reason || 'Счётчик не читается';
+    $('#pick-live').disabled = state.pending.length > 0;
+    $('#cashout-log').replaceChildren(...state.logs.slice(-5).map(entry => {const row = document.createElement('div');row.textContent = clock(entry.at) + ' · ' + entry.text;return row;}));
+    launcher.dataset.cashout = state.armed ? state.mode : 'off';
+  }
+  function watchManualInput(index, selection) {
+    manualListeners[index]?.();
+    const handler = event => {if (!event.isTrusted || !cashout.state.armed) return;
+      cashout.disarm('Ручное действие — автоотслеживание выключено');auto.disarm('Ручное действие — авто выключено');};
+    selection.element.addEventListener('pointerdown', handler, true);
+    selection.element.addEventListener('click', handler, true);
+    manualListeners[index] = () => {selection.element.removeEventListener('pointerdown', handler, true);selection.element.removeEventListener('click', handler, true);};
+  }
+  $('#pick-live').onclick = () => {
+    if (cashout.state.pending.length) return;
+    cashout.disarm('Выбор счётчика — отслеживание выключено');auto.disarm('Выбор счётчика — авто выключено');
+    panel.hidden = true;launcher.hidden = true;
+    cancelPicker = pickLiveMultiplier(root, selection => {
+      cancelPicker = null;layout();$('.auto-panel').hidden = false;
+      if (selection.element) {liveSelection = selection;liveMonitor.setSource(selection);$('#auto-diagnostic').textContent = '';}
+      else $('#auto-diagnostic').textContent = selection.error || 'Выбор отменён';
+      renderCashout();
+    });
+  };
+  $('#cashout-mode').onchange = event => {
+    if (!event.isTrusted) {event.target.value = requestedCashoutMode;return;}
+    requestedCashoutMode = event.target.value === 'live' ? 'live' : 'test';cashout.disarm('Режим изменён — отслеживание выключено');
+  };
+  $('#cashout-toggle').onclick = () => {
+    if (cashout.state.armed) {cashout.disarm();return;}
+    if (requestedCashoutMode === 'live' && (!liveSelection || selectedButtons.some(button => !button || button.document !== liveSelection.document))) {
+      $('#cashout-message').textContent = 'Выбери живой счётчик и оба поля в одном игровом документе';return;
+    }
+    cashout.arm(requestedCashoutMode);
+  };
   function renderAuto() {
     const state = auto.state;
+    if (cashout?.state.armed && cashout.state.mode === 'live' && (!state.armed || state.mode !== 'live')) cashout.disarm('Автоставки выключены — автозабирание выключено');
     $('#auto-title').textContent = state.armed ? (state.mode === 'live' ? 'Автонажатия включены' : 'Тест включён') : 'Авто выключено';
     $('#auto-message').textContent = state.message;
     $('#auto-toggle').textContent = state.armed ? 'Выключить' : requestedAutoMode === 'live' ? 'Включить автонажатия' : 'Включить тест';
@@ -117,12 +187,14 @@ async function start(gm) {
   });
   for (const index of [0, 1]) activate($('#pick-' + index), event => {
     if (!event.isTrusted) return;
+    if (cashout.state.pending.length) {$('#auto-diagnostic').textContent = 'Сначала выключи отслеживание активного поля';return;}
+    cashout.disarm('Выбор кнопки — отслеживание выключено');
     auto.disarm('Выбор кнопки — авто выключено');
     panel.hidden = true; launcher.hidden = true;
     cancelPicker = pickButton(root, index, selection => {
       cancelPicker = null; layout(); $('.auto-panel').hidden = false;
       if (selection.element) {
-        try {auto.setButton(index, selection); selectedButtons[index] = selection; frameSupport.invalidate(); $('#auto-diagnostic').textContent = '';}
+        try {auto.setButton(index, selection); selectedButtons[index] = selection; watchManualInput(index, selection); frameSupport.invalidate(); $('#auto-diagnostic').textContent = '';}
         catch (error) {$('#auto-diagnostic').textContent = error.message;}
       } else $('#auto-diagnostic').textContent = selection.error || 'Выбор отменён';
       renderAuto();
@@ -247,7 +319,7 @@ async function start(gm) {
     $('#result-label').textContent = completed ? (completed.status === 'hit' ? 'ЦЕЛЬ В ОКНЕ' : completed.status === 'miss' ? 'НИЖЕ ЦЕЛИ В ОКНЕ' : 'НЕТ ДАННЫХ') +
       (completed.actual != null ? ' · макс. окна ' + number(completed.actual) + '×' : '') : 'Проверка: достижение цели в окне';
     if (!$('.history').hidden) renderHistory();
-    if (!$('.auto-panel').hidden) renderAuto();
+    if (!$('.auto-panel').hidden) {renderAuto();renderCashout();}
   }
   const fetchImpl = createExtensionFetch(gm, SUPABASE_CONFIG);
   function startFeed() {
@@ -265,7 +337,7 @@ async function start(gm) {
       onStatus(s) {
         if (destroyed) return;
         status = s.state; if (s.lastSuccess) lastSuccessAt = s.lastSuccess;
-        if (s.state === 'error') auto.disarm('Ошибка связи — авто выключено');
+        if (s.state === 'error') {cashout.disarm('Ошибка связи — отслеживание выключено');auto.disarm('Ошибка связи — авто выключено');}
         if (s.message) host.dataset.error = s.message;
         render();
       },
@@ -274,10 +346,10 @@ async function start(gm) {
   }
   $('#retry').onclick = startFeed;
   const onVisibility = () => {
-    if (document.hidden) {auto.disarm('Safari ушёл в фон — авто выключено'); cancelPicker?.(); feed?.stop(); feed = null; status = 'paused'; scene.setPaused(true);}
+    if (document.hidden) {cashout.disarm('Safari ушёл в фон — отслеживание выключено');auto.disarm('Safari ушёл в фон — авто выключено'); cancelPicker?.(); feed?.stop(); feed = null; status = 'paused'; scene.setPaused(true);}
     else {layout(); startFeed();}
   };
-  const onPageHide = () => {auto.disarm('Страница закрыта — авто выключено'); cancelPicker?.(); feed?.stop(); feed = null; scene.setPaused(true);};
+  const onPageHide = () => {cashout.disarm('Страница закрыта — отслеживание выключено');auto.disarm('Страница закрыта — авто выключено'); cancelPicker?.(); feed?.stop(); feed = null; scene.setPaused(true);};
   const onPageShow = event => {if (event.persisted && !document.hidden) {layout(); startFeed();}};
   const onResize = () => layout();
   document.addEventListener('visibilitychange', onVisibility);
@@ -287,7 +359,18 @@ async function start(gm) {
   observer.observe(document.documentElement, {childList: true});
   const tick = setInterval(() => {if (!document.hidden) render();}, 1000);
   const autoTick = setInterval(() => {void auto.tick().catch(() => auto.disarm('Ошибка авто — режим выключен'));}, 250);
+  let cashoutFrame = null, lastCashoutRender = 0;
+  function cashoutLoop() {
+    if (destroyed) return;
+    if (!document.hidden) {
+      try {cashout.tick();} catch {cashout.disarm('Ошибка отслеживания — выключено');auto.disarm('Ошибка отслеживания — авто выключено');}
+      if (!$('.auto-panel').hidden && performance.now() - lastCashoutRender > 250) {renderCashout();lastCashoutRender = performance.now();}
+    }
+    cashoutFrame = requestAnimationFrame(cashoutLoop);
+  }
+  cashoutFrame = requestAnimationFrame(cashoutLoop);
   closeOverlay = $('#close').onclick = () => {
+    cashout.disarm('Панель закрыта — отслеживание выключено');liveMonitor.clear();manualListeners.forEach(stop => stop?.());cancelAnimationFrame(cashoutFrame);
     auto.disarm('Панель закрыта — авто выключено'); cancelPicker?.();
     destroyed = true; if (window !== window.top) frameSupport.stop(); clearInterval(tick); clearInterval(autoTick); clearTimeout(saveTimer); feed?.stop(); scene.destroy(); observer.disconnect();
     document.removeEventListener('visibilitychange', onVisibility);
