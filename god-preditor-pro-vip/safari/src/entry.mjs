@@ -8,6 +8,9 @@ import {SUPABASE_CONFIG} from '../../supabase-config.mjs';
 import {createSupabaseFeed} from '../../supabase-feed.mjs';
 import {mergeRounds} from '../../data.mjs';
 import {MODEL, analyze, advanceJournal} from './window-model-v2.mjs';
+import {analyzeRareWindows} from './rare-window-model.mjs';
+import {advanceRareAlerts} from './rare-alerts.mjs';
+import {formatRarePresentation} from './rare-presentation.mjs';
 import {mountScene} from '../../scene.mjs';
 import {createExtensionFetch, permittedPage} from './transport.mjs';
 import {CSS} from './style.mjs';
@@ -17,6 +20,7 @@ import {pickButton, inspectBetButton, clickSelectedBet} from './betting-dom.mjs'
 const ID = 'god-preditor-safari-overlay', KEY = 'god-preditor-safari-v4', LEGACY_KEY = 'god-preditor-safari-v1';
 const HOME = 'https://miuiproking.github.io/luckyjet-telegram-mini-app/god-preditor-pro-vip/';
 const ASSETS = HOME + 'assets/';
+const RARE_HISTORY_LIMIT = 2000;
 const number = n => Number(n).toLocaleString('ru-RU', {maximumFractionDigits: 2});
 const clock = t => new Date(t).toLocaleTimeString('ru-RU', {timeZone: 'Europe/Kyiv'});
 const duration = ms => {const n = Math.max(0, Math.ceil(ms / 1000)); return `${Math.floor(n / 60).toString().padStart(2, '0')}:${(n % 60).toString().padStart(2, '0')}`;};
@@ -25,14 +29,14 @@ async function start(gm) {
   // Exact casino/game hosts; each frame accesses only its own document.
   if ((window !== window.top && location.origin !== GAME_ORIGIN) || !permittedPage(location) || document.getElementById(ID)) return;
   const host = document.createElement('div'); host.id = ID;
-  host.dataset.version = '1.5.0'; host.dataset.model = MODEL;
+  host.dataset.version = '1.6.0'; host.dataset.model = MODEL;
   for (const [k, v] of Object.entries({position: 'fixed', inset: '0 auto auto 0', width: '0', height: '0',
     'z-index': '2147483647', 'pointer-events': 'none', transform: 'none'})) host.style.setProperty(k, v, 'important');
   const root = host.attachShadow({mode: 'open'});
   root.innerHTML = `<style>${CSS}</style>
     <section class="panel" aria-label="GOD PREDITOR PRO VIP">
       <header class="handle" title="Перетащи панель за эту строку">
-        <div class="brand"><strong id="brand-text">GOD PREDITOR</strong><img id="brand-image" alt="GOD PREDITOR" hidden referrerpolicy="no-referrer"><small>PRO · VIP · 1.5</small></div>
+        <div class="brand"><strong id="brand-text">GOD PREDITOR</strong><img id="brand-image" alt="GOD PREDITOR" hidden referrerpolicy="no-referrer"><small>PRO · VIP · 1.6</small></div>
         <div class="window-controls" role="group" aria-label="Управление окном">
           <button class="icon" id="size-up" aria-label="Увеличить окно" title="Увеличить окно">+</button>
           <button class="icon" id="size-down" aria-label="Уменьшить окно" title="Уменьшить окно">−</button>
@@ -43,13 +47,14 @@ async function start(gm) {
       <div class="body">
         <div class="status" id="status" role="status">Подключение к нашему Supabase…</div>
         <div class="recent" aria-label="Пять последних коэффициентов"></div>
+        <div class="rare-alert" id="rare-alert" role="status" hidden><b id="rare-title"></b><time id="rare-window"></time><small id="rare-detail"></small></div>
         <div class="neural"><canvas aria-label="Неоновый мозг и паук"></canvas><img class="vip" alt="VIP" referrerpolicy="no-referrer"></div>
         <div class="signal" id="signal">—</div>
         <div class="window" id="window">Получаем историю</div>
         <div class="note" id="note"></div>
         <div class="targets" aria-label="Цель"><button data-target="primary">Основной</button><button data-target="big">Доп. окно</button></div>
         <div class="result" id="result" role="status"><img id="result-image" hidden alt="" referrerpolicy="no-referrer"><span id="result-label">Проверка по окну</span></div>
-        <div class="tools" id="tools" hidden><button id="retry">Обновить связь</button><button id="opacity">Прозрачность</button><button id="reset">Сбросить размер</button><p class="hint">Кнопки + и − вверху меняют размер. Перетащи за заголовок. Угол ↘ тоже меняет размер. × скрывает до перезагрузки. Данные — наш Supabase.</p></div>
+        <div class="tools" id="tools" hidden><button id="retry">Обновить связь</button><button id="opacity">Прозрачность</button><button id="reset">Сбросить размер</button><p class="hint">Кнопки + и − вверху меняют размер. Перетащи за заголовок. Угол ↘ тоже меняет размер. × скрывает до перезагрузки. Данные — наш Supabase.</p><details class="rare-diagnostics"><summary>Модели 100× и журнал предупреждений</summary><p id="rare-diagnostics"></p><p id="rare-result"></p><button id="rare-export">Скачать журнал JSON</button></details></div>
       </div>
       <footer class="footer"><button class="link" id="history-open">История</button><button class="link" id="auto-open">Авто</button><button class="link" id="tools-open">Настроить</button><a class="link" href="${HOME}" target="_blank" rel="noopener noreferrer">Страница ↗</a><button class="grip" id="resize" aria-label="Изменить размер панели">↘</button></footer>
       <section class="history" hidden><div class="history-head"><b>Полученные коэффициенты</b><button class="icon" id="history-close" aria-label="Закрыть историю">×</button></div><small id="history-count"></small><div class="history-list"></div></section>
@@ -81,6 +86,7 @@ async function start(gm) {
   const $ = selector => root.querySelector(selector);
   const panel = $('.panel'), launcher = $('.launcher');
   let rows = [], journal = [], legacyJournal = [], selected = 'primary', feed = null, status = 'connecting', lastSuccessAt = null;
+  let rareJournal = [], rareAnalysis = null, rareAnalysisKey = '', rowsRevision = 0;
   let destroyed = false, saveTimer = null, storageWarning = false, historyVersion = '', latestResult = '';
   let latestStats = analyze([]), cancelPicker = null, requestedAutoMode = 'test', requestedCashoutMode = 'test';
   let cashout = null, liveSelection = null;
@@ -218,7 +224,7 @@ async function start(gm) {
     if (destroyed) return;
     clearTimeout(saveTimer);
     saveTimer = setTimeout(async () => {
-      try {await gm.setValue(KEY, {model: MODEL, rows: rows.slice(0, 2000), journal: journal.slice(-100), legacyJournal: legacyJournal.slice(-200), selected, ui: {...ui}});}
+      try {await gm.setValue(KEY, {model: MODEL, rows: rows.slice(0, 2000), journal: journal.slice(-100), rareJournal: rareJournal.slice(-100), legacyJournal: legacyJournal.slice(-200), selected, ui: {...ui}});}
       catch {storageWarning = true;}
     }, 500);
   }
@@ -266,6 +272,13 @@ async function start(gm) {
   for (const button of root.querySelectorAll('[data-target]')) button.onclick = () => {selected = button.dataset.target; saveSoon(); render();};
   $('#history-open').onclick = () => {$('.history').hidden = false; renderHistory();};
   $('#history-close').onclick = () => {$('.history').hidden = true;};
+  $('#rare-export').onclick = () => {
+    // Observation records only. Never export credentials, DOM bindings or auto state.
+    const blob = new Blob([JSON.stringify({model: 'rare-alert-v1', evidenceStatus: 'experimental-unvalidated', exportedAt: Date.now(), journal: rareJournal}, null, 2)], {type: 'application/json'});
+    const url = URL.createObjectURL(blob), link = document.createElement('a');
+    link.href = url; link.download = 'god-preditor-rare-alerts.json'; link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
 
   function renderHistory() {
     const version = rows.length + ':' + rows[0]?.id;
@@ -287,6 +300,19 @@ async function start(gm) {
     latestStats = stats;
     const result = advanceJournal(journal, rows, stats, now, true, {online: status === 'connected', lastSuccessAt});
     journal = result.journal; host.dataset.ready = String(stats.ready); host.dataset.continuityCount = String(stats.continuityCount); if (result.changed) saveSoon();
+    // Cache expensive quantiles per data revision/minute, while rechecking source
+    // freshness each render. This isolated journal is never passed to auto/cashout.
+    const rareKey = rowsRevision + ':' + Math.floor(now / 60000) + ':' + (stats.fresh === true);
+    if (rareKey !== rareAnalysisKey) {rareAnalysis = analyzeRareWindows(rows.slice(0, RARE_HISTORY_LIMIT), now); rareAnalysisKey = rareKey;}
+    const rare = advanceRareAlerts(rareJournal, rows, {analysis: rareAnalysis, bigForecast: current('big'), now, online: status === 'connected', lastSuccessAt});
+    rareJournal = rare.journal; if (rare.changed) saveSoon();
+    const rareView = formatRarePresentation({analysis: rareAnalysis, alerts: rare, now, online: status === 'connected', lastSuccessAt});
+    $('#rare-alert').hidden = !rareView.banner;
+    $('#rare-title').textContent = rareView.banner?.title || '';
+    $('#rare-window').textContent = rareView.banner?.windowLabel || '';
+    $('#rare-detail').textContent = rareView.banner?.detail || '';
+    $('#rare-diagnostics').textContent = rareView.diagnostics.join('\n\n');
+    $('#rare-result').textContent = rareView.journalLabel;
     const forecast = current(selected), occupied = stats.ready && forecast && now <= forecast.end;
     $('#status').className = 'status' + (status === 'error' ? ' error' : !stats.fresh && rows.length ? ' warn' : '');
     $('#status').textContent = status === 'error' ? (host.dataset.error || 'Ошибка связи · открой «Настроить»') :
@@ -331,6 +357,7 @@ async function start(gm) {
         if (destroyed) return;
         const seen = new Set(rows.map(x => x.id));
         rows = mergeRounds(rows, batch, 'Supabase · LuckyJet').rounds;
+        rowsRevision++;
         scene.push(batch.filter(x => !seen.has(x.id)), {initial});
         saveSoon(); render();
       },
@@ -394,7 +421,9 @@ async function start(gm) {
     const saved = await loadPanelState(gm, MODEL, {key: KEY, legacyKey: LEGACY_KEY});
     if (saved && !destroyed) {
       rows = mergeRounds([], Array.isArray(saved.rows) ? saved.rows : [], 'Supabase · LuckyJet').rounds;
+      rowsRevision++;
       journal = saved.model === MODEL && Array.isArray(saved.journal) ? saved.journal.slice(-100) : [];
+      rareJournal = Array.isArray(saved.rareJournal) ? saved.rareJournal : [];
       legacyJournal = saved.legacyJournal;
       selected = saved.selected === 'big' ? 'big' : 'primary';
       if (saved.ui && typeof saved.ui === 'object') {

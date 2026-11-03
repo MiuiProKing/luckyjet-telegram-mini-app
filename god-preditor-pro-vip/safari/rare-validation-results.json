@@ -1,0 +1,129 @@
+{
+  "protocol": {
+    "cutoff": 1793632794671,
+    "cutoffISO": "2026-11-02T15:19:54.671Z",
+    "historyLimit": 2000,
+    "threshold": 100,
+    "horizonMs": 180000,
+    "candidateIssuance": "actual rare-alert journal; beta fallback only; one as-of call at each unique post-cutoff completed timestamp; source assumed immediate",
+    "gammaIssuance": "fixed nonoverlap UTC 180-second grid; (start,end] outcome; same horizon and threshold for all compared probabilities",
+    "baseline": "empirical hit fraction of fully bracketed historical UTC180s windows returned by unchanged model (maximum200), using only last2000 as-of rows",
+    "coverage": "Gamma endpoint brackets and inter-round gaps<=180s; alert miss rule frozen cadence threshold60–180s; gaps operational coverage assumption",
+    "modelHash": "1aeaa9e034519bfd0d09b75220b75b970297d10ab87b6f962698bb4d96111f92",
+    "journalHash": "355bdb5f76fbc2a5f99e42e527190169fa2748065c5abc1045c5238e29bf7042",
+    "oldHash": "cc80e3464b6adebbd934f15aaa3c140bf07830cdbea218e90a373ceb50746608",
+    "newHash": "bd14d5006543c0a003b2bd13cf751bbe492b5ada9b74044006f64aed91f3ef89"
+  },
+  "data": {
+    "oldRows": 20000,
+    "latestRows": 20000,
+    "mergedRows": 22565,
+    "identicalOverlaps": 17435,
+    "conflictingIds": 0,
+    "freshRounds": 2565,
+    "freshEvents": 35,
+    "firstFreshISO": "2026-11-02T15:20:12.729Z",
+    "lastFreshISO": "2026-11-03T05:58:11.916Z",
+    "holdoutHours": 14.63812361111111,
+    "maxFreshGapMs": 97223,
+    "freshGapsOver180s": 0
+  },
+  "backup": {
+    "evaluatedAsOfTicks": 2565,
+    "candidateTicks": 0,
+    "betaReadyTicks": 955,
+    "poissonReadyTicks": 2565,
+    "maxRecentHits": 7,
+    "bayesReasons": {
+      "insufficient-hit-windows": 1610,
+      "no-supported-local-rise": 955
+    },
+    "published": 0,
+    "journalStatuses": {
+      "pending": 0,
+      "hit": 0,
+      "miss": 0,
+      "unknown": 0
+    },
+    "fullyCoveredWindows": 0,
+    "hits": 0,
+    "hitWilson95": null,
+    "scores": {
+      "empirical": {
+        "n": 0,
+        "brier": null,
+        "logLoss": null,
+        "meanForecast": null
+      },
+      "recentBeta": {
+        "n": 0,
+        "brier": null,
+        "logLoss": null,
+        "meanForecast": null
+      },
+      "poisson": {
+        "n": 0,
+        "brier": null,
+        "logLoss": null,
+        "meanForecast": null
+      }
+    }
+  },
+  "gamma": {
+    "gridAnchors": 293,
+    "eligible": 293,
+    "known": 292,
+    "unknown": 1,
+    "unknownReasons": {
+      "missing-endpoint-bracket": 1
+    },
+    "hits": 35,
+    "hitFrequency": 0.11986301369863013,
+    "scores": {
+      "gammaPoisson": {
+        "n": 292,
+        "brier": 0.106398762327702,
+        "logLoss": 0.37208305508595096,
+        "meanForecast": 0.0986888361429761
+      },
+      "empirical": {
+        "n": 292,
+        "brier": 0.10592183219178102,
+        "logLoss": 0.36947004180681603,
+        "meanForecast": 0.1019349315068495
+      },
+      "poissonPlugin": {
+        "n": 292,
+        "brier": 0.106479994929099,
+        "logLoss": 0.37262759673173507,
+        "meanForecast": 0.09692056215699524
+      }
+    },
+    "pairedBrierVsEmpirical": {
+      "n": 292,
+      "meanDifference": 0.00047693013592115907,
+      "interval95": [
+        -0.000271093597503531,
+        0.001178596239703635
+      ],
+      "method": "paired circular moving-block bootstrap; block=10 windows; 3000 draws; fixed seed; approximate"
+    },
+    "pairedLogLossVsEmpirical": {
+      "n": 292,
+      "meanDifference": 0.0026130132791346004,
+      "interval95": [
+        -0.002319188585284742,
+        0.0070357287218548465
+      ],
+      "method": "paired circular moving-block bootstrap; block=10 windows; 3000 draws; fixed seed; approximate"
+    }
+  },
+  "limitations": [
+    "New time period was not used to tune model gates, but replay was run after implementation; future prospective validation remains necessary.",
+    "Recorded completion timestamps are not source arrival/poll timestamps; replay assumes immediate availability and does not test live delays.",
+    "This single approximately15-hour holdout has35 rare round events; it is too short for strong predictive claims.",
+    "Historical interval nonoverlap is a repeated conditional comparison, not a calibrated future edge or false-alert guarantee.",
+    "Model coverage depends on observed spacing and cannot prove complete provider delivery. Any-hit-window scores are not per-bet profits.",
+    "Zero issued backup alerts means backup precision, lift and Brier/log scores cannot be estimated."
+  ]
+}

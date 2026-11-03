@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         GOD PREDITOR PRO VIP — LuckyJet Safari
 // @namespace    https://miuiproking.github.io/luckyjet-telegram-mini-app/god-preditor-pro-vip/
-// @version      1.5.0
-// @description  Исправленная экспериментальная модель v2; преимущество в точности не установлено. Автоставки и DOM-автозабирание выключены до явного включения и выбора полей/счётчика.
+// @version      1.6.0
+// @description  Gamma-Poisson и дополнительная экспериментальная модель окон 100×; преимущество в точности не установлено. Красные предупреждения информационные. Авто выключено до явного включения.
 // @match        https://one-vv3016.com/*
 // @match        https://miuiproking.github.io/luckyjet-telegram-mini-app/god-preditor-pro-vip/safari/preview.html
 // @match        https://1play.gamedev-tech.cc/*
@@ -41,7 +41,7 @@
     let message = "Автовывод выключен", logs = [];
     const pending = /* @__PURE__ */ new Map(), acknowledgements = /* @__PURE__ */ new Map();
     const receipts = /* @__PURE__ */ new Set(), consumed = /* @__PURE__ */ new Set();
-    function record(text) {
+    function record2(text) {
       if (text !== message) {
         message = text;
         logs.push({ at: previousNow, text });
@@ -54,11 +54,11 @@
       pending.clear();
       acknowledgements.clear();
     }
-    function fail(reason) {
+    function fail(reason2) {
       if (failing) return false;
       failing = true;
       clear();
-      record(reason);
+      record2(reason2);
       if (!notifying) {
         notifying = true;
         try {
@@ -69,7 +69,7 @@
         }
       }
       try {
-        onFatal(reason);
+        onFatal(reason2);
       } catch {
       } finally {
         failing = false;
@@ -77,7 +77,7 @@
       return false;
     }
     function notify(text) {
-      if (text) record(text);
+      if (text) record2(text);
       if (notifying) return;
       notifying = true;
       try {
@@ -88,11 +88,11 @@
         notifying = false;
       }
     }
-    function disarm(reason = "Автовывод выключен") {
+    function disarm(reason2 = "Автовывод выключен") {
       clear();
-      notify(reason);
+      notify(reason2);
     }
-    function clock2(initial = false) {
+    function clock3(initial = false) {
       const time = now(), mono = monotonic();
       if (!Number.isFinite(time) || !Number.isFinite(mono) || mono < 0) throw Error("Некорректные часы");
       if (!initial) {
@@ -136,9 +136,9 @@
       }
       return checked;
     }
-    function close(entry, reason) {
+    function close(entry, reason2) {
       pending.delete(entry.index);
-      notify(`Поле ${entry.index + 1}: ${reason} · жду новую автоставку`);
+      notify(`Поле ${entry.index + 1}: ${reason2} · жду новую автоставку`);
     }
     function freshChange(source, time) {
       time = Math.max(time, source.observedAt);
@@ -152,7 +152,7 @@
         latestSource = null;
         if (!["test", "live"].includes(nextMode)) throw Error("Неизвестный режим автовывода");
         mode = nextMode;
-        const { time, mono } = clock2(true);
+        const { time, mono } = clock3(true);
         checkContext();
         const source = sourceAt(time);
         if (source.state !== "ready") throw Error("Сначала выбери читаемый живой коэффициент");
@@ -175,7 +175,7 @@
       if (receipts.has(id)) return false;
       busy = true;
       try {
-        const { time } = clock2();
+        const { time } = clock3();
         if (!Number.isFinite(receipt.at) || receipt.at < armedAt || receipt.at > time || time - receipt.at > CASHOUT_FRESH_MS) return false;
         checkContext();
         const source = sourceAt(time);
@@ -213,10 +213,10 @@
       if (!armed || mode !== "live" || busy || failing || ![0, 1].includes(index)) return false;
       busy = true;
       try {
-        const { time } = clock2();
+        const { time } = clock3();
         checkContext();
         sourceAt(time);
-        clock2();
+        clock3();
         checkContext();
         if (pending.has(index) || acknowledgements.has(index)) throw Error(`Поле ${index + 1}: предыдущее наблюдение ещё не завершено`);
         return armed;
@@ -231,7 +231,7 @@
       busy = true;
       const ticket = generation;
       try {
-        const { time, mono } = clock2();
+        const { time, mono } = clock3();
         previousNow = time;
         previousMono = mono;
         checkContext();
@@ -292,10 +292,10 @@
           entry.lastValue = source.value;
           entry.lastChangeAt = source.changedAt;
           if (entry.increases < 2 || source.value < entry.target) continue;
-          const beforeRead = clock2();
+          const beforeRead = clock3();
           checkContext();
           const finalSource = sourceAt(beforeRead.time), finalButton = inspect(entry.button);
-          const finalClock = clock2();
+          const finalClock = clock3();
           checkContext();
           if (!armed || generation !== ticket) return;
           if (finalButton.state === "closed") {
@@ -537,7 +537,7 @@
       } catch {
         at = NaN;
       }
-      const result = (state, reason, value = null) => ({ state, value, at, changedAt, epoch, reason });
+      const result = (state, reason2, value = null) => ({ state, value, at, changedAt, epoch, reason: reason2 });
       if (clockUnsafe || !Number.isFinite(at) || at < 0 || lastAt != null && at < lastAt || changedAt != null && changedAt > at) {
         clockUnsafe = true;
         return result("unsafe", "время изменилось — выбери счётчик заново");
@@ -676,10 +676,12 @@
     const legacy = Array.isArray(saved.legacyJournal) ? saved.legacyJournal.filter((x) => x && typeof x === "object") : [];
     const active = saved.model === model ? journal.filter((x) => x.model === model) : [];
     const archived = saved.model === model ? journal.filter((x) => x.model !== model) : journal;
+    const rare = current != null && saved.model === model && Array.isArray(saved.rareJournal) ? saved.rareJournal.filter((x) => x && typeof x === "object" && !Array.isArray(x)) : [];
     return {
       model,
       rows: Array.isArray(saved.rows) ? saved.rows : [],
       journal: active.slice(-100),
+      rareJournal: rare.slice(-100),
       legacyJournal: [...legacy, ...archived].slice(-200),
       selected: saved.selected === "big" ? "big" : "primary",
       ui: saved.ui && typeof saved.ui === "object" && !Array.isArray(saved.ui) ? saved.ui : {}
@@ -743,10 +745,10 @@
   // ../supabase-feed.mjs
   var COLUMNS = "id,source_seq,coefficient,round_timestamp,estimated,origin";
   function mapSupabaseRound(row, now = Date.now()) {
-    const timestamp = Date.parse(row.round_timestamp);
+    const timestamp2 = Date.parse(row.round_timestamp);
     const coefficient = Number(row.coefficient);
-    if (row.estimated !== false || !row.round_timestamp || !Number.isFinite(timestamp) || timestamp <= 0 || timestamp > now || !Number.isFinite(coefficient) || coefficient < 1 || !row.id) return null;
-    return { id: `supabase:luckyjet:${row.id}`, coefficient, timestamp, source: "Supabase · LuckyJet" };
+    if (row.estimated !== false || !row.round_timestamp || !Number.isFinite(timestamp2) || timestamp2 <= 0 || timestamp2 > now || !Number.isFinite(coefficient) || coefficient < 1 || !row.id) return null;
+    return { id: `supabase:luckyjet:${row.id}`, coefficient, timestamp: timestamp2, source: "Supabase · LuckyJet" };
   }
   function createSupabaseFeed(config, { onRounds, onStatus, fetchImpl = fetch, now = Date.now, schedule = setTimeout, cancel = clearTimeout }) {
     const root = new URL(config.url);
@@ -833,12 +835,12 @@
     const coefficient = Number(o.coefficient ?? o.multiplier ?? o.coef ?? o.value);
     const rawTimestamp = o.timestamp ?? o.played_at ?? o.time;
     if (rawTimestamp == null || String(rawTimestamp).trim() === "") throw Error("Для проверки временного окна нужно время раунда");
-    const timestamp = parseTime(rawTimestamp, now);
+    const timestamp2 = parseTime(rawTimestamp, now);
     if (!Number.isFinite(coefficient) || coefficient < 1) throw Error("Коэффициент должен быть числом ≥ 1");
-    if (!Number.isFinite(timestamp) || timestamp <= 0 || timestamp > now) throw Error("Неверное или будущее время раунда");
-    const id = String(o.id ?? `${timestamp}:${coefficient}`);
+    if (!Number.isFinite(timestamp2) || timestamp2 <= 0 || timestamp2 > now) throw Error("Неверное или будущее время раунда");
+    const id = String(o.id ?? `${timestamp2}:${coefficient}`);
     if (id.length > 300) throw Error("Слишком длинный ID");
-    return { id, coefficient, timestamp, source: String(o.source ?? source).slice(0, 100) };
+    return { id, coefficient, timestamp: timestamp2, source: String(o.source ?? source).slice(0, 100) };
   }
   function mergeRounds(current, incoming, source, now = Date.now()) {
     if (!Array.isArray(incoming)) incoming = [incoming];
@@ -999,10 +1001,10 @@
     return median(xs.map((x) => Math.abs(x - center)));
   };
   var clamp = (value, low, high) => Math.max(low, Math.min(high, value));
-  function bucketBy(rounds, keyOf) {
+  function bucketBy(rounds, keyOf2) {
     const grouped = /* @__PURE__ */ new Map();
     for (const round of rounds) {
-      const key = keyOf(round);
+      const key = keyOf2(round);
       const values = grouped.get(key) ?? [];
       values.push(round.coefficient);
       grouped.set(key, values);
@@ -1356,21 +1358,21 @@
     return normalizeRounds(rounds, now);
   }
   function currentSegment(rows) {
-    let count = rows.length, boundaryGapMs = null;
+    let count2 = rows.length, boundaryGapMs = null;
     for (let i = 1; i < rows.length; i++) {
       const gap = rows[i - 1].timestamp - rows[i].timestamp;
       if (gap > MAX_FRESH_AGE_MS) {
-        count = i;
+        count2 = i;
         boundaryGapMs = gap;
         break;
       }
     }
     return {
-      rows: rows.slice(0, count),
+      rows: rows.slice(0, count2),
       diagnostics: {
         gapThresholdMs: MAX_FRESH_AGE_MS,
-        currentSegmentCount: count,
-        discardedOlderSegmentRows: rows.length - count,
+        currentSegmentCount: count2,
+        discardedOlderSegmentRows: rows.length - count2,
         boundaryGapMs,
         status: boundaryGapMs === null ? "no-large-gap-observed" : "continuity-unknown-before-gap"
       }
@@ -1590,11 +1592,618 @@
     return { journal: next.slice(-200), changed, analysis, diagnostics: analysis.diagnostics };
   }
 
+  // src/rare-window-model.mjs
+  var MODEL2 = "rare-window-v1";
+  var EVIDENCE_STATUS2 = "experimental-unvalidated";
+  var THRESHOLD = 100;
+  var HORIZON_MS = 18e4;
+  var MIN_ROUNDS2 = 500;
+  var MAX_WINDOWS = 200;
+  var RECENT_WINDOWS = 30;
+  var MIN_REFERENCE_WINDOWS = 60;
+  var MIN_EVENTS = 5;
+  var COVERAGE_ASSUMPTION = "operational-coverage-assumption";
+  var MINUTE2 = 6e4;
+  var MIN_TIMESTAMP2 = 9466848e5;
+  var MAX_NOW = 864e13 - 30 * MINUTE2;
+  var clamp01 = (x) => Math.max(0, Math.min(1, x));
+  function logGamma(z) {
+    if (!Number.isFinite(z) || z <= 0) return NaN;
+    const coefficients = [
+      676.5203681218851,
+      -1259.1392167224028,
+      771.3234287776531,
+      -176.6150291621406,
+      12.507343278686905,
+      -0.13857109526572012,
+      9984369578019572e-21,
+      15056327351493116e-23
+    ];
+    if (z < 0.5) return Math.log(Math.PI) - Math.log(Math.sin(Math.PI * z)) - logGamma(1 - z);
+    const shifted = z - 1;
+    let sum = 0.9999999999998099;
+    for (let i = 0; i < coefficients.length; i++) sum += coefficients[i] / (shifted + i + 1);
+    const t = shifted + 7.5;
+    return 0.9189385332046727 + (shifted + 0.5) * Math.log(t) - t + Math.log(sum);
+  }
+  function betaFraction(a, b, x) {
+    const tiny = 1e-300;
+    const nonzero = (value) => Math.abs(value) < tiny ? value < 0 ? -tiny : tiny : value;
+    const qab = a + b, qap = a + 1, qam = a - 1;
+    let c = 1, d = 1 / nonzero(1 - qab * x / qap), h = d;
+    for (let m2 = 1; m2 <= 300; m2++) {
+      const twice = 2 * m2;
+      let aa = m2 * (b - m2) * x / ((qam + twice) * (a + twice));
+      d = 1 / nonzero(1 + aa * d);
+      c = nonzero(1 + aa / c);
+      h *= d * c;
+      aa = -(a + m2) * (qab + m2) * x / ((a + twice) * (qap + twice));
+      d = 1 / nonzero(1 + aa * d);
+      c = nonzero(1 + aa / c);
+      const delta = d * c;
+      h *= delta;
+      if (Math.abs(delta - 1) < 3e-14) return h;
+    }
+    return NaN;
+  }
+  function regularizedBeta(x, a, b) {
+    if (![x, a, b].every(Number.isFinite) || a <= 0 || b <= 0 || x < 0 || x > 1) return NaN;
+    if (x === 0 || x === 1) return x;
+    const factor = Math.exp(logGamma(a + b) - logGamma(a) - logGamma(b) + a * Math.log(x) + b * Math.log1p(-x));
+    return clamp01(x < (a + 1) / (a + b + 2) ? factor * betaFraction(a, b, x) / a : 1 - factor * betaFraction(b, a, 1 - x) / b);
+  }
+  function inverseBetaCDF(p, a, b) {
+    if (![p, a, b].every(Number.isFinite) || p < 0 || p > 1 || a <= 0 || b <= 0) return NaN;
+    if (p === 0 || p === 1) return p;
+    let low = 0, high = 1;
+    for (let i = 0; i < 90; i++) {
+      const middle = (low + high) / 2;
+      const cdf = regularizedBeta(middle, a, b);
+      if (!Number.isFinite(cdf)) return NaN;
+      if (cdf < p) low = middle;
+      else high = middle;
+    }
+    return (low + high) / 2;
+  }
+  function regularizedGamma(shape, x) {
+    if (!Number.isFinite(shape) || shape <= 0 || typeof x !== "number" || Number.isNaN(x) || x < 0) return NaN;
+    if (x === 0) return 0;
+    if (x === Infinity) return 1;
+    const factor = Math.exp(shape * Math.log(x) - x - logGamma(shape));
+    if (x < shape + 1) {
+      let term = 1 / shape, sum = term;
+      for (let i = 1; i <= 2e3; i++) {
+        term *= x / (shape + i);
+        sum += term;
+        if (Math.abs(term) < Math.abs(sum) * 3e-14) return clamp01(sum * factor);
+      }
+    } else {
+      const tiny = 1e-300;
+      const nonzero = (value) => Math.abs(value) < tiny ? value < 0 ? -tiny : tiny : value;
+      let b = x + 1 - shape, c = 1 / tiny, d = 1 / nonzero(b), h = d;
+      for (let i = 1; i <= 2e3; i++) {
+        const an = -i * (i - shape);
+        b += 2;
+        d = 1 / nonzero(an * d + b);
+        c = nonzero(b + an / c);
+        const delta = d * c;
+        h *= delta;
+        if (Math.abs(delta - 1) < 3e-14) return clamp01(1 - factor * h);
+      }
+    }
+    return NaN;
+  }
+  function inverseGammaCDF(p, shape) {
+    if (![p, shape].every(Number.isFinite) || p < 0 || p > 1 || shape <= 0) return NaN;
+    if (p === 0) return 0;
+    if (p === 1) return Infinity;
+    let low = 0, high = Math.max(1, shape);
+    for (let i = 0; i < 100 && regularizedGamma(shape, high) < p; i++) high *= 2;
+    if (regularizedGamma(shape, high) < p) return NaN;
+    for (let i = 0; i < 100; i++) {
+      const middle = (low + high) / 2;
+      const cdf = regularizedGamma(shape, middle);
+      if (!Number.isFinite(cdf)) return NaN;
+      if (cdf < p) low = middle;
+      else high = middle;
+    }
+    return (low + high) / 2;
+  }
+  function gammaPoissonPosterior(eventCount, exposureMs, horizonMs = HORIZON_MS) {
+    if (!Number.isSafeInteger(eventCount) || eventCount < 0 || !Number.isFinite(exposureMs) || exposureMs <= 0 || !Number.isFinite(horizonMs) || horizonMs < 0) return null;
+    const shape = eventCount + 0.5;
+    const rateInterval95PerMs = [0.025, 0.975].map((p) => inverseGammaCDF(p, shape) / exposureMs);
+    if (!rateInterval95PerMs.every(Number.isFinite)) return null;
+    return {
+      shape,
+      rateMs: exposureMs,
+      meanRatePerMs: shape / exposureMs,
+      rateInterval95PerMs,
+      probability: -Math.expm1(-shape * Math.log1p(horizonMs / exposureMs)),
+      probabilityInterval95: rateInterval95PerMs.map((rate) => -Math.expm1(-rate * horizonMs))
+    };
+  }
+  function newestSegment(rows) {
+    let boundary = rows.length, boundaryGapMs = null;
+    for (let i = 1; i < rows.length; i++) {
+      const gap = rows[i - 1].timestamp - rows[i].timestamp;
+      if (gap > HORIZON_MS) {
+        boundary = i;
+        boundaryGapMs = gap;
+        break;
+      }
+    }
+    return {
+      rows: rows.slice(0, boundary).reverse(),
+      diagnostics: {
+        gapThresholdMs: HORIZON_MS,
+        currentSegmentCount: boundary,
+        discardedOlderSegmentRows: rows.length - boundary,
+        boundaryGapMs,
+        coverageAssumption: COVERAGE_ASSUMPTION
+      }
+    };
+  }
+  function completedWindows(rows) {
+    if (rows.length < 2) return [];
+    const firstAt = rows[0].timestamp, lastAt = rows.at(-1).timestamp;
+    const lastEnd = Math.floor(lastAt / HORIZON_MS) * HORIZON_MS;
+    const firstStart = Math.max(Math.ceil(firstAt / HORIZON_MS) * HORIZON_MS, lastEnd - MAX_WINDOWS * HORIZON_MS);
+    const windows = [];
+    let index = 0;
+    for (let start2 = firstStart; start2 + HORIZON_MS <= lastEnd; start2 += HORIZON_MS) {
+      const end = start2 + HORIZON_MS;
+      while (index < rows.length && rows[index].timestamp <= start2) index++;
+      let rowCount = 0, eventCount = 0;
+      while (index < rows.length && rows[index].timestamp <= end) {
+        rowCount++;
+        eventCount += Number(rows[index].coefficient >= THRESHOLD);
+        index++;
+      }
+      windows.push({ start: start2, end, rowCount, eventCount, hit: eventCount > 0 });
+    }
+    return windows;
+  }
+  function windowSummary(windows) {
+    if (!windows.length) return null;
+    const n = windows.length, hits = windows.filter((w) => w.hit).length;
+    const a = hits + 0.5, b = n - hits + 0.5;
+    return {
+      start: windows[0].start,
+      end: windows.at(-1).end,
+      windowCount: n,
+      hitWindowCount: hits,
+      eventCount: windows.reduce((sum, w) => sum + w.eventCount, 0),
+      observedFrequency: hits / n,
+      posteriorMean: a / (a + b),
+      interval95: [0.025, 0.975].map((p) => inverseBetaCDF(p, a, b)),
+      posterior: { distribution: "beta", alpha: a, beta: b }
+    };
+  }
+  function analyzeRareWindows(input, now = Date.now()) {
+    const validNow3 = Number.isSafeInteger(now) && now >= MIN_TIMESTAMP2 && now <= MAX_NOW;
+    const normalized = normalizeRounds(input, now);
+    const segment = newestSegment(normalized), rows = segment.rows;
+    const firstAt = rows[0]?.timestamp ?? null, lastAt = rows.at(-1)?.timestamp ?? null;
+    const ageMs = lastAt === null || !validNow3 ? null : now - lastAt;
+    const fresh = ageMs !== null && ageMs <= HORIZON_MS;
+    const exposureMs = firstAt === null ? 0 : lastAt - firstAt;
+    const gateReason = !validNow3 ? "invalid-now" : !Array.isArray(input) ? "invalid-input" : !rows.length ? "no-valid-completed-rounds" : !fresh ? "stale-data" : rows.length < MIN_ROUNDS2 ? "insufficient-contiguous-history" : exposureMs <= 0 ? "no-positive-exposure" : null;
+    const ready = gateReason === null;
+    const eventCount = rows.filter((r) => r.timestamp > firstAt && r.coefficient >= THRESHOLD).length;
+    let poissonReason = gateReason ?? (exposureMs < HORIZON_MS ? "insufficient-exposure" : eventCount < MIN_EVENTS ? "insufficient-events" : null);
+    const posterior = poissonReason === null ? gammaPoissonPosterior(eventCount, exposureMs) : null;
+    if (poissonReason === null && posterior === null) poissonReason = "numerical-failure";
+    const poisson = {
+      status: posterior ? "ready" : "insufficient",
+      reason: poissonReason,
+      model: "stationary-poisson-gamma-jeffreys",
+      evidenceStatus: "assumption-only-not-calibrated",
+      assumption: "stationary-event-rate",
+      coverageAssumption: COVERAGE_ASSUMPTION,
+      exposureStart: firstAt,
+      exposureEnd: lastAt,
+      exposureMs,
+      eventCount,
+      intervalConvention: "start-exclusive-end-inclusive",
+      horizonMs: HORIZON_MS,
+      observedRatePerMs: exposureMs > 0 ? eventCount / exposureMs : null,
+      posteriorShape: posterior?.shape ?? null,
+      posteriorRateMs: posterior?.rateMs ?? null,
+      posteriorMeanRatePerMs: posterior?.meanRatePerMs ?? null,
+      rateInterval95PerMs: posterior?.rateInterval95PerMs ?? null,
+      probability: posterior?.probability ?? null,
+      probabilityInterval95: posterior?.probabilityInterval95 ?? null,
+      intervalKind: "95-percent-equal-tailed-gamma-posterior"
+    };
+    const windows = completedWindows(rows);
+    const split = Math.max(0, windows.length - RECENT_WINDOWS);
+    const recent = windowSummary(windows.slice(split));
+    const reference = windowSummary(windows.slice(0, split));
+    const numericalSupport = [...recent?.interval95 ?? [], ...reference?.interval95 ?? []].every(Number.isFinite);
+    const bayesianReason = gateReason ?? (recent?.windowCount !== RECENT_WINDOWS || (reference?.windowCount ?? 0) < MIN_REFERENCE_WINDOWS ? "insufficient-covered-windows" : recent.hitWindowCount < MIN_EVENTS || reference.hitWindowCount < MIN_EVENTS ? "insufficient-hit-windows" : !numericalSupport ? "numerical-failure" : null);
+    const supported = bayesianReason === null;
+    const localRise = supported && recent.interval95[0] > reference.interval95[1];
+    const bayesian = {
+      status: supported ? "ready" : "insufficient",
+      reason: bayesianReason ?? (localRise ? "experimental-local-frequency-rise" : "no-supported-local-rise"),
+      model: "beta-jeffreys-window-frequency",
+      evidenceStatus: EVIDENCE_STATUS2,
+      coverageAssumption: COVERAGE_ASSUMPTION,
+      assumption: "exchangeable-window-outcomes-within-each-historical-group",
+      intervalConvention: "start-exclusive-end-inclusive",
+      intervalKind: "95-percent-equal-tailed-beta-posterior",
+      windows,
+      windowCount: windows.length,
+      hitWindowCount: windows.filter((w) => w.hit).length,
+      eventCount: windows.reduce((sum, w) => sum + w.eventCount, 0),
+      recent,
+      reference,
+      localFrequencyRise: localRise,
+      currentWindowFrequency: supported ? recent.posteriorMean : null,
+      currentWindowFrequencyInterval95: supported ? recent.interval95 : null
+    };
+    const start2 = validNow3 ? Math.ceil((now + 2 * MINUTE2) / MINUTE2) * MINUTE2 : null;
+    const candidate = localRise ? {
+      model: MODEL2,
+      source: "beta-window-frequency",
+      target: THRESHOLD,
+      generatedAt: now,
+      start: start2,
+      end: start2 + HORIZON_MS,
+      windowMs: HORIZON_MS,
+      horizonMs: HORIZON_MS,
+      evidenceStatus: EVIDENCE_STATUS2,
+      purpose: "observation-only",
+      interpretation: "experimental-local-frequency-rise",
+      coverageAssumption: COVERAGE_ASSUMPTION,
+      currentWindowFrequency: recent.posteriorMean,
+      currentWindowFrequencyInterval95: [...recent.interval95],
+      referenceWindowFrequency: reference.posteriorMean,
+      referenceWindowFrequencyInterval95: [...reference.interval95],
+      recentWindowCount: recent.windowCount,
+      recentHitWindowCount: recent.hitWindowCount,
+      referenceWindowCount: reference.windowCount,
+      referenceHitWindowCount: reference.hitWindowCount,
+      reason: "Disjoint historical window groups have separated 95% Beta posterior intervals; future performance is unvalidated."
+    } : null;
+    return {
+      ready,
+      evidenceStatus: EVIDENCE_STATUS2,
+      threshold: THRESHOLD,
+      horizonMs: HORIZON_MS,
+      poisson,
+      bayesian,
+      candidate,
+      diagnostics: {
+        analyzedAt: validNow3 ? now : null,
+        reason: gateReason ?? bayesian.reason,
+        inputCount: Array.isArray(input) ? input.length : 0,
+        acceptedCount: normalized.length,
+        rejectedCount: Array.isArray(input) ? input.length - normalized.length : 0,
+        lastAt,
+        freshestAgeMs: ageMs,
+        fresh,
+        ...segment.diagnostics
+      }
+    };
+  }
+
+  // src/rare-alerts.mjs
+  var MODEL3 = "rare-alert-v1";
+  var RESULT_GRACE_MS2 = 18e4;
+  var MAX_ALERTS = 100;
+  var BIG_MODEL = "hardened-dynamic-windows-v4";
+  var RARE_MODEL = "rare-window-v1";
+  var BIG_SOURCE = "existing-big-opportunity";
+  var BETA_SOURCE = "beta-window-frequency";
+  var MINUTE3 = 6e4;
+  var POLL_FRESH_MS = 12e3;
+  var MIN_TIMESTAMP3 = 9466848e5;
+  var MAX_TIMESTAMP2 = 864e13;
+  var STATUSES = /* @__PURE__ */ new Set(["pending", "hit", "miss", "unknown"]);
+  var record = (value) => !!value && typeof value === "object" && !Array.isArray(value);
+  var finite2 = (value) => typeof value === "number" && Number.isFinite(value);
+  var timestamp = (value) => Number.isSafeInteger(value) && value >= MIN_TIMESTAMP3 && value <= MAX_TIMESTAMP2;
+  var validNow2 = (value) => timestamp(value) && value <= MAX_TIMESTAMP2 - 30 * MINUTE3;
+  var safeTarget = (value) => Number.isSafeInteger(value) && value >= 100;
+  function validTimes(value) {
+    return record(value) && safeTarget(value.target) && [value.generatedAt, value.start, value.end].every(timestamp) && Number.isSafeInteger(value.windowMs) && value.windowMs > 0 && value.windowMs <= 10 * MINUTE3 && value.end - value.start === value.windowMs && value.start - value.generatedAt >= 2 * MINUTE3 && value.start - value.generatedAt <= 15 * MINUTE3;
+  }
+  function candidateFromBig(value, now) {
+    if (!record(value) || value.model !== BIG_MODEL || value.channel !== "big" || value.evidenceStatus !== EVIDENCE_STATUS || value.scoreKind !== "heuristic" || !finite2(value.heuristicScore) || value.heuristicScore < 0 || value.heuristicScore > 100 || !validTimes(value) || value.start < value.generatedAt + 3 * MINUTE3 || value.windowMs > 6 * MINUTE3 || value.end > value.generatedAt + 9 * MINUTE3 || value.generatedAt > now || value.start <= now) return null;
+    return {
+      source: BIG_SOURCE,
+      sourceModel: BIG_MODEL,
+      target: value.target,
+      generatedAt: value.generatedAt,
+      start: value.start,
+      end: value.end,
+      windowMs: value.windowMs
+    };
+  }
+  function candidateFromBeta(value, now) {
+    if (!record(value) || value.model !== RARE_MODEL || value.source !== BETA_SOURCE || value.evidenceStatus !== EVIDENCE_STATUS || value.target !== 100) return null;
+    const candidate = { ...value, windowMs: value.end - value.start };
+    if (!validTimes(candidate) || candidate.generatedAt > now || candidate.start <= now) return null;
+    return {
+      source: BETA_SOURCE,
+      sourceModel: RARE_MODEL,
+      target: candidate.target,
+      generatedAt: candidate.generatedAt,
+      start: candidate.start,
+      end: candidate.end,
+      windowMs: candidate.windowMs
+    };
+  }
+  function keyOf(value) {
+    return `${MODEL3}:${value.source}:${value.generatedAt}:${value.start}:${value.end}:${value.target}:${value.acceptedAt}`;
+  }
+  function validResult(value, now) {
+    if (value.status === "pending") {
+      return value.actual === void 0 && value.actualAt === void 0 && value.resolvedAt === void 0;
+    }
+    if (!timestamp(value.resolvedAt) || value.resolvedAt < value.acceptedAt || value.resolvedAt > now) return false;
+    if (value.status === "hit") {
+      return finite2(value.actual) && value.actual >= value.target && timestamp(value.actualAt) && value.actualAt >= value.start && value.actualAt <= value.end && value.actualAt <= value.resolvedAt;
+    }
+    if (value.status === "miss") {
+      return finite2(value.actual) && value.actual >= 1 && value.actual < value.target && value.actualAt === value.end && value.resolvedAt > value.end;
+    }
+    return value.resolvedAt > value.end + RESULT_GRACE_MS2 && (value.actual === null || finite2(value.actual) && value.actual >= 1 && value.actual < value.target) && (value.actual === null ? value.actualAt === null : timestamp(value.actualAt) && value.actualAt >= value.start && value.actualAt <= value.end);
+  }
+  function validEntry(value, now) {
+    if (!record(value) || value.model !== MODEL3 || value.evidenceStatus !== EVIDENCE_STATUS || !validTimes(value) || !timestamp(value.acceptedAt) || value.acceptedAt < value.generatedAt || value.acceptedAt >= value.start || value.acceptedAt > now || !STATUSES.has(value.status) || !finite2(value.avgRoundSeconds) || value.avgRoundSeconds <= 0 || value.avgRoundSeconds > 180 || value.key !== keyOf(value) || !validResult(value, now)) return false;
+    if (value.source === BIG_SOURCE) {
+      return value.sourceModel === BIG_MODEL && value.start >= value.generatedAt + 3 * MINUTE3 && value.windowMs <= 6 * MINUTE3 && value.end <= value.generatedAt + 9 * MINUTE3;
+    }
+    return value.source === BETA_SOURCE && value.sourceModel === RARE_MODEL && value.target === 100;
+  }
+  function cleanEntry(value) {
+    const clean = {
+      model: MODEL3,
+      key: value.key,
+      source: value.source,
+      sourceModel: value.sourceModel,
+      evidenceStatus: EVIDENCE_STATUS,
+      target: value.target,
+      generatedAt: value.generatedAt,
+      acceptedAt: value.acceptedAt,
+      start: value.start,
+      end: value.end,
+      windowMs: value.windowMs,
+      avgRoundSeconds: value.avgRoundSeconds,
+      status: value.status
+    };
+    if (value.status !== "pending") {
+      clean.actual = value.actual;
+      clean.actualAt = value.actualAt;
+      clean.resolvedAt = value.resolvedAt;
+    }
+    return clean;
+  }
+  function sameFields(a, b) {
+    const keys = Object.keys(a);
+    return keys.length === Object.keys(b).length && keys.every((key) => Object.hasOwn(b, key) && a[key] === b[key]);
+  }
+  function sanitize(journal) {
+    const input = Array.isArray(journal) ? journal : [];
+    const eligible = input.filter((value) => validEntry(value, Infinity)).sort((a, b) => a.acceptedAt - b.acceptedAt || a.start - b.start || a.key.localeCompare(b.key));
+    const clean = [], keys = /* @__PURE__ */ new Set();
+    for (const value of eligible) {
+      const previous = clean.at(-1);
+      const blockedUntil = previous?.status === "pending" ? Infinity : Math.max(previous?.end ?? 0, previous?.resolvedAt ?? 0);
+      if (keys.has(value.key) || value.acceptedAt < blockedUntil) continue;
+      keys.add(value.key);
+      clean.push(cleanEntry(value));
+    }
+    const capped = clean.slice(-MAX_ALERTS);
+    return {
+      journal: capped,
+      changed: capped.length !== input.length || capped.some((value, i) => !sameFields(value, input[i]))
+    };
+  }
+  function currentSegment2(rows) {
+    let count2 = rows.length;
+    for (let i = 1; i < rows.length; i++) {
+      if (rows[i - 1].timestamp - rows[i].timestamp > MAX_FRESH_AGE_MS) {
+        count2 = i;
+        break;
+      }
+    }
+    return rows.slice(0, count2);
+  }
+  function cadenceSeconds(rows) {
+    const gaps = rows.slice(1, 101).map((row, i) => rows[i].timestamp - row.timestamp).filter((gap) => gap > 0).sort((a, b) => a - b);
+    if (!gaps.length) return 30;
+    const middle = Math.floor(gaps.length / 2);
+    const median2 = gaps.length % 2 ? gaps[middle] : gaps[middle - 1] / 2 + gaps[middle] / 2;
+    return Math.min(180, Math.max(1e-3, median2 / 1e3));
+  }
+  function sourceFresh(online, lastSuccessAt, now) {
+    return online === true && timestamp(lastSuccessAt) && lastSuccessAt <= now && now - lastSuccessAt <= POLL_FRESH_MS;
+  }
+  function analysisFresh(analysis, rows, segment, now) {
+    return analysis?.ready === true && analysis.evidenceStatus === EVIDENCE_STATUS && analysis.threshold === 100 && analysis.horizonMs === 18e4 && segment.length >= MIN_ROUNDS2 && rows.length > 0 && now - rows[0].timestamp <= MAX_FRESH_AGE_MS;
+  }
+  function advanceRareAlerts(journal, rounds, options = {}) {
+    const { analysis = null, bigForecast = null, now = Date.now(), online = false, lastSuccessAt = null } = options ?? {};
+    const sanitized = sanitize(journal);
+    if (!validNow2(now) || sanitized.journal.some((entry) => entry.acceptedAt > now || entry.resolvedAt !== void 0 && entry.resolvedAt > now)) {
+      return {
+        journal: Object.freeze(sanitized.journal.map((entry) => Object.freeze(entry))),
+        changed: sanitized.changed,
+        active: null,
+        latestResult: null
+      };
+    }
+    const rows = normalizeRounds(rounds, now), segment = currentSegment2(rows);
+    let changed = sanitized.changed;
+    const freshPoll = sourceFresh(online, lastSuccessAt, now);
+    const freshAnalysis = analysisFresh(analysis, rows, segment, now);
+    const next = sanitized.journal.map((entry) => {
+      if (entry.status !== "pending") return entry;
+      const result = We(entry, rows, now, entry.avgRoundSeconds);
+      const freshFinalPoll = freshPoll && lastSuccessAt >= entry.end && rows.length > 0 && now - rows[0].timestamp <= MAX_FRESH_AGE_MS;
+      if (result && (result.status === "validated" || freshFinalPoll)) {
+        changed = true;
+        return {
+          ...entry,
+          status: result.status === "validated" ? "hit" : "miss",
+          actual: result.coefficient,
+          actualAt: result.at,
+          resolvedAt: now
+        };
+      }
+      if (now > entry.end + RESULT_GRACE_MS2) {
+        const best = Te(rows, entry.target, entry.start, entry.windowMs);
+        changed = true;
+        return { ...entry, status: "unknown", actual: best.best, actualAt: best.bestAt, resolvedAt: now };
+      }
+      return entry;
+    });
+    const blocked = next.some((entry) => entry.status === "pending" || now < entry.end);
+    if (!blocked && freshPoll && freshAnalysis) {
+      const candidate = candidateFromBig(bigForecast, now) ?? candidateFromBeta(analysis.candidate, now);
+      if (candidate) {
+        const entry = {
+          ...candidate,
+          model: MODEL3,
+          evidenceStatus: EVIDENCE_STATUS,
+          acceptedAt: now,
+          avgRoundSeconds: cadenceSeconds(segment),
+          status: "pending"
+        };
+        entry.key = keyOf(entry);
+        next.push(cleanEntry(entry));
+        changed = true;
+      }
+    }
+    const frozen = Object.freeze(next.slice(-MAX_ALERTS).map((entry) => Object.freeze(entry)));
+    const active = freshPoll && freshAnalysis ? [...frozen].reverse().find((entry) => now < entry.end && (entry.status === "pending" || entry.status === "hit")) ?? null : null;
+    const latestResult = frozen.reduce((latest, entry) => entry.status !== "pending" && (!latest || entry.resolvedAt > latest.resolvedAt || entry.resolvedAt === latest.resolvedAt && entry.acceptedAt > latest.acceptedAt) ? entry : latest, null);
+    return { journal: frozen, changed, active, latestResult };
+  }
+
+  // src/rare-presentation.mjs
+  var EVIDENCE_STATUS3 = "experimental-unvalidated";
+  var POLL_FRESH_MS2 = 12e3;
+  var MINUTE4 = 6e4;
+  var MIN_TIMESTAMP4 = 9466848e5;
+  var MAX_TIMESTAMP3 = 864e13;
+  var clock = (value) => Number.isSafeInteger(value) && value >= MIN_TIMESTAMP4 && value <= MAX_TIMESTAMP3;
+  var finite3 = (value) => typeof value === "number" && Number.isFinite(value);
+  var probability = (value) => finite3(value) && value >= 0 && value <= 1;
+  var count = (value) => Number.isSafeInteger(value) && value >= 0;
+  var percentFormatter = new Intl.NumberFormat("ru-RU", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  var coefficientFormatter = new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 2 });
+  var dayFormatter = new Intl.DateTimeFormat("ru-RU", { timeZone: "Europe/Kyiv", day: "2-digit", month: "2-digit" });
+  var timeFormatter = new Intl.DateTimeFormat("ru-RU", { timeZone: "Europe/Kyiv", hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
+  var sources = {
+    "beta-window-frequency": "Бета: частота окон",
+    "existing-big-opportunity": "пересечение эвристик"
+  };
+  var reasons = {
+    "invalid-now": "некорректное время устройства",
+    "invalid-input": "нет корректной истории",
+    "no-valid-completed-rounds": "нет корректных завершённых результатов",
+    "stale-data": "последний результат устарел",
+    "insufficient-contiguous-history": "нужно минимум 500 непрерывно наблюдавшихся завершённых результатов",
+    "no-positive-exposure": "интервал наблюдения не измерен",
+    "insufficient-exposure": "наблюдаемый интервал короче 3 минут",
+    "insufficient-events": "наблюдалось меньше 5 результатов ≥100×",
+    "insufficient-covered-windows": "нужны 30 последних и не менее 60 предыдущих полных окон",
+    "insufficient-hit-windows": "нужно минимум 5 окон с ≥100× в каждой группе",
+    "numerical-failure": "численная оценка недоступна",
+    "no-supported-local-rise": "поддержанного роста локальной частоты нет",
+    "experimental-local-frequency-rise": "экспериментальный рост локальной частоты"
+  };
+  var reason = (value) => reasons[value] ?? "недостаточно данных";
+  function percent(value) {
+    if (!probability(value)) return null;
+    if (value === 0) return "0%";
+    if (value === 1) return "100%";
+    if (value < 1e-3) return "<0,1%";
+    if (value > 0.999) return ">99,9%";
+    return `${percentFormatter.format(value * 100)}%`;
+  }
+  function range(value) {
+    return Array.isArray(value) && value.length === 2 && value.every(probability) && value[0] <= value[1] ? `${percent(value[0])}–${percent(value[1])}` : null;
+  }
+  function windowLabel(value) {
+    if (!clock(value?.start) || !clock(value?.end) || value.start >= value.end) return null;
+    const fromDay = dayFormatter.format(value.start), toDay = dayFormatter.format(value.end);
+    return `${fromDay}, ${timeFormatter.format(value.start)}–${fromDay === toDay ? "" : `${toDay}, `}${timeFormatter.format(value.end)} · Киев`;
+  }
+  function futureClockAnomaly(analysis, alerts, now) {
+    if (!clock(now) || now > MAX_TIMESTAMP3 - 30 * MINUTE4) return true;
+    const fields = [
+      analysis?.diagnostics?.analyzedAt,
+      analysis?.diagnostics?.lastAt,
+      analysis?.poisson?.exposureEnd,
+      analysis?.bayesian?.recent?.end,
+      alerts?.active?.generatedAt,
+      alerts?.active?.acceptedAt,
+      alerts?.active?.resolvedAt,
+      alerts?.latestResult?.resolvedAt
+    ];
+    return fields.some((value) => value !== void 0 && value !== null && (!clock(value) || value > now));
+  }
+  function validPending(value, now) {
+    return value?.status === "pending" && value.model === "rare-alert-v1" && value.evidenceStatus === EVIDENCE_STATUS3 && Object.hasOwn(sources, value.source) && Number.isSafeInteger(value.target) && value.target >= 100 && [value.generatedAt, value.acceptedAt, value.start, value.end].every(clock) && value.generatedAt <= value.acceptedAt && value.acceptedAt <= now && value.acceptedAt < value.start && value.start - value.generatedAt >= 2 * MINUTE4 && value.start - value.generatedAt <= 15 * MINUTE4 && value.end > value.start && value.end - value.start <= 10 * MINUTE4 && value.windowMs === value.end - value.start && now < value.end && value.actual === void 0 && value.actualAt === void 0 && value.resolvedAt === void 0;
+  }
+  function betaLine(label, summary) {
+    const interval = range(summary?.interval95);
+    if (!summary || !count(summary.windowCount) || summary.windowCount === 0 || !count(summary.hitWindowCount) || summary.hitWindowCount > summary.windowCount || !probability(summary.posteriorMean) || !interval) return null;
+    return `${label} ${summary.windowCount} окон: ${percent(summary.posteriorMean)} · 95% байесовский интервал ${interval}; ${summary.hitWindowCount}/${summary.windowCount} окон с ≥100×.`;
+  }
+  function journalLabel(latest, now) {
+    if (!latest || !["hit", "miss", "unknown"].includes(latest.status)) return "Журнал: завершённых окон пока нет.";
+    const label = windowLabel(latest);
+    if (!label || !Number.isSafeInteger(latest.target) || latest.target < 100 || !clock(latest.resolvedAt) || latest.resolvedAt > now) return "Журнал: результат недоступен из-за некорректного времени.";
+    const result = { hit: "цель отмечена", miss: "цель не отмечена", unknown: "покрытие неизвестно" }[latest.status];
+    const actual = finite3(latest.actual) && latest.actual >= 1 ? `зафиксированный коэффициент ${coefficientFormatter.format(latest.actual)}×` : "зафиксированный коэффициент неизвестен";
+    return `Журнал: ${result} · цель ≥${coefficientFormatter.format(latest.target)}× · ${label} · источник: ${sources[latest.source] ?? "неизвестен"} · ${actual}.`;
+  }
+  function formatRarePresentation({ analysis = null, alerts = null, now = Date.now(), online = false, lastSuccessAt = null } = {}) {
+    const anomaly = futureClockAnomaly(analysis, alerts, now) || lastSuccessAt !== null && lastSuccessAt !== void 0 && (!clock(lastSuccessAt) || lastSuccessAt > now);
+    const freshPoll = online === true && clock(lastSuccessAt) && lastSuccessAt <= now && now - lastSuccessAt <= POLL_FRESH_MS2;
+    const freshAnalysis = clock(analysis?.diagnostics?.lastAt) && clock(analysis?.diagnostics?.analyzedAt) && now - analysis.diagnostics.lastAt <= 18e4 && now - analysis.diagnostics.analyzedAt <= 18e4;
+    const ready = analysis?.ready === true && analysis.evidenceStatus === EVIDENCE_STATUS3 && analysis.threshold === 100 && analysis.horizonMs === 18e4;
+    let readiness = reason(analysis?.diagnostics?.reason);
+    if (ready && !analysis?.diagnostics?.reason) readiness = "история готова";
+    if (anomaly) readiness = "расхождение времени; оповещение скрыто";
+    else if (online !== true) readiness = "источник недоступен";
+    else if (!freshPoll) readiness = "свежий опрос не подтверждён (не старше 12 с)";
+    else if (ready && !freshAnalysis) readiness = "данные анализа устарели";
+    const diagnostics = [`Данные: ${readiness}.`];
+    const poisson = analysis?.poisson, poissonInterval = range(poisson?.probabilityInterval95);
+    const sample = count(poisson?.eventCount) && finite3(poisson?.exposureMs) && poisson.exposureMs >= 0 ? ` Событий: ${poisson.eventCount}; наблюдение: ${coefficientFormatter.format(poisson.exposureMs / MINUTE4)} мин.` : "";
+    diagnostics.push(poisson?.status === "ready" && probability(poisson.probability) && poissonInterval ? `Гамма–Пуассон, следующие 3 мин: ${percent(poisson.probability)} · 95% байесовский интервал ${poissonInterval} — при постоянной интенсивности.${sample}` : `Гамма–Пуассон: оценка недоступна — ${reason(poisson?.reason)}.`);
+    const beta = analysis?.bayesian;
+    const recent = beta?.status === "ready" ? betaLine("Бета, последние", beta.recent) : null;
+    const reference = beta?.status === "ready" ? betaLine("Предыдущие", beta.reference) : null;
+    if (recent && reference) diagnostics.push(recent, reference);
+    else diagnostics.push(`Бета: оценка недоступна — ${reason(beta?.reason)}.`);
+    diagnostics.push(
+      "Эксперимент: частоты прошлых окон не являются откалиброванным шансом будущего окна.",
+      "Долгое отсутствие ≥100× само по себе не повышает оценку.",
+      "Покрытие истории предполагается по наблюдавшимся интервалам между результатами."
+    );
+    const active = alerts?.active;
+    const banner = !anomaly && freshPoll && freshAnalysis && ready && validPending(active, now) ? {
+      title: `В эти минуты оценивается возможность большого скачка ≥${coefficientFormatter.format(active.target)}×`,
+      windowLabel: windowLabel(active),
+      detail: `Экспериментальная оценка для наблюдения · источник: ${sources[active.source]}. Будущий результат не гарантирован. Не запускает автоставки.`
+    } : null;
+    return { banner, diagnostics, journalLabel: journalLabel(alerts?.latestResult, now) };
+  }
+
   // ../scene.mjs
   function mountScene(canvas, { onDelivery = () => {
   }, compact = false } = {}) {
     const c = canvas.getContext("2d");
-    let W = 0, H = 0, dpr = 1, raf = 0, clock2 = 0, last = 0, deliveries = 0, flash = 0, paused = false, mouse = null, job = null, queue = [];
+    let W = 0, H = 0, dpr = 1, raf = 0, clock3 = 0, last = 0, deliveries = 0, flash = 0, paused = false, mouse = null, job = null, queue = [];
     const reduced = matchMedia("(prefers-reduced-motion: reduce)");
     const random = (i) => {
       const n = Math.sin(i * 127.1 + 311.7) * 43758.5453;
@@ -1616,7 +2225,7 @@
     observer.observe(canvas);
     resize();
     const brain = () => {
-      const a = clock2 * 0.34, span = compact ? Math.min(W * 0.18, H * 0.2) : Math.min(W * 0.26, H * 0.29), target = mouse ?? { x: W / 2 + span * Math.sqrt(2) * Math.cos(a) / (1 + Math.sin(a) ** 2), y: H * 0.52 + span * 0.65 * Math.cos(a) * Math.sin(a) / (1 + Math.sin(a) ** 2) };
+      const a = clock3 * 0.34, span = compact ? Math.min(W * 0.18, H * 0.2) : Math.min(W * 0.26, H * 0.29), target = mouse ?? { x: W / 2 + span * Math.sqrt(2) * Math.cos(a) / (1 + Math.sin(a) ** 2), y: H * 0.52 + span * 0.65 * Math.cos(a) * Math.sin(a) / (1 + Math.sin(a) ** 2) };
       core.x += (Math.max(compact ? 30 : 65, Math.min(W - (compact ? 30 : 65), target.x)) - core.x) * 0.08;
       core.y += (Math.max(compact ? 30 : W < 800 ? 290 : 270, Math.min(H - (compact ? 25 : W < 800 ? 250 : 230), target.y)) - core.y) * 0.08;
       return { x: core.x, y: core.y, scale: (compact ? 0.22 : W < 800 ? 0.47 : 0.58) * (1 + Math.min(deliveries, 30) / 30 * 0.24) };
@@ -1673,7 +2282,7 @@
     function drawBrain(b) {
       c.save();
       c.translate(b.x, b.y);
-      const breath = 1 + 0.012 * Math.sin(clock2 * 1.8) + flash * 0.035;
+      const breath = 1 + 0.012 * Math.sin(clock3 * 1.8) + flash * 0.035;
       c.scale(b.scale * breath, b.scale * breath);
       const glow = c.createRadialGradient(0, 0, 5, 0, 0, 160);
       glow.addColorStop(0, "#20f0be12");
@@ -1703,7 +2312,7 @@
         c.clip(hemisphere);
         c.globalCompositeOperation = "lighter";
         for (let i = 0; i < 48; i++) {
-          const x = -10 - random(i + 21) * 98, y = -100 + random(i + 74) * 200, alpha = 0.15 + 0.5 * Math.max(0, Math.sin(clock2 * 1.1 + i));
+          const x = -10 - random(i + 21) * 98, y = -100 + random(i + 74) * 200, alpha = 0.15 + 0.5 * Math.max(0, Math.sin(clock3 * 1.1 + i));
           c.fillStyle = `rgba(125,255,225,${alpha})`;
           c.beginPath();
           c.arc(x, y, 0.7 + flash, 0, Math.PI * 2);
@@ -1740,7 +2349,7 @@
       c.shadowColor = "#84cce5";
       c.shadowBlur = 3;
       for (let side of [-1, 1]) for (let i = 0; i < 4; i++) {
-        const a = side * (0.65 + i * 0.62), walk = Math.sin(clock2 * 12 + i * Math.PI + side) * 4;
+        const a = side * (0.65 + i * 0.62), walk = Math.sin(clock3 * 12 + i * Math.PI + side) * 4;
         const hx = Math.cos(a) * 5, hy = Math.sin(a) * 5, fx = Math.cos(a) * (31 + walk), fy = Math.sin(a) * (31 + walk);
         const kx = (hx + fx) * 0.5 - side * (fy - hy) * 0.45, ky = (hy + fy) * 0.5 + side * (fx - hx) * 0.45;
         c.strokeStyle = "#b8dbedbb";
@@ -1790,7 +2399,7 @@
       const dt = Math.min(0.04, last ? (ms - last) / 1e3 : 0.016);
       last = ms;
       if (paused && canvas.dataset.sceneReady === "true") return;
-      clock2 += dt;
+      clock3 += dt;
       flash = Math.max(0, flash - dt * 1.7);
       c.setTransform(dpr, 0, 0, dpr, 0, 0);
       c.clearRect(0, 0, W, H);
@@ -1817,9 +2426,9 @@
           carry = null;
         }
       } else {
-        x = b.x + Math.cos(clock2 * 0.44) * Math.min(compact ? 55 : 180, W * (compact ? 0.22 : 0.32));
-        y = b.y + Math.sin(clock2 * 0.66) * (compact ? Math.min(32, H * 0.25) : 116);
-        a = Math.atan2(Math.cos(clock2 * 0.66) * 0.66, -Math.sin(clock2 * 0.44) * 0.44);
+        x = b.x + Math.cos(clock3 * 0.44) * Math.min(compact ? 55 : 180, W * (compact ? 0.22 : 0.32));
+        y = b.y + Math.sin(clock3 * 0.66) * (compact ? Math.min(32, H * 0.25) : 116);
+        a = Math.atan2(Math.cos(clock3 * 0.66) * 0.66, -Math.sin(clock3 * 0.44) * 0.44);
       }
       drawSpider(x, y, a, carry);
       canvas.dataset.sceneReady = "true";
@@ -1892,6 +2501,7 @@
 
   // src/style.mjs
   var CSS = `
+.rare-alert{flex:0 0 auto;border:1px solid #ff758a99;border-radius:9px;background:#510c244d;padding:8px;color:#ff9daf;text-align:center;overflow-wrap:anywhere}.rare-alert b{display:block;font-size:10px;line-height:1.4;color:#ff7d94}.rare-alert time{display:block;font:700 10px/1.5 ui-monospace,monospace;margin-top:4px;color:#ffd0d8}.rare-alert small{display:block;font-size:8px;margin-top:3px;color:#d8a5b1}.rare-diagnostics{width:100%;border-top:1px solid #ffffff14;padding-top:5px}.rare-diagnostics summary{cursor:pointer;color:#d4b7e9}.rare-diagnostics p{white-space:pre-line;overflow-wrap:anywhere;font-size:8px;line-height:1.6;color:#bda9cb}
 :host{all:initial;color-scheme:dark!important}*{box-sizing:border-box}button,a{touch-action:manipulation}button{font:inherit;color:inherit;cursor:pointer}button:focus-visible,a:focus-visible{outline:2px solid #71efd9;outline-offset:2px}[hidden]{display:none!important}
 .panel{--header-height:94px;position:fixed;display:flex;flex-direction:column;pointer-events:auto;overflow:hidden;min-width:218px;min-height:220px;border:1px solid #a77beb70;border-radius:18px;background:#090716f2;color:#eae4fa;box-shadow:0 10px 40px #0008;backdrop-filter:blur(15px);-webkit-backdrop-filter:blur(15px);font:11px/1.4 -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;isolation:isolate;text-align:left}
 .handle{display:flex;flex-direction:column;align-items:stretch;gap:6px;height:var(--header-height);flex:0 0 var(--header-height);padding:7px 9px;background:#171125;touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab}.window-controls{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;flex:0 0 44px}.window-controls .icon{width:100%;height:44px;min-width:44px;font-size:24px;border-radius:10px;touch-action:manipulation}.handle:active{cursor:grabbing}.brand{flex:1;min-width:0}.brand strong{font-size:11px;font-weight:900;letter-spacing:.5px;color:#d9a4ff}.brand img{display:block;width:145px;max-width:100%;height:auto}.brand small{display:block;font-size:7px;color:#ab93bd;letter-spacing:1px}.icon{display:grid;place-items:center;flex:0 0 25px;width:25px;height:25px;padding:0;border:1px solid #bc90eb35;border-radius:8px;background:#ffffff08;font-size:16px}.body{min-height:0;overflow:auto;overscroll-behavior:contain;scrollbar-width:thin;flex:1;display:flex;flex-direction:column;padding:7px 10px 10px;gap:6px}.status{font-size:8px;color:#90ddbd;min-height:12px;overflow-wrap:anywhere}.status.error{color:#ff9fa8}.status.warn{color:#d1baa1}.recent{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:3px}.chip{padding:4px 0;text-align:center;border-radius:7px;background:#ffffff05;border:1px solid #ffffff0e;overflow:hidden}.chip b{font:700 10px ui-monospace,monospace;color:#d7a4ff;white-space:nowrap}.chip.low b{color:#80d5ff}.chip time{display:block;font:6px ui-monospace,monospace;color:#9b89a8;margin-top:3px}.neural{position:relative;min-height:65px;flex:1 0 95px;max-height:190px;border-radius:10px;overflow:hidden;background:radial-gradient(ellipse,#12372e44,transparent 70%)}canvas{display:block;width:100%;height:100%;position:absolute;inset:0;pointer-events:none}.vip{position:absolute;right:3px;top:1px;width:31px;max-height:18px;object-fit:contain}.signal{text-align:center;font:900 30px/1.1 ui-monospace,monospace;color:#f0d0ff;letter-spacing:-1px;overflow-wrap:anywhere}.window{text-align:center;font:9px/1.4 ui-monospace,monospace;white-space:pre-line;color:#e8dcf7;min-height:26px}.note{text-align:center;font-size:8px;line-height:1.5;color:#ac99bf;min-height:12px;overflow-wrap:anywhere}.targets{display:flex;justify-content:center;gap:8px}.targets button{padding:5px 12px;min-height:27px;border:1px solid #b979eb38;border-radius:7px;background:#140d22;color:#c5a5d9;font-size:10px}.targets button.active{background:#53306e66;border-color:#d4a4ee;color:#fff}.result{min-height:22px;display:flex;align-items:center;justify-content:center;gap:6px;font-size:9px;text-align:center;color:#b8a9c6}.result.hit{color:#a2e8ac}.result.miss{color:#ff9ca8}.result img{width:26px;height:26px;object-fit:contain}.result strong{font-size:19px}.footer{display:flex;justify-content:space-between;align-items:center;padding:0 10px 7px;gap:4px}.link{color:#bc9ed6;font-size:8px;background:transparent;border:0;padding:4px;text-decoration:none}.grip{width:27px;height:27px;border:0;background:transparent;color:#baa2c8;font-size:18px;touch-action:none;cursor:nwse-resize;flex:0 0 27px}.tools{border-top:1px solid #ffffff14;padding-top:6px;display:flex;gap:5px;flex-wrap:wrap;font-size:9px}.tools button{border:1px solid #bf8be535;border-radius:6px;background:#ffffff07;padding:5px 8px;min-height:27px}.hint{font-size:8px;color:#aa9cb4;margin:0}.history{position:absolute;inset:var(--header-height) 0 0;background:#0d091bf5;z-index:3;display:flex;flex-direction:column;padding:10px}.history-head{display:flex;align-items:center;justify-content:space-between;gap:6px}.history-head b{font-size:11px}.history small{font-size:8px;color:#ac9cbb;margin:5px 0}.history-list{overflow:auto;flex:1;margin-top:5px;overscroll-behavior:contain}.row{display:flex;justify-content:space-between;gap:5px;padding:7px 2px;border-bottom:1px solid #ffffff10;font:10px ui-monospace,monospace}.row time{font-size:8px;color:#9b8aaa}.launcher{position:fixed;display:flex;align-items:center;gap:5px;pointer-events:auto;min-width:55px;min-height:41px;border:1px solid #aa78d8b0;border-radius:14px;background:#120b20eb;box-shadow:0 5px 20px #0008;color:#f2d0ff;font:900 12px -apple-system,sans-serif;touch-action:none;user-select:none;-webkit-user-select:none;padding:8px}.launcher span{font:700 10px ui-monospace,monospace;color:#8af3ce}
@@ -1904,7 +2514,7 @@
 
   // ../window-model.mjs
   var TARGETS2 = Object.freeze(["primary", "big"]);
-  var MODEL2 = "supplied-dynamic-windows-v3";
+  var MODEL4 = "supplied-dynamic-windows-v3";
   var RULES2 = Object.freeze({
     cycle: "Цикл достижения цели",
     "low-streak": "Серия ниже цели",
@@ -1953,7 +2563,7 @@
     onBetDispatched = () => {
     },
     beforeBet = () => true,
-    model = MODEL2
+    model = MODEL4
   }) {
     let armed = false, mode = "test", generation = 0, busy = false, lock = null;
     let initialized = false, storageOK = false, armedAt = 0, previousNow = 0, previousMono = 0;
@@ -1967,13 +2577,13 @@
       }
       onChange();
     };
-    function disarm(reason = "Авто выключено") {
+    function disarm(reason2 = "Авто выключено") {
       generation++;
       armed = false;
       lock?.release();
       lock = null;
       acknowledgements.length = 0;
-      notify(reason);
+      notify(reason2);
     }
     async function initialize() {
       try {
@@ -2312,8 +2922,9 @@
   var LEGACY_KEY = "god-preditor-safari-v1";
   var HOME = "https://miuiproking.github.io/luckyjet-telegram-mini-app/god-preditor-pro-vip/";
   var ASSETS = HOME + "assets/";
+  var RARE_HISTORY_LIMIT = 2e3;
   var number = (n) => Number(n).toLocaleString("ru-RU", { maximumFractionDigits: 2 });
-  var clock = (t) => new Date(t).toLocaleTimeString("ru-RU", { timeZone: "Europe/Kyiv" });
+  var clock2 = (t) => new Date(t).toLocaleTimeString("ru-RU", { timeZone: "Europe/Kyiv" });
   var duration = (ms) => {
     const n = Math.max(0, Math.ceil(ms / 1e3));
     return `${Math.floor(n / 60).toString().padStart(2, "0")}:${(n % 60).toString().padStart(2, "0")}`;
@@ -2322,7 +2933,7 @@
     if (window !== window.top && location.origin !== GAME_ORIGIN2 || !permittedPage(location) || document.getElementById(ID)) return;
     const host = document.createElement("div");
     host.id = ID;
-    host.dataset.version = "1.5.0";
+    host.dataset.version = "1.6.0";
     host.dataset.model = MODEL;
     for (const [k, v] of Object.entries({
       position: "fixed",
@@ -2337,7 +2948,7 @@
     root.innerHTML = `<style>${CSS}</style>
     <section class="panel" aria-label="GOD PREDITOR PRO VIP">
       <header class="handle" title="Перетащи панель за эту строку">
-        <div class="brand"><strong id="brand-text">GOD PREDITOR</strong><img id="brand-image" alt="GOD PREDITOR" hidden referrerpolicy="no-referrer"><small>PRO · VIP · 1.5</small></div>
+        <div class="brand"><strong id="brand-text">GOD PREDITOR</strong><img id="brand-image" alt="GOD PREDITOR" hidden referrerpolicy="no-referrer"><small>PRO · VIP · 1.6</small></div>
         <div class="window-controls" role="group" aria-label="Управление окном">
           <button class="icon" id="size-up" aria-label="Увеличить окно" title="Увеличить окно">+</button>
           <button class="icon" id="size-down" aria-label="Уменьшить окно" title="Уменьшить окно">−</button>
@@ -2348,13 +2959,14 @@
       <div class="body">
         <div class="status" id="status" role="status">Подключение к нашему Supabase…</div>
         <div class="recent" aria-label="Пять последних коэффициентов"></div>
+        <div class="rare-alert" id="rare-alert" role="status" hidden><b id="rare-title"></b><time id="rare-window"></time><small id="rare-detail"></small></div>
         <div class="neural"><canvas aria-label="Неоновый мозг и паук"></canvas><img class="vip" alt="VIP" referrerpolicy="no-referrer"></div>
         <div class="signal" id="signal">—</div>
         <div class="window" id="window">Получаем историю</div>
         <div class="note" id="note"></div>
         <div class="targets" aria-label="Цель"><button data-target="primary">Основной</button><button data-target="big">Доп. окно</button></div>
         <div class="result" id="result" role="status"><img id="result-image" hidden alt="" referrerpolicy="no-referrer"><span id="result-label">Проверка по окну</span></div>
-        <div class="tools" id="tools" hidden><button id="retry">Обновить связь</button><button id="opacity">Прозрачность</button><button id="reset">Сбросить размер</button><p class="hint">Кнопки + и − вверху меняют размер. Перетащи за заголовок. Угол ↘ тоже меняет размер. × скрывает до перезагрузки. Данные — наш Supabase.</p></div>
+        <div class="tools" id="tools" hidden><button id="retry">Обновить связь</button><button id="opacity">Прозрачность</button><button id="reset">Сбросить размер</button><p class="hint">Кнопки + и − вверху меняют размер. Перетащи за заголовок. Угол ↘ тоже меняет размер. × скрывает до перезагрузки. Данные — наш Supabase.</p><details class="rare-diagnostics"><summary>Модели 100× и журнал предупреждений</summary><p id="rare-diagnostics"></p><p id="rare-result"></p><button id="rare-export">Скачать журнал JSON</button></details></div>
       </div>
       <footer class="footer"><button class="link" id="history-open">История</button><button class="link" id="auto-open">Авто</button><button class="link" id="tools-open">Настроить</button><a class="link" href="${HOME}" target="_blank" rel="noopener noreferrer">Страница ↗</a><button class="grip" id="resize" aria-label="Изменить размер панели">↘</button></footer>
       <section class="history" hidden><div class="history-head"><b>Полученные коэффициенты</b><button class="icon" id="history-close" aria-label="Закрыть историю">×</button></div><small id="history-count"></small><div class="history-list"></div></section>
@@ -2386,6 +2998,7 @@
     const $2 = (selector) => root.querySelector(selector);
     const panel = $2(".panel"), launcher = $2(".launcher");
     let rows = [], journal = [], legacyJournal = [], selected = "primary", feed = null, status = "connecting", lastSuccessAt = null;
+    let rareJournal = [], rareAnalysis = null, rareAnalysisKey = "", rowsRevision = 0;
     let destroyed = false, saveTimer = null, storageWarning = false, historyVersion = "", latestResult = "";
     let latestStats = analyze([]), cancelPicker = null, requestedAutoMode = "test", requestedCashoutMode = "test";
     let cashout = null, liveSelection = null;
@@ -2433,7 +3046,7 @@
       inspectCashout: inspectCashoutButton,
       clickCashout: clickCashoutButton,
       onChange: renderCashout,
-      onFatal: (reason) => auto.disarm("Автозабирание остановлено: " + reason)
+      onFatal: (reason2) => auto.disarm("Автозабирание остановлено: " + reason2)
     });
     function renderCashout() {
       if (!cashout || destroyed) return;
@@ -2446,7 +3059,7 @@
       $2("#pick-live").disabled = state.pending.length > 0;
       $2("#cashout-log").replaceChildren(...state.logs.slice(-5).map((entry) => {
         const row = document.createElement("div");
-        row.textContent = clock(entry.at) + " · " + entry.text;
+        row.textContent = clock2(entry.at) + " · " + entry.text;
         return row;
       }));
       launcher.dataset.cashout = state.armed ? state.mode : "off";
@@ -2517,7 +3130,7 @@
       });
       $2("#auto-log").replaceChildren(...state.logs.slice(-5).map((entry) => {
         const line = document.createElement("div");
-        line.textContent = clock(entry.at) + " · " + entry.text;
+        line.textContent = clock2(entry.at) + " · " + entry.text;
         return line;
       }));
     }
@@ -2598,7 +3211,7 @@
       clearTimeout(saveTimer);
       saveTimer = setTimeout(async () => {
         try {
-          await gm.setValue(KEY, { model: MODEL, rows: rows.slice(0, 2e3), journal: journal.slice(-100), legacyJournal: legacyJournal.slice(-200), selected, ui: { ...ui } });
+          await gm.setValue(KEY, { model: MODEL, rows: rows.slice(0, 2e3), journal: journal.slice(-100), rareJournal: rareJournal.slice(-100), legacyJournal: legacyJournal.slice(-200), selected, ui: { ...ui } });
         } catch {
           storageWarning = true;
         }
@@ -2685,6 +3298,14 @@
     $2("#history-close").onclick = () => {
       $2(".history").hidden = true;
     };
+    $2("#rare-export").onclick = () => {
+      const blob = new Blob([JSON.stringify({ model: "rare-alert-v1", evidenceStatus: "experimental-unvalidated", exportedAt: Date.now(), journal: rareJournal }, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob), link = document.createElement("a");
+      link.href = url;
+      link.download = "god-preditor-rare-alerts.json";
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1e3);
+    };
     function renderHistory() {
       const version = rows.length + ":" + rows[0]?.id;
       if (version === historyVersion) return;
@@ -2697,7 +3318,7 @@
         const value = document.createElement("b");
         value.textContent = number(row.coefficient) + "×";
         const time = document.createElement("time");
-        time.textContent = clock(row.timestamp);
+        time.textContent = clock2(row.timestamp);
         line.append(value, time);
         fragment.append(line);
       }
@@ -2712,6 +3333,21 @@
       host.dataset.ready = String(stats.ready);
       host.dataset.continuityCount = String(stats.continuityCount);
       if (result.changed) saveSoon();
+      const rareKey = rowsRevision + ":" + Math.floor(now / 6e4) + ":" + (stats.fresh === true);
+      if (rareKey !== rareAnalysisKey) {
+        rareAnalysis = analyzeRareWindows(rows.slice(0, RARE_HISTORY_LIMIT), now);
+        rareAnalysisKey = rareKey;
+      }
+      const rare = advanceRareAlerts(rareJournal, rows, { analysis: rareAnalysis, bigForecast: current("big"), now, online: status === "connected", lastSuccessAt });
+      rareJournal = rare.journal;
+      if (rare.changed) saveSoon();
+      const rareView = formatRarePresentation({ analysis: rareAnalysis, alerts: rare, now, online: status === "connected", lastSuccessAt });
+      $2("#rare-alert").hidden = !rareView.banner;
+      $2("#rare-title").textContent = rareView.banner?.title || "";
+      $2("#rare-window").textContent = rareView.banner?.windowLabel || "";
+      $2("#rare-detail").textContent = rareView.banner?.detail || "";
+      $2("#rare-diagnostics").textContent = rareView.diagnostics.join("\n\n");
+      $2("#rare-result").textContent = rareView.journalLabel;
       const forecast = current(selected), occupied = stats.ready && forecast && now <= forecast.end;
       $2("#status").className = "status" + (status === "error" ? " error" : !stats.fresh && rows.length ? " warn" : "");
       $2("#status").textContent = status === "error" ? host.dataset.error || "Ошибка связи · открой «Настроить»" : status === "connected" ? stats.fresh ? `● Supabase · ${rows.length} · Киев` : "● Связь есть · история устарела" : status === "paused" ? "Пауза в фоне" : "Подключение к нашему Supabase…";
@@ -2725,13 +3361,13 @@
           const value = document.createElement("b");
           value.textContent = number(row.coefficient) + "×";
           const time = document.createElement("time");
-          time.textContent = clock(row.timestamp);
+          time.textContent = clock2(row.timestamp);
           chip.append(value, time);
           return chip;
         }));
       }
       $2("#signal").textContent = stats.ready && occupied ? number(forecast.target) + "×" : stats.n && !stats.fresh ? "Пауза" : "—";
-      $2("#window").textContent = !stats.ready ? "Пауза · нужно 20 свежих\nпоследовательных раундов" : forecast && occupied ? `${clock(forecast.start)} — ${clock(forecast.end)}
+      $2("#window").textContent = !stats.ready ? "Пауза · нужно 20 свежих\nпоследовательных раундов" : forecast && occupied ? `${clock2(forecast.start)} — ${clock2(forecast.end)}
 Окно · Киев` : forecast?.status === "pending" ? "Проверяем покрытие окна" : selected === "big" && stats.ready ? "Дополнительного окна сейчас нет" : "Нужно 20 раундов\nи свежий поток";
       $2("#note").textContent = forecast && occupied ? `${now < forecast.start ? "До окна " + duration(forecast.start - now) : "До конца " + duration(forecast.end - now)} · ${forecast.pattern} · балл ${forecast.heuristicScore}/100 · эксперимент` : "Балл правила не равен вероятности выигрыша";
       launcher.querySelector("span").textContent = stats.ready && occupied ? number(forecast.target) + "×" : "…";
@@ -2762,6 +3398,7 @@
           if (destroyed) return;
           const seen = new Set(rows.map((x) => x.id));
           rows = mergeRounds(rows, batch, "Supabase · LuckyJet").rounds;
+          rowsRevision++;
           scene.push(batch.filter((x) => !seen.has(x.id)), { initial });
           saveSoon();
           render();
@@ -2896,7 +3533,9 @@
       const saved = await loadPanelState(gm, MODEL, { key: KEY, legacyKey: LEGACY_KEY });
       if (saved && !destroyed) {
         rows = mergeRounds([], Array.isArray(saved.rows) ? saved.rows : [], "Supabase · LuckyJet").rounds;
+        rowsRevision++;
         journal = saved.model === MODEL && Array.isArray(saved.journal) ? saved.journal.slice(-100) : [];
+        rareJournal = Array.isArray(saved.rareJournal) ? saved.rareJournal : [];
         legacyJournal = saved.legacyJournal;
         selected = saved.selected === "big" ? "big" : "primary";
         if (saved.ui && typeof saved.ui === "object") {
