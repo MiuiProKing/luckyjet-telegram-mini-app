@@ -26,7 +26,8 @@ const reasons = {
   'insufficient-exposure': 'наблюдаемый интервал короче 3 минут',
   'insufficient-events': 'наблюдалось меньше 5 результатов ≥100×',
   'insufficient-covered-windows': 'нужны 30 последних и не менее 60 предыдущих полных окон',
-  'insufficient-hit-windows': 'нужно минимум 5 окон с ≥100× в каждой группе',
+  'insufficient-hit-windows': 'нужно минимум 5 окон с ≥100× в каждой группе; не обязательно подряд',
+  'archive-recent-window-conflict': 'обнаружено расхождение архива и текущих окон; сигнал отложен',
   'numerical-failure': 'численная оценка недоступна',
   'no-supported-local-rise': 'поддержанного роста локальной частоты нет',
   'experimental-local-frequency-rise': 'экспериментальный рост локальной частоты',
@@ -116,10 +117,12 @@ export function formatRarePresentation({analysis = null, alerts = null, now = Da
     ? `Гамма–Пуассон, следующие 3 мин: ${percent(poisson.probability)} · 95% байесовский интервал ${poissonInterval} — при постоянной интенсивности.${sample}`
     : `Гамма–Пуассон: оценка недоступна — ${reason(poisson?.reason)}.`);
   const beta = analysis?.bayesian;
-  const recent = beta?.status === 'ready' ? betaLine('Бета, последние', beta.recent) : null;
-  const reference = beta?.status === 'ready' ? betaLine('Предыдущие', beta.reference) : null;
-  if (recent && reference) diagnostics.push(recent, reference);
-  else diagnostics.push(`Бета: оценка недоступна — ${reason(beta?.reason)}.`);
+  const recent = betaLine('Бета, последние', beta?.recent);
+  const reference = betaLine(analysis?.archive?.status === 'ready' ? 'Архив для сравнения,' : 'Предыдущие', beta?.reference);
+  if (beta?.status !== 'ready') diagnostics.push(`Бета: сигнал недоступен — ${reason(beta?.reason)}.`);
+  if (recent) diagnostics.push(recent);
+  if (reference) diagnostics.push(reference);
+  if (!recent && !reference && beta?.status === 'ready') diagnostics.push('Бета: описание групп недоступно.');
   diagnostics.push(
     'Эксперимент: частоты прошлых окон не являются откалиброванным шансом будущего окна.',
     'Долгое отсутствие ≥100× само по себе не повышает оценку.',
