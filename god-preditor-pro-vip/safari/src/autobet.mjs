@@ -18,7 +18,7 @@ export async function acquireAutoLock(locks) {
 // This controller contains no casino selectors or network calls. The adapter
 // can act only on the two button objects explicitly selected in this session.
 export function createAutoBet({now = Date.now, monotonic = () => performance.now(),
-  context, inspect, click, acquireLock, readReceipts, writeReceipts, onChange = () => {}, model = MODEL}) {
+  context, inspect, click, acquireLock, readReceipts, writeReceipts, onChange = () => {}, onBetDispatched = () => {}, beforeBet = () => true, model = MODEL}) {
   let armed = false, mode = 'test', generation = 0, busy = false, lock = null;
   let initialized = false, storageOK = false, armedAt = 0, previousNow = 0, previousMono = 0;
   let receipts = [], message = 'Авто выключено', logs = [];
@@ -113,7 +113,11 @@ export function createAutoBet({now = Date.now, monotonic = () => performance.now
         if (checked.state === 'waiting') {notify(`Поле ${index + 1}: жду доступную «Ставку», не более 15 секунд`); continue;}
         if (checked.state !== 'ready') {disarm(`Поле ${index + 1}: ${checked.reason}`); break;}
         consumed.add(seen);
-        if (mode === 'test') {notify(`ТЕСТ ${index + 1}: здесь было бы нажатие ${target.toFixed(2)}× · кнопка не нажата`); continue;}
+        if (mode === 'test') {
+          try {onBetDispatched(Object.freeze({index, target, windowKey: window.key, receiptId: id, at: time, button: Object.freeze({...buttons[index]}), mode: 'test', generation: ticket}));}
+          catch {disarm('Ошибка тестового отслеживания — авто выключено'); break;}
+          notify(`ТЕСТ ${index + 1}: здесь было бы нажатие ${target.toFixed(2)}× · кнопка не нажата`); continue;
+        }
         // Commit the at-most-once reservation BEFORE dispatch. Uncertainty never
         // retries a monetary action, including after a reload or storage error.
         receipts.push({id, target, at: time, state: 'reserved'}); receipts = receipts.slice(-200);
@@ -128,9 +132,15 @@ export function createAutoBet({now = Date.now, monotonic = () => performance.now
             latestWindow?.key !== window.key || latestWindow.status !== 'pending') {
           disarm('Авто выключено: условия изменились перед нажатием'); break;
         }
+        try {
+          if (beforeBet(Object.freeze({index, target, windowKey: window.key, at: currentTime})) !== true) {disarm('Отслеживание не готово — новая ставка не нажата');break;}
+        } catch {disarm('Ошибка проверки перед ставкой — новая ставка не нажата');break;}
+        if (!armed || ticket !== generation) break;
         try {click(buttons[index]);}
         catch {disarm(`Поле ${index + 1}: нажатие не выполнено · повторения нет`); break;}
         acknowledgements.push({index, button: buttons[index], until: currentTime + 2500});
+        try {onBetDispatched(Object.freeze({index, target, windowKey: window.key, receiptId: id, at: currentTime, button: Object.freeze({...buttons[index]}), mode: 'live', generation: ticket}));}
+        catch {disarm('Ставка нажата, отслеживание не запущено — проверь игру вручную'); break;}
         notify(`Поле ${index + 1}: нажатие отправлено · проверь подтверждение в игре`);
       }
     } finally {busy = false;}

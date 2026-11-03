@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         GOD PREDITOR PRO VIP — LuckyJet Safari
 // @namespace    https://miuiproking.github.io/luckyjet-telegram-mini-app/god-preditor-pro-vip/
-// @version      1.4.0
-// @description  Исправленная экспериментальная модель v2; преимущество в точности не установлено. Автонажатия выключены до явного включения и выбора двух кнопок.
+// @version      1.5.0
+// @description  Исправленная экспериментальная модель v2; преимущество в точности не установлено. Автоставки и DOM-автозабирание выключены до явного включения и выбора полей/счётчика.
 // @match        https://one-vv3016.com/*
 // @match        https://miuiproking.github.io/luckyjet-telegram-mini-app/god-preditor-pro-vip/safari/preview.html
 // @match        https://1play.gamedev-tech.cc/*
@@ -19,29 +19,336 @@
 // No remote JavaScript or credential reads. Live mode may click ONLY the two
 // user-selected bet buttons; default is OFF, test mode never clicks them.
 (() => {
-  // src/freshness.mjs
-  function sourceReady(status, stats, lastSuccessAt, now = Date.now()) {
-    if (status !== "connected" || stats?.ready !== true || !Number.isFinite(now) || !Number.isFinite(lastSuccessAt) || !Number.isFinite(stats.lastAt)) return false;
-    const pollAge = now - lastSuccessAt, roundAge = now - stats.lastAt;
-    return pollAge >= 0 && pollAge <= 12e3 && roundAge >= 0 && roundAge <= 18e4;
-  }
-
-  // src/storage.mjs
-  async function loadPanelState(gm, model, { key, legacyKey }) {
-    const current = await gm.getValue(key, null);
-    const saved = current ?? await gm.getValue(legacyKey, null);
-    if (!saved || typeof saved !== "object" || Array.isArray(saved)) return null;
-    const journal = Array.isArray(saved.journal) ? saved.journal.filter((x) => x && typeof x === "object") : [];
-    const legacy = Array.isArray(saved.legacyJournal) ? saved.legacyJournal.filter((x) => x && typeof x === "object") : [];
-    const active = saved.model === model ? journal.filter((x) => x.model === model) : [];
-    const archived = saved.model === model ? journal.filter((x) => x.model !== model) : journal;
+  // src/autocashout.mjs
+  var CASHOUT_FRESH_MS = 750;
+  var CASHOUT_TICK_MS = 1e3;
+  var CASHOUT_WAIT_MS = 12e4;
+  var CASHOUT_ACK_MS = 2500;
+  function createAutoCashout({
+    now = Date.now,
+    monotonic = () => performance.now(),
+    context,
+    readMultiplier,
+    inspectCashout,
+    clickCashout,
+    onChange = () => {
+    },
+    onFatal = () => {
+    }
+  }) {
+    let armed = false, mode = "test", generation = 0, busy = false, failing = false, notifying = false;
+    let armedAt = 0, previousNow = 0, previousMono = 0, latestSource = null;
+    let message = "Автовывод выключен", logs = [];
+    const pending = /* @__PURE__ */ new Map(), acknowledgements = /* @__PURE__ */ new Map();
+    const receipts = /* @__PURE__ */ new Set(), consumed = /* @__PURE__ */ new Set();
+    function record(text) {
+      if (text !== message) {
+        message = text;
+        logs.push({ at: previousNow, text });
+        logs = logs.slice(-30);
+      }
+    }
+    function clear() {
+      generation++;
+      armed = false;
+      pending.clear();
+      acknowledgements.clear();
+    }
+    function fail(reason) {
+      if (failing) return false;
+      failing = true;
+      clear();
+      record(reason);
+      if (!notifying) {
+        notifying = true;
+        try {
+          onChange();
+        } catch {
+        } finally {
+          notifying = false;
+        }
+      }
+      try {
+        onFatal(reason);
+      } catch {
+      } finally {
+        failing = false;
+      }
+      return false;
+    }
+    function notify(text) {
+      if (text) record(text);
+      if (notifying) return;
+      notifying = true;
+      try {
+        onChange();
+      } catch {
+        fail("Автовывод выключен: ошибка обновления состояния");
+      } finally {
+        notifying = false;
+      }
+    }
+    function disarm(reason = "Автовывод выключен") {
+      clear();
+      notify(reason);
+    }
+    function clock2(initial = false) {
+      const time = now(), mono = monotonic();
+      if (!Number.isFinite(time) || !Number.isFinite(mono) || mono < 0) throw Error("Некорректные часы");
+      if (!initial) {
+        const wallGap = time - previousNow, monoGap = mono - previousMono;
+        if (wallGap < 0 || monoGap < 0 || wallGap > CASHOUT_TICK_MS || monoGap > CASHOUT_TICK_MS || Math.abs(wallGap - monoGap) > 1500) throw Error("Таймер задержался или изменились часы");
+      }
+      return { time, mono };
+    }
+    function checkContext() {
+      const state = context();
+      if (!state || state.visible !== true || state.fresh !== true) throw Error("Вкладка скрыта или связь устарела");
+      const configured = state.buttonsConfigured === true || Array.isArray(state.buttonsConfigured) && state.buttonsConfigured.length === 2 && state.buttonsConfigured.every(Boolean);
+      if (mode === "live" && (state.autoBetArmed !== true || state.autoBetMode !== "live" || !configured)) {
+        throw Error("Для реального автовывода нужны автоставки и две выбранные кнопки");
+      }
+      return state;
+    }
+    function sourceAt(time) {
+      const readMono = monotonic();
+      const source = readMultiplier();
+      const observedAt = now(), observedMono = monotonic();
+      if (!Number.isFinite(readMono) || readMono < 0 || !Number.isFinite(observedAt) || !Number.isFinite(observedMono) || observedMono < 0 || observedAt < time || observedMono < readMono || observedAt - time > CASHOUT_TICK_MS || observedMono - readMono > CASHOUT_TICK_MS || Math.abs(observedAt - time - (observedMono - readMono)) > 1500) throw Error("Чтение коэффициента задержалось или изменились часы");
+      if (!source || !["ready", "waiting"].includes(source.state)) throw Error(source?.reason || "Живой коэффициент недоступен");
+      if (!Number.isFinite(source.at) || source.at > observedAt || observedAt - source.at > CASHOUT_FRESH_MS || !Number.isInteger(source.epoch) || source.epoch < 0) throw Error("Живой коэффициент имеет неверное время или раунд");
+      if (source.changedAt != null && (!Number.isFinite(source.changedAt) || source.changedAt > source.at)) {
+        throw Error("Неверное время изменения живого коэффициента");
+      }
+      if (source.state === "ready" && (!Number.isFinite(source.value) || source.value < 1 || !Number.isFinite(source.changedAt))) {
+        throw Error("Нет читаемого числового коэффициента");
+      }
+      if (latestSource && (source.epoch < latestSource.epoch || source.changedAt != null && latestSource.changedAt != null && source.changedAt < latestSource.changedAt)) {
+        throw Error("Источник коэффициента сменился или время пошло назад");
+      }
+      latestSource = { ...source, observedAt };
+      return latestSource;
+    }
+    function inspect(button) {
+      const checked = inspectCashout(button);
+      if (!checked || !["ready", "waiting", "closed"].includes(checked.state)) {
+        throw Error(checked?.reason || "Кнопка вывода недоступна");
+      }
+      return checked;
+    }
+    function close(entry, reason) {
+      pending.delete(entry.index);
+      notify(`Поле ${entry.index + 1}: ${reason} · жду новую автоставку`);
+    }
+    function freshChange(source, time) {
+      time = Math.max(time, source.observedAt);
+      return source.state === "ready" && source.changedAt <= time && time - source.changedAt <= CASHOUT_FRESH_MS;
+    }
+    function arm(nextMode = "test") {
+      if (busy || failing || notifying) return false;
+      busy = true;
+      try {
+        clear();
+        latestSource = null;
+        if (!["test", "live"].includes(nextMode)) throw Error("Неизвестный режим автовывода");
+        mode = nextMode;
+        const { time, mono } = clock2(true);
+        checkContext();
+        const source = sourceAt(time);
+        if (source.state !== "ready") throw Error("Сначала выбери читаемый живой коэффициент");
+        armedAt = previousNow = time;
+        previousMono = mono;
+        armed = true;
+        const ticket = generation;
+        notify(mode === "live" ? "Автовывод включён · жду новую автоставку" : "Тест автовывода · реальных нажатий нет");
+        return armed && generation === ticket;
+      } catch (error) {
+        return fail(`Автовывод выключен: ${error.message}`);
+      } finally {
+        busy = false;
+      }
+    }
+    function onBetDispatched(receipt) {
+      if (!armed || busy || failing) return false;
+      if (!receipt || receipt.mode !== mode || ![0, 1].includes(receipt.index) || typeof receipt.windowKey !== "string" || !receipt.windowKey || receipt.windowKey.length > 500 || !Number.isFinite(receipt.target) || receipt.target < 1 || !receipt.button) return false;
+      const id = `${receipt.windowKey}:${receipt.index}`;
+      if (receipts.has(id)) return false;
+      busy = true;
+      try {
+        const { time } = clock2();
+        if (!Number.isFinite(receipt.at) || receipt.at < armedAt || receipt.at > time || time - receipt.at > CASHOUT_FRESH_MS) return false;
+        checkContext();
+        const source = sourceAt(time);
+        if (pending.has(receipt.index) || acknowledgements.has(receipt.index)) throw Error("Новая ставка до завершения предыдущего наблюдения");
+        receipts.add(id);
+        pending.set(receipt.index, {
+          id,
+          index: receipt.index,
+          windowKey: receipt.windowKey,
+          receiptId: receipt.receiptId ?? id,
+          target: receipt.target,
+          button: receipt.button,
+          at: receipt.at,
+          mode,
+          baselineEpoch: source.epoch,
+          epoch: source.epoch,
+          roundSeen: false,
+          phase: "waiting",
+          active: false,
+          sawQueued: false,
+          increases: 0,
+          readyBaseline: false,
+          lastValue: null,
+          lastChangeAt: null
+        });
+        notify(`Поле ${receipt.index + 1}: цель ${receipt.target.toFixed(2)}× закреплена · жду новый полёт`);
+        return armed;
+      } catch (error) {
+        return fail(`Автовывод выключен: ${error.message}`);
+      } finally {
+        busy = false;
+      }
+    }
+    function canTrackBet(index) {
+      if (!armed || mode !== "live" || busy || failing || ![0, 1].includes(index)) return false;
+      busy = true;
+      try {
+        const { time } = clock2();
+        checkContext();
+        sourceAt(time);
+        clock2();
+        checkContext();
+        if (pending.has(index) || acknowledgements.has(index)) throw Error(`Поле ${index + 1}: предыдущее наблюдение ещё не завершено`);
+        return armed;
+      } catch (error) {
+        return fail(`Автовывод выключен: ${error.message}`);
+      } finally {
+        busy = false;
+      }
+    }
+    function tick() {
+      if (!armed || busy || failing) return;
+      busy = true;
+      const ticket = generation;
+      try {
+        const { time, mono } = clock2();
+        previousNow = time;
+        previousMono = mono;
+        checkContext();
+        const source = sourceAt(time);
+        for (const [index, ack] of acknowledgements) {
+          const checked = inspect(ack.button);
+          if (checked.state !== "ready") {
+            acknowledgements.delete(index);
+            notify(`Поле ${index + 1}: запрос отправлен, кнопка изменилась · проверь игру`);
+          } else if (time >= ack.until) throw Error(`Поле ${index + 1}: кнопка не подтвердила запрос · повторения нет`);
+          if (!armed || generation !== ticket) return;
+        }
+        for (const entry of [...pending.values()]) {
+          if (!armed || generation !== ticket) return;
+          checkContext();
+          const checked = inspect(entry.button);
+          if (checked.state === "waiting") entry.sawQueued = true;
+          if (checked.state === "closed" && (entry.active || entry.sawQueued)) {
+            close(entry, "полёт или ставка завершились, результат не подтверждён");
+            continue;
+          }
+          if (checked.state === "ready") entry.active = true;
+          if (entry.phase === "waiting" && time - entry.at > CASHOUT_WAIT_MS) throw Error(`Поле ${entry.index + 1}: новый полёт не подтверждён за 120 секунд`);
+          if (source.state === "waiting") {
+            if (entry.phase === "tracking") throw Error("Живой коэффициент пропал во время полёта");
+            continue;
+          }
+          if (entry.roundSeen && (source.epoch !== entry.epoch || source.value < entry.lastValue)) {
+            close(entry, "коэффициент сбросился, прежнее наблюдение завершено");
+            continue;
+          }
+          if (!entry.roundSeen) {
+            const afterDispatch = source.at > entry.at && source.changedAt > entry.at;
+            if (checked.state !== "ready") continue;
+            if (!(source.epoch > entry.baselineEpoch || afterDispatch && source.value <= 1.2)) continue;
+            entry.roundSeen = true;
+            entry.epoch = source.epoch;
+            entry.lastValue = source.value;
+            entry.lastChangeAt = source.changedAt;
+          }
+          if (checked.state !== "ready") {
+            entry.readyBaseline = false;
+            entry.increases = 0;
+            entry.lastValue = source.value;
+            entry.lastChangeAt = source.changedAt;
+            continue;
+          }
+          entry.active = true;
+          entry.phase = "tracking";
+          if (!freshChange(source, time)) throw Error("Живой коэффициент перестал обновляться");
+          if (!entry.readyBaseline) {
+            entry.readyBaseline = true;
+            entry.lastValue = source.value;
+            entry.lastChangeAt = source.changedAt;
+            continue;
+          }
+          if (source.changedAt > entry.lastChangeAt && source.value > entry.lastValue) entry.increases++;
+          entry.lastValue = source.value;
+          entry.lastChangeAt = source.changedAt;
+          if (entry.increases < 2 || source.value < entry.target) continue;
+          const beforeRead = clock2();
+          checkContext();
+          const finalSource = sourceAt(beforeRead.time), finalButton = inspect(entry.button);
+          const finalClock = clock2();
+          checkContext();
+          if (!armed || generation !== ticket) return;
+          if (finalButton.state === "closed") {
+            close(entry, "ставка завершилась до запроса");
+            continue;
+          }
+          if (finalButton.state !== "ready") {
+            entry.readyBaseline = false;
+            entry.increases = 0;
+            continue;
+          }
+          if (finalSource.state !== "ready") throw Error("Живой коэффициент пропал перед запросом");
+          if (finalSource.epoch !== entry.epoch || finalSource.value < entry.lastValue) {
+            close(entry, "коэффициент сбросился до запроса");
+            continue;
+          }
+          if (!freshChange(finalSource, finalClock.time)) throw Error("Живой коэффициент устарел перед запросом");
+          if (finalSource.value < entry.target) continue;
+          pending.delete(entry.index);
+          consumed.add(entry.id);
+          if (mode === "test") {
+            notify(`ТЕСТ ${entry.index + 1}: порог ${entry.target.toFixed(2)}× достигнут · нажатий нет`);
+            continue;
+          }
+          acknowledgements.set(entry.index, { button: entry.button, until: finalClock.time + CASHOUT_ACK_MS });
+          clickCashout(entry.button);
+          if (!armed || generation !== ticket) return;
+          notify(`Поле ${entry.index + 1}: запрос вывода отправлен · проверь подтверждение в игре`);
+        }
+      } catch (error) {
+        fail(`Автовывод выключен: ${error.message}`);
+      } finally {
+        busy = false;
+      }
+    }
     return {
-      model,
-      rows: Array.isArray(saved.rows) ? saved.rows : [],
-      journal: active.slice(-100),
-      legacyJournal: [...legacy, ...archived].slice(-200),
-      selected: saved.selected === "big" ? "big" : "primary",
-      ui: saved.ui && typeof saved.ui === "object" && !Array.isArray(saved.ui) ? saved.ui : {}
+      arm,
+      disarm,
+      canTrackBet,
+      onBetDispatched,
+      tick,
+      get state() {
+        return {
+          armed,
+          mode,
+          message,
+          logs: logs.map((entry) => ({ ...entry })),
+          pending: [...pending.values()].map(({ index, target, windowKey, receiptId, at, phase, increases }) => ({ index, target, windowKey, receiptId, at, phase, increases })),
+          acknowledgements: [...acknowledgements.keys()],
+          consumed: [...consumed],
+          source: latestSource ? { ...latestSource } : null
+        };
+      }
     };
   }
 
@@ -78,8 +385,309 @@
     });
   }
 
-  // src/frame-support.mjs
+  // src/live-dom.mjs
+  var OVERLAY_ID = "god-preditor-safari-overlay";
   var GAME_ORIGIN = "https://1play.gamedev-tech.cc";
+  var DRAWN = /* @__PURE__ */ new Set(["canvas", "img", "svg", "video"]);
+  var INTERACTIVE = /* @__PURE__ */ new Set(["button", "input", "a", "select", "textarea", "option"]);
+  var BET = /^(?:сделать\s+ставку|зробити\s+ставку|ставка|поставить|place\s+bet|bet)(?:$|\s|[\d₴$€])/iu;
+  var CASHOUT = /^(?:забрать|забрати|cash[\s-]?out|collect)(?:$|\s|[\d(₴$€₽])/iu;
+  var WAITING = /^(?:cancel|отмен\S*|скасув\S*|очікуван\S*|ожидан\S*|waiting|placed|accepted|принят\S*)(?:$|\s|[\d(])/iu;
+  var ACCOUNT = /withdraw|account|deposit|wallet|bonus|вывод|вывести|сч[её]т|кошел[её]к|пополн|бонус|вивести|рахунок|гаманець/iu;
+  var PREBET_BUSY = /забра|cash[\s-]?out|collect|cancel|отмен|скасув|очікуван|ожидан|waiting|placed|accepted|принят/iu;
+  var normalize = (text) => String(text ?? "").normalize("NFKC").replace(/\s+/gu, " ").trim();
+  var textOf = (element) => normalize(typeof element.innerText === "string" ? element.innerText : element.textContent || "");
+  var labelOf = (element) => normalize(element.innerText || element.getAttribute?.("aria-label") || element.textContent || "");
+  function parseLiveMultiplier(text) {
+    const value = normalize(text);
+    if (!value || value.length > 40) return null;
+    const match = /^(?:[x×х]\s*(\d+(?:[.,]\d+)?)|(\d+(?:[.,]\d+)?)\s*[x×х]|(\d+[.,]\d+))$/iu.exec(value);
+    if (!match) return null;
+    const number2 = Number((match[1] || match[2] || match[3]).replace(",", "."));
+    return Number.isFinite(number2) && number2 >= 1 && number2 <= 1e6 ? number2 : null;
+  }
+  function parentOf(element) {
+    return element?.parentElement || element?.getRootNode?.()?.host || null;
+  }
+  function ancestors(element) {
+    const items = [];
+    for (let item = element; item && items.length < 80; item = parentOf(item)) items.push(item);
+    return items;
+  }
+  function inOverlay(element) {
+    return ancestors(element).some((item) => item.id === OVERLAY_ID);
+  }
+  function counterHazard(element) {
+    for (const item of ancestors(element)) {
+      if (DRAWN.has(item.localName)) return "Счётчик нарисован: DOM-текст недоступен. Выбери текстовый счётчик.";
+      const editable = item.getAttribute?.("contenteditable");
+      if (INTERACTIVE.has(item.localName) || item.getAttribute?.("role") === "button" || item.getAttribute?.("role") === "link" || item.isContentEditable || editable != null && editable !== "false")
+        return "Выбери сам текст текущего коэффициента, вне кнопок и полей ввода.";
+      if (item.id === OVERLAY_ID) return "Наведи прицел на счётчик игры.";
+    }
+    return null;
+  }
+  function topHit(root, x, y, ignoreOverlay = false) {
+    const hits = root.elementsFromPoint?.(x, y) || [root.elementFromPoint?.(x, y)];
+    return hits.find((item) => item && (!ignoreOverlay || !inOverlay(item))) || null;
+  }
+  function shadowHit(element, x, y, ignoreOverlay = false) {
+    for (let depth = 0; element?.shadowRoot && depth < 10; depth++) {
+      const child = topHit(element.shadowRoot, x, y, ignoreOverlay);
+      if (!child || child === element) break;
+      element = child;
+    }
+    return element;
+  }
+  function frameOrigin(frame) {
+    try {
+      return new URL(frame.src, frame.ownerDocument.baseURI).origin;
+    } catch {
+      return "неизвестный домен";
+    }
+  }
+  function hitLiveMultiplier(document2, x, y) {
+    let doc = document2, px = x, py = y;
+    try {
+      for (let depth = 0; depth < 10; depth++) {
+        const element = shadowHit(topHit(doc, px, py, true), px, py, true);
+        if (!element) return { error: "Наведи центр прицела на текст текущего коэффициента." };
+        if (element.localName === "iframe") {
+          let child;
+          try {
+            child = element.contentDocument;
+          } catch {
+          }
+          if (!child) return { error: "Игра в отдельном фрейме. Нужен доступ к домену: " + frameOrigin(element), frameOrigin: frameOrigin(element) };
+          const rect = element.getBoundingClientRect();
+          if (!rect.width || !rect.height || !element.offsetWidth || !element.offsetHeight) return { error: "Игровой фрейм скрыт." };
+          px = (px - rect.left) * element.offsetWidth / rect.width - (element.clientLeft || 0);
+          py = (py - rect.top) * element.offsetHeight / rect.height - (element.clientTop || 0);
+          doc = child;
+          continue;
+        }
+        const hazard = counterHazard(element);
+        if (hazard) return { error: hazard };
+        let candidate = element;
+        for (let depth2 = 0; candidate && depth2 < 3; depth2++, candidate = parentOf(candidate)) {
+          if (counterHazard(candidate)) break;
+          const label = textOf(candidate);
+          if (label.length > 40) break;
+          if (parseLiveMultiplier(label) != null) return { element: candidate, document: doc, label };
+        }
+        return { error: "Здесь нет одного читаемого коэффициента (например, 1.74×)." };
+      }
+      return { error: "Слишком глубокое вложение игрового поля." };
+    } catch {
+      return { error: "Браузер не разрешает прочитать этот счётчик." };
+    }
+  }
+  function visibleElement(element, doc) {
+    if (!element || !doc || element.ownerDocument !== doc || !element.isConnected) return "элемент исчез, выбери его заново";
+    const win = doc.defaultView;
+    if (!win || win.document !== doc) return "игра перезагрузилась";
+    if (doc.hidden || doc.visibilityState === "hidden") return "игровая вкладка скрыта";
+    const rect = element.getBoundingClientRect();
+    if (![rect.left, rect.top, rect.width, rect.height].every(Number.isFinite) || rect.width <= 0 || rect.height <= 0) return "элемент скрыт";
+    if (Number.isFinite(win.innerWidth) && (rect.left >= win.innerWidth || rect.left + rect.width <= 0) || Number.isFinite(win.innerHeight) && (rect.top >= win.innerHeight || rect.top + rect.height <= 0)) return "элемент вне видимой области";
+    for (const item of ancestors(element)) {
+      const style = win.getComputedStyle(item);
+      if (style.display === "none" || style.visibility === "hidden" || style.visibility === "collapse" || Number(style.opacity) === 0) return "элемент скрыт";
+    }
+    return null;
+  }
+  function isInside(element, hit) {
+    if (!hit) return false;
+    if (element === hit || element.contains?.(hit)) return true;
+    return ancestors(hit).includes(element);
+  }
+  function frameChain(doc, x, y, checkCover) {
+    let current = doc;
+    for (let depth = 0; depth < 10; depth++) {
+      const win = current.defaultView;
+      if (win === win.top) return null;
+      const frame = win.frameElement;
+      if (!frame && current.location?.origin === GAME_ORIGIN) return null;
+      if (!frame || frame.contentDocument !== current) return "доступ к игровому фрейму изменился";
+      const parent = frame.ownerDocument, visibility = visibleElement(frame, parent);
+      if (visibility) return visibility;
+      const rect = frame.getBoundingClientRect();
+      if (!frame.offsetWidth || !frame.offsetHeight) return "игровой фрейм скрыт";
+      x = rect.left + (x + (frame.clientLeft || 0)) * rect.width / frame.offsetWidth;
+      y = rect.top + (y + (frame.clientTop || 0)) * rect.height / frame.offsetHeight;
+      if (checkCover && !isInside(frame, shadowHit(topHit(parent, x, y), x, y))) return "игровое поле перекрыто";
+      current = parent;
+    }
+    return "слишком глубокое вложение игрового поля";
+  }
+  function createLiveMultiplierMonitor({ now = Date.now } = {}) {
+    let source = null, previous = null, changedAt = null, epoch = 0, lastAt = null, clockUnsafe = false;
+    function reset(selected) {
+      source = selected ? { element: selected.element, document: selected.document, label: selected.label } : null;
+      previous = null;
+      changedAt = null;
+      epoch = 0;
+      lastAt = null;
+      clockUnsafe = false;
+    }
+    function read() {
+      let at;
+      try {
+        at = now();
+      } catch {
+        at = NaN;
+      }
+      const result = (state, reason, value = null) => ({ state, value, at, changedAt, epoch, reason });
+      if (clockUnsafe || !Number.isFinite(at) || at < 0 || lastAt != null && at < lastAt || changedAt != null && changedAt > at) {
+        clockUnsafe = true;
+        return result("unsafe", "время изменилось — выбери счётчик заново");
+      }
+      lastAt = at;
+      if (!source) return result("unsafe", "счётчик не выбран");
+      try {
+        const element = source.element, doc = source.document;
+        const hazard = counterHazard(element);
+        if (hazard) return result("unsafe", hazard);
+        const visibility = visibleElement(element, doc);
+        if (visibility) return result("unsafe", visibility);
+        const rect = element.getBoundingClientRect();
+        const frame = frameChain(doc, rect.left + rect.width / 2, rect.top + rect.height / 2, false);
+        if (frame) return result("unsafe", frame);
+        const label = textOf(element);
+        if (label.length > 40) return result("unsafe", "выбранный текст изменился — выбери счётчик заново");
+        const value = parseLiveMultiplier(label);
+        if (value == null) return result("waiting", "ждём читаемый текущий коэффициент");
+        if (previous == null || previous !== value) {
+          if (previous != null && previous - value > 0.01 + Number.EPSILON * Math.max(previous, value) * 4) epoch++;
+          changedAt = at;
+        }
+        previous = value;
+        return result("ready", "коэффициент читается", value);
+      } catch {
+        return result("unsafe", "доступ к счётчику закрыт браузером");
+      }
+    }
+    return { setSource: reset, clear: () => reset(null), read };
+  }
+  function inspectCashoutButton(selected) {
+    const element = selected?.element, doc = selected?.document;
+    try {
+      const originalLabel = normalize(selected?.label);
+      if (!BET.test(originalLabel) || ACCOUNT.test(originalLabel) || PREBET_BUSY.test(originalLabel)) return { state: "unsafe", reason: "нужна ранее выбранная кнопка «Ставка»" };
+      if (!element || element.localName !== "button" && element.getAttribute?.("role") !== "button" || inOverlay(element)) return { state: "unsafe", reason: "это не выбранная игровая кнопка" };
+      const visibility = visibleElement(element, doc);
+      if (visibility) return { state: "unsafe", reason: visibility };
+      const label = labelOf(element);
+      if (ACCOUNT.test(label)) return { state: "unsafe", reason: "кнопка относится к счёту или выводу средств", label };
+      if (BET.test(label)) return { state: "closed", reason: "поле снова принимает ставки", label };
+      if (WAITING.test(label)) return { state: "waiting", reason: "кнопка ожидает игровой раунд", label };
+      if (!CASHOUT.test(label)) return { state: "unsafe", reason: "это не кнопка «Забрать»", label };
+      const style = doc.defaultView.getComputedStyle(element);
+      if (element.disabled || element.matches?.(":disabled") || element.getAttribute?.("aria-disabled") === "true" || style.pointerEvents === "none")
+        return { state: "waiting", reason: "кнопка «Забрать» пока недоступна", label };
+      const rect = element.getBoundingClientRect(), x = rect.left + rect.width / 2, y = rect.top + rect.height / 2;
+      const hit = shadowHit(topHit(doc, x, y), x, y);
+      const root = element.getRootNode?.();
+      if (!isInside(element, hit) && !(root?.host === hit && !root.elementFromPoint && !root.elementsFromPoint))
+        return { state: "waiting", reason: "кнопка перекрыта — отодвинь панель", label };
+      const frame = frameChain(doc, x, y, true);
+      if (frame) return { state: /перекрыто/u.test(frame) ? "waiting" : "unsafe", reason: frame, label };
+      return { state: "ready", reason: "кнопка «Забрать» доступна", label };
+    } catch {
+      return { state: "unsafe", reason: "доступ к кнопке закрыт браузером" };
+    }
+  }
+  function clickCashoutButton(selected) {
+    if (inspectCashoutButton(selected).state !== "ready") throw Error("Кнопка «Забрать» уже недоступна");
+    selected.document.defaultView.HTMLElement.prototype.click.call(selected.element);
+  }
+  function pickLiveMultiplier(root, done) {
+    const doc = root.host.ownerDocument, win = doc.defaultView;
+    const picker = doc.createElement("div");
+    picker.className = "picker";
+    picker.innerHTML = `<div class="pick-bar"><b>Выбрать живой коэффициент</b><p>Перетащи прицел на текущий летящий коэффициент, затем нажми «Выбрать». История и суммы не подходят.</p><div class="pick-info"></div><button class="pick-confirm" disabled>Выбрать</button><button class="pick-cancel">Отмена</button></div><div class="pick-cursor" role="button" aria-label="Прицел выбора текущего коэффициента">＋</div>`;
+    root.append(picker);
+    const cursor = picker.querySelector(".pick-cursor"), info = picker.querySelector(".pick-info"), confirm = picker.querySelector(".pick-confirm");
+    let point = { x: win.innerWidth / 2, y: win.innerHeight * 0.7 }, candidate = null, drag = null, stopped = false;
+    function update() {
+      cursor.style.left = point.x - 25 + "px";
+      cursor.style.top = point.y - 25 + "px";
+      candidate = hitLiveMultiplier(doc, point.x, point.y);
+      info.textContent = candidate.error || candidate.label;
+      confirm.disabled = !!candidate.error;
+    }
+    cursor.addEventListener("pointerdown", (event) => {
+      if (!event.isTrusted || event.button !== 0) return;
+      event.preventDefault();
+      cursor.setPointerCapture(event.pointerId);
+      drag = { id: event.pointerId, dx: point.x - event.clientX, dy: point.y - event.clientY };
+    });
+    cursor.addEventListener("pointermove", (event) => {
+      if (!event.isTrusted || !drag || drag.id !== event.pointerId) return;
+      point = { x: Math.max(25, Math.min(win.innerWidth - 25, event.clientX + drag.dx)), y: Math.max(25, Math.min(win.innerHeight - 25, event.clientY + drag.dy)) };
+      update();
+    });
+    const stopDrag = () => {
+      drag = null;
+    };
+    cursor.addEventListener("pointerup", stopDrag);
+    cursor.addEventListener("pointercancel", stopDrag);
+    cursor.addEventListener("lostpointercapture", stopDrag);
+    const timer = setInterval(update, 300);
+    function finish(value) {
+      if (stopped) return;
+      stopped = true;
+      clearInterval(timer);
+      picker.style.opacity = "0";
+      picker.style.pointerEvents = "auto";
+      picker.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+      }, true);
+      setTimeout(() => {
+        picker.remove();
+        done(value);
+      }, 400);
+    }
+    activate(picker.querySelector(".pick-cancel"), () => finish({ cancelled: true }));
+    activate(confirm, () => {
+      if (!stopped) {
+        update();
+        if (!candidate.error) finish(candidate);
+      }
+    });
+    update();
+    return () => finish({ cancelled: true });
+  }
+
+  // src/freshness.mjs
+  function sourceReady(status, stats, lastSuccessAt, now = Date.now()) {
+    if (status !== "connected" || stats?.ready !== true || !Number.isFinite(now) || !Number.isFinite(lastSuccessAt) || !Number.isFinite(stats.lastAt)) return false;
+    const pollAge = now - lastSuccessAt, roundAge = now - stats.lastAt;
+    return pollAge >= 0 && pollAge <= 12e3 && roundAge >= 0 && roundAge <= 18e4;
+  }
+
+  // src/storage.mjs
+  async function loadPanelState(gm, model, { key, legacyKey }) {
+    const current = await gm.getValue(key, null);
+    const saved = current ?? await gm.getValue(legacyKey, null);
+    if (!saved || typeof saved !== "object" || Array.isArray(saved)) return null;
+    const journal = Array.isArray(saved.journal) ? saved.journal.filter((x) => x && typeof x === "object") : [];
+    const legacy = Array.isArray(saved.legacyJournal) ? saved.legacyJournal.filter((x) => x && typeof x === "object") : [];
+    const active = saved.model === model ? journal.filter((x) => x.model === model) : [];
+    const archived = saved.model === model ? journal.filter((x) => x.model !== model) : journal;
+    return {
+      model,
+      rows: Array.isArray(saved.rows) ? saved.rows : [],
+      journal: active.slice(-100),
+      legacyJournal: [...legacy, ...archived].slice(-200),
+      selected: saved.selected === "big" ? "big" : "primary",
+      ui: saved.ui && typeof saved.ui === "object" && !Array.isArray(saved.ui) ? saved.ui : {}
+    };
+  }
+
+  // src/frame-support.mjs
+  var GAME_ORIGIN2 = "https://1play.gamedev-tech.cc";
   var CASINO_ORIGIN = "https://one-vv3016.com";
   var READY = "gp-frame-ready-v1";
   var STATE = "gp-parent-state-v1";
@@ -87,7 +695,7 @@
   }, getProbes = () => []) {
     let parentSeenAt = 0, parentReady = false;
     const framed = win !== win.top;
-    if (framed && win.location.origin !== GAME_ORIGIN) return { invalidate() {
+    if (framed && win.location.origin !== GAME_ORIGIN2) return { invalidate() {
       parentReady = false;
     }, ready: () => false };
     function message(event) {
@@ -96,14 +704,14 @@
         parentSeenAt = Date.now();
         parentReady = event.data.ready === true;
       } else {
-        if (event.origin !== GAME_ORIGIN || event.data?.type !== READY) return;
-        const frame = [...win.document.querySelectorAll("iframe")].find((f) => f.contentWindow === event.source && new URL(f.src, win.location.href).origin === GAME_ORIGIN);
+        if (event.origin !== GAME_ORIGIN2 || event.data?.type !== READY) return;
+        const frame = [...win.document.querySelectorAll("iframe")].find((f) => f.contentWindow === event.source && new URL(f.src, win.location.href).origin === GAME_ORIGIN2);
         if (!frame) return;
         const rect = frame.getBoundingClientRect(), x = rect.left + rect.width / 2, y = rect.top + rect.height / 2;
         const probes = Array.isArray(event.data.probes) ? event.data.probes.slice(0, 2) : [];
         const pointsVisible = probes.every((p) => Number.isFinite(p.x) && Number.isFinite(p.y) && p.x >= 0 && p.y >= 0 && p.x <= frame.clientWidth && p.y <= frame.clientHeight && win.document.elementFromPoint(rect.left + (p.x + frame.clientLeft) * rect.width / frame.offsetWidth, rect.top + (p.y + frame.clientTop) * rect.height / frame.offsetHeight) === frame);
         const ready = !win.document.hidden && rect.width > 0 && rect.height > 0 && win.document.elementFromPoint(x, y) === frame && pointsVisible;
-        event.source.postMessage({ type: STATE, ready }, GAME_ORIGIN);
+        event.source.postMessage({ type: STATE, ready }, GAME_ORIGIN2);
         onReady();
       }
     }
@@ -744,7 +1352,7 @@
   var TARGETS = Object.freeze(["primary", "big"]);
   var RESULT_GRACE_MS = MAX_FRESH_AGE_MS;
   var MINUTE = 6e4;
-  function normalize(rounds, now = Date.now()) {
+  function normalize2(rounds, now = Date.now()) {
     return normalizeRounds(rounds, now);
   }
   function currentSegment(rows) {
@@ -834,7 +1442,7 @@
     };
   }
   function analyze(rounds, now = Date.now()) {
-    const rows = normalize(rounds, now);
+    const rows = normalize2(rounds, now);
     return analyzeHistory(rounds, rows, now, generatePrediction(rounds, null, now));
   }
   var RULES = Object.freeze({
@@ -928,7 +1536,7 @@
     return journal.reduce((latest, entry) => entry.channel === channel && (!latest || entry.acceptedAt >= latest.acceptedAt) ? entry : latest, null);
   }
   function advanceJournal(journal, rounds, _stats, now = Date.now(), enabled = true, coverage = { online: true, lastSuccessAt: now }) {
-    const rows = normalize(rounds, now), inputJournal = Array.isArray(journal) ? journal : [];
+    const rows = normalize2(rounds, now), inputJournal = Array.isArray(journal) ? journal : [];
     const eligible = inputJournal.filter((entry) => acceptedWindow(entry, now));
     let changed = eligible.length !== inputJournal.length;
     const raw = generatePrediction(rounds, previousState(
@@ -1289,7 +1897,7 @@
 .handle{display:flex;flex-direction:column;align-items:stretch;gap:6px;height:var(--header-height);flex:0 0 var(--header-height);padding:7px 9px;background:#171125;touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab}.window-controls{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;flex:0 0 44px}.window-controls .icon{width:100%;height:44px;min-width:44px;font-size:24px;border-radius:10px;touch-action:manipulation}.handle:active{cursor:grabbing}.brand{flex:1;min-width:0}.brand strong{font-size:11px;font-weight:900;letter-spacing:.5px;color:#d9a4ff}.brand img{display:block;width:145px;max-width:100%;height:auto}.brand small{display:block;font-size:7px;color:#ab93bd;letter-spacing:1px}.icon{display:grid;place-items:center;flex:0 0 25px;width:25px;height:25px;padding:0;border:1px solid #bc90eb35;border-radius:8px;background:#ffffff08;font-size:16px}.body{min-height:0;overflow:auto;overscroll-behavior:contain;scrollbar-width:thin;flex:1;display:flex;flex-direction:column;padding:7px 10px 10px;gap:6px}.status{font-size:8px;color:#90ddbd;min-height:12px;overflow-wrap:anywhere}.status.error{color:#ff9fa8}.status.warn{color:#d1baa1}.recent{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:3px}.chip{padding:4px 0;text-align:center;border-radius:7px;background:#ffffff05;border:1px solid #ffffff0e;overflow:hidden}.chip b{font:700 10px ui-monospace,monospace;color:#d7a4ff;white-space:nowrap}.chip.low b{color:#80d5ff}.chip time{display:block;font:6px ui-monospace,monospace;color:#9b89a8;margin-top:3px}.neural{position:relative;min-height:65px;flex:1 0 95px;max-height:190px;border-radius:10px;overflow:hidden;background:radial-gradient(ellipse,#12372e44,transparent 70%)}canvas{display:block;width:100%;height:100%;position:absolute;inset:0;pointer-events:none}.vip{position:absolute;right:3px;top:1px;width:31px;max-height:18px;object-fit:contain}.signal{text-align:center;font:900 30px/1.1 ui-monospace,monospace;color:#f0d0ff;letter-spacing:-1px;overflow-wrap:anywhere}.window{text-align:center;font:9px/1.4 ui-monospace,monospace;white-space:pre-line;color:#e8dcf7;min-height:26px}.note{text-align:center;font-size:8px;line-height:1.5;color:#ac99bf;min-height:12px;overflow-wrap:anywhere}.targets{display:flex;justify-content:center;gap:8px}.targets button{padding:5px 12px;min-height:27px;border:1px solid #b979eb38;border-radius:7px;background:#140d22;color:#c5a5d9;font-size:10px}.targets button.active{background:#53306e66;border-color:#d4a4ee;color:#fff}.result{min-height:22px;display:flex;align-items:center;justify-content:center;gap:6px;font-size:9px;text-align:center;color:#b8a9c6}.result.hit{color:#a2e8ac}.result.miss{color:#ff9ca8}.result img{width:26px;height:26px;object-fit:contain}.result strong{font-size:19px}.footer{display:flex;justify-content:space-between;align-items:center;padding:0 10px 7px;gap:4px}.link{color:#bc9ed6;font-size:8px;background:transparent;border:0;padding:4px;text-decoration:none}.grip{width:27px;height:27px;border:0;background:transparent;color:#baa2c8;font-size:18px;touch-action:none;cursor:nwse-resize;flex:0 0 27px}.tools{border-top:1px solid #ffffff14;padding-top:6px;display:flex;gap:5px;flex-wrap:wrap;font-size:9px}.tools button{border:1px solid #bf8be535;border-radius:6px;background:#ffffff07;padding:5px 8px;min-height:27px}.hint{font-size:8px;color:#aa9cb4;margin:0}.history{position:absolute;inset:var(--header-height) 0 0;background:#0d091bf5;z-index:3;display:flex;flex-direction:column;padding:10px}.history-head{display:flex;align-items:center;justify-content:space-between;gap:6px}.history-head b{font-size:11px}.history small{font-size:8px;color:#ac9cbb;margin:5px 0}.history-list{overflow:auto;flex:1;margin-top:5px;overscroll-behavior:contain}.row{display:flex;justify-content:space-between;gap:5px;padding:7px 2px;border-bottom:1px solid #ffffff10;font:10px ui-monospace,monospace}.row time{font-size:8px;color:#9b8aaa}.launcher{position:fixed;display:flex;align-items:center;gap:5px;pointer-events:auto;min-width:55px;min-height:41px;border:1px solid #aa78d8b0;border-radius:14px;background:#120b20eb;box-shadow:0 5px 20px #0008;color:#f2d0ff;font:900 12px -apple-system,sans-serif;touch-action:none;user-select:none;-webkit-user-select:none;padding:8px}.launcher span{font:700 10px ui-monospace,monospace;color:#8af3ce}
 
 .auto-panel{position:absolute;inset:var(--header-height) 0 0;background:#10091bf8;z-index:4;padding:10px;overflow:auto;overscroll-behavior:contain}.auto-panel p{font-size:9px;line-height:1.5;color:#c1aecb;margin:8px 0}.auto-panel button,.auto-panel select{font:10px -apple-system,sans-serif;color:#eadcf5;background:#372344;border:1px solid #c99fe34d;border-radius:7px;padding:7px 8px;min-height:30px}.auto-panel label{display:block;font-size:10px;margin:10px 0}.auto-panel select{width:100%;margin-top:4px}.auto-slot{margin:9px 0;display:flex;gap:6px;align-items:center}.auto-slot small{font-size:8px;overflow-wrap:anywhere}.auto-panel #auto-toggle{display:block;width:100%;background:#24473d;border-color:#68c5a3}.auto-panel #auto-toggle.armed{background:#713636;border-color:#eb8f8f}.auto-panel #auto-message{color:#d8c1f0}.auto-panel #auto-diagnostic{color:#ffd598;overflow-wrap:anywhere;user-select:text;-webkit-user-select:text}#auto-log{font:8px/1.6 ui-monospace,monospace;color:#aa96b6}#auto-log>div{border-top:1px solid #ffffff14;padding:5px 0}.launcher[data-auto=live]:after{content:'А';background:#d87660;color:#200a08;border-radius:4px;font-size:8px;padding:2px}.launcher[data-auto=test]:after{content:'Т';color:#e5ca83;font-size:8px}.picker{position:fixed;inset:0;pointer-events:none;z-index:20;font:12px/1.45 -apple-system,sans-serif;color:#f2e6ff}.pick-bar{position:fixed;left:8px;right:8px;top:calc(8px + env(safe-area-inset-top,0px));pointer-events:auto;padding:12px;background:#150c25f5;border:1px solid #d5b2ed88;border-radius:13px;box-shadow:0 5px 30px #0008}.pick-bar p{font-size:11px;margin:5px 0;color:#bba6cd}.pick-info{font-size:10px;color:#ffe0a4;overflow-wrap:anywhere;margin:7px 0}.pick-bar button{font:12px -apple-system,sans-serif;color:#f1e1ff;background:#694081;border:1px solid #e5bff266;border-radius:8px;padding:9px 12px;margin-right:8px}.pick-bar button:disabled{opacity:.4}.pick-cursor{position:fixed;width:50px;height:50px;border:2px solid #9ef8d5;border-radius:50%;display:grid;place-items:center;background:#153a2ca0;color:#b5ffe2;font:32px/1 sans-serif;pointer-events:auto;touch-action:none;user-select:none;-webkit-user-select:none;box-shadow:0 0 15px #80ffd74d}
-@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}`;
+#cashout-toggle{display:block;width:100%;background:#24473d;border-color:#68c5a3}#cashout-toggle.armed{background:#713636;border-color:#eb8f8f}#live-value{font:10px/1.5 ui-monospace,monospace;color:#9ef8d5}#cashout-log{font:8px/1.6 ui-monospace,monospace;color:#aa96b6}.launcher[data-cashout=live]:before{content:"З";color:#9ef8d5;font-size:9px}@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}`;
 
   // ../modules/supplied-prediction.mjs
   var ARCHIVE_PROFILE2 = Object.freeze({ low: 2, cycle: 10, cluster: 20, confirmation: 50, midMin: 5, midMax: 10, opportunity: 100 });
@@ -1342,6 +1950,9 @@
     writeReceipts,
     onChange = () => {
     },
+    onBetDispatched = () => {
+    },
+    beforeBet = () => true,
     model = MODEL2
   }) {
     let armed = false, mode = "test", generation = 0, busy = false, lock = null;
@@ -1494,6 +2105,12 @@
           }
           consumed.add(seen);
           if (mode === "test") {
+            try {
+              onBetDispatched(Object.freeze({ index, target, windowKey: window2.key, receiptId: id, at: time, button: Object.freeze({ ...buttons[index] }), mode: "test", generation: ticket }));
+            } catch {
+              disarm("Ошибка тестового отслеживания — авто выключено");
+              break;
+            }
             notify(`ТЕСТ ${index + 1}: здесь было бы нажатие ${target.toFixed(2)}× · кнопка не нажата`);
             continue;
           }
@@ -1514,12 +2131,28 @@
             break;
           }
           try {
+            if (beforeBet(Object.freeze({ index, target, windowKey: window2.key, at: currentTime })) !== true) {
+              disarm("Отслеживание не готово — новая ставка не нажата");
+              break;
+            }
+          } catch {
+            disarm("Ошибка проверки перед ставкой — новая ставка не нажата");
+            break;
+          }
+          if (!armed || ticket !== generation) break;
+          try {
             click(buttons[index]);
           } catch {
             disarm(`Поле ${index + 1}: нажатие не выполнено · повторения нет`);
             break;
           }
           acknowledgements.push({ index, button: buttons[index], until: currentTime + 2500 });
+          try {
+            onBetDispatched(Object.freeze({ index, target, windowKey: window2.key, receiptId: id, at: currentTime, button: Object.freeze({ ...buttons[index] }), mode: "live", generation: ticket }));
+          } catch {
+            disarm("Ставка нажата, отслеживание не запущено — проверь игру вручную");
+            break;
+          }
           notify(`Поле ${index + 1}: нажатие отправлено · проверь подтверждение в игре`);
         }
       } finally {
@@ -1542,8 +2175,8 @@
 
   // src/betting-dom.mjs
   var BUSY = /забра|забрати|cash[\s-]?out|collect|cancel|отмен|скасув|очікуван|ожидан|waiting|placed|accepted|принят/iu;
-  var BET = /^(?:сделать\s+ставку|зробити\s+ставку|ставка|поставить|place\s+bet|bet)(?:$|\s|[\d₴$€])/iu;
-  var labelOf = (element) => String(element.innerText || element.getAttribute("aria-label") || element.textContent || "").normalize("NFKC").replace(/\s+/g, " ").trim();
+  var BET2 = /^(?:сделать\s+ставку|зробити\s+ставку|ставка|поставить|place\s+bet|bet)(?:$|\s|[\d₴$€])/iu;
+  var labelOf2 = (element) => String(element.innerText || element.getAttribute("aria-label") || element.textContent || "").normalize("NFKC").replace(/\s+/g, " ").trim();
   var originOf = (frame) => {
     try {
       return new URL(frame.src, frame.ownerDocument.baseURI).origin;
@@ -1575,8 +2208,8 @@
       }
       const button = element?.closest?.('button,[role="button"]');
       if (!button || !button.click || button.getRootNode().host?.id === "god-preditor-safari-overlay") return { error: "Наведи центр прицела на саму кнопку «Ставка»" };
-      const label = labelOf(button);
-      if (!BET.test(label) || BUSY.test(label)) return { error: "Это не доступная «Ставка»: " + label.slice(0, 70) };
+      const label = labelOf2(button);
+      if (!BET2.test(label) || BUSY.test(label)) return { error: "Это не доступная «Ставка»: " + label.slice(0, 70) };
       return { element: button, document: doc, label };
     }
     return { error: "Слишком глубокое вложение игрового поля" };
@@ -1586,10 +2219,10 @@
     if (!element || !doc || !element.isConnected) return { state: "unsafe", reason: "кнопка исчезла, выбери её заново" };
     try {
       if (doc.defaultView.document !== doc) return { state: "unsafe", reason: "игра перезагрузилась" };
-      const label = labelOf(element), style = doc.defaultView.getComputedStyle(element), rect = element.getBoundingClientRect();
+      const label = labelOf2(element), style = doc.defaultView.getComputedStyle(element), rect = element.getBoundingClientRect();
       if (!rect.width || !rect.height || style.visibility !== "visible" || style.display === "none") return { state: "unsafe", reason: "кнопка скрыта" };
       if (BUSY.test(label)) return { state: "busy", reason: "поле занято: это не «Ставка»", label };
-      if (!BET.test(label)) return { state: "unsafe", reason: "подпись кнопки изменилась", label };
+      if (!BET2.test(label)) return { state: "unsafe", reason: "подпись кнопки изменилась", label };
       if (element.disabled || element.matches(":disabled") || element.getAttribute("aria-disabled") === "true" || style.pointerEvents === "none")
         return { state: "waiting", reason: "игра пока не принимает ставку", label };
       let currentDoc = doc, x = rect.left + rect.width / 2, y = rect.top + rect.height / 2;
@@ -1686,10 +2319,10 @@
     return `${Math.floor(n / 60).toString().padStart(2, "0")}:${(n % 60).toString().padStart(2, "0")}`;
   };
   async function start(gm) {
-    if (window !== window.top && location.origin !== GAME_ORIGIN || !permittedPage(location) || document.getElementById(ID)) return;
+    if (window !== window.top && location.origin !== GAME_ORIGIN2 || !permittedPage(location) || document.getElementById(ID)) return;
     const host = document.createElement("div");
     host.id = ID;
-    host.dataset.version = "1.4.0";
+    host.dataset.version = "1.5.0";
     host.dataset.model = MODEL;
     for (const [k, v] of Object.entries({
       position: "fixed",
@@ -1704,7 +2337,7 @@
     root.innerHTML = `<style>${CSS}</style>
     <section class="panel" aria-label="GOD PREDITOR PRO VIP">
       <header class="handle" title="Перетащи панель за эту строку">
-        <div class="brand"><strong id="brand-text">GOD PREDITOR</strong><img id="brand-image" alt="GOD PREDITOR" hidden referrerpolicy="no-referrer"><small>PRO · VIP · 1.4</small></div>
+        <div class="brand"><strong id="brand-text">GOD PREDITOR</strong><img id="brand-image" alt="GOD PREDITOR" hidden referrerpolicy="no-referrer"><small>PRO · VIP · 1.5</small></div>
         <div class="window-controls" role="group" aria-label="Управление окном">
           <button class="icon" id="size-up" aria-label="Увеличить окно" title="Увеличить окно">+</button>
           <button class="icon" id="size-down" aria-label="Уменьшить окно" title="Уменьшить окно">−</button>
@@ -1736,6 +2369,16 @@
         <p class="hint">Оба поля: по одному нажатию в начале основного окна. Если «Ставка» недоступна 15 секунд — пропуск. Фон, перезагрузка или ошибка выключают режим. Новая привязка нужна после перезагрузки игры.</p>
         <p class="hint">Результат окна не подтверждает выигрыш твоей ставки. Отправленное нажатие проверяй в самой игре.</p>
         <p id="auto-diagnostic"></p><div id="auto-log"></div>
+        <hr><b id="cashout-title">Автозабирание выключено</b>
+        <p>Сначала выбери живой счётчик в самом полёте. Из Supabase идут только завершённые раунды.</p>
+        <button id="pick-live">Выбрать живой коэффициент</button>
+        <p id="live-value" role="status">Счётчик не выбран</p>
+        <label>Забрать <select id="cashout-mode"><option value="test">Тест без нажатий</option><option value="live">Автонажатие «Забрать»</option></select></label>
+        <button id="cashout-toggle">Включить тест счётчика</button>
+        <p id="cashout-message" role="status">Выключено</p><div id="cashout-log"></div>
+        <p class="hint">Для авто сначала включи автоставки. Цель фиксируется отдельно для каждого поля при нашем нажатии «Ставка». После окончания раунда ждём новый прогноз; по старому повторной ставки нет. Ручная ставка не подхватывается.</p>
+        <p class="hint">Привязки должны быть в одном игровом документе. Если число нарисовано в Canvas, чтение не поддерживается. Совпадение игрового раунда пока определяется по интерфейсу и не проверено на твоей игре. Сначала тест. Нажатие по порогу может опоздать и не подтверждает выплату.</p>
+        <p class="hint">Суммы и штатный автовывод не меняются. Если в игре задан более низкий автовывод, он сработает раньше скрипта. Любое ручное нажатие выбранного поля прекращает автоотслеживание.</p>
       </section>
     </section>
     <button class="launcher" hidden aria-label="Открыть панель GOD PREDITOR">GP <span>—</span></button>`;
@@ -1744,7 +2387,10 @@
     const panel = $2(".panel"), launcher = $2(".launcher");
     let rows = [], journal = [], legacyJournal = [], selected = "primary", feed = null, status = "connecting", lastSuccessAt = null;
     let destroyed = false, saveTimer = null, storageWarning = false, historyVersion = "", latestResult = "";
-    let latestStats = analyze([]), cancelPicker = null, requestedAutoMode = "test";
+    let latestStats = analyze([]), cancelPicker = null, requestedAutoMode = "test", requestedCashoutMode = "test";
+    let cashout = null, liveSelection = null;
+    const liveMonitor = createLiveMultiplierMonitor();
+    const manualListeners = [null, null];
     const ui = { x: 10, y: 115, width: 238, height: 390, opacity: 0.97, collapsed: false };
     const scene = mountScene($2("canvas"), { compact: true });
     const current = (target) => [...journal].reverse().find((x) => x.channel === target && x.model === MODEL);
@@ -1769,10 +2415,96 @@
       acquireLock: () => acquireAutoLock(navigator.locks),
       readReceipts: () => gm.getValue(AUTO_KEY, []),
       writeReceipts: (receipts) => gm.setValue(AUTO_KEY, receipts),
-      onChange: renderAuto
+      onChange: renderAuto,
+      onBetDispatched: (receipt) => {
+        if (cashout?.state.armed) cashout.onBetDispatched(receipt);
+      },
+      beforeBet: ({ index }) => cashout?.state.armed && cashout.state.mode === "live" ? cashout.canTrackBet(index) : true
     });
+    cashout = createAutoCashout({
+      context: () => ({
+        visible: !document.hidden && !destroyed,
+        fresh: frameSupport.ready() && sourceReady(status, latestStats, lastSuccessAt),
+        autoBetArmed: auto.state.armed,
+        autoBetMode: auto.state.mode,
+        buttonsConfigured: selectedButtons.every(Boolean) && selectedButtons[0]?.element !== selectedButtons[1]?.element && selectedButtons.every((button) => button?.document === liveSelection?.document)
+      }),
+      readMultiplier: () => liveMonitor.read(),
+      inspectCashout: inspectCashoutButton,
+      clickCashout: clickCashoutButton,
+      onChange: renderCashout,
+      onFatal: (reason) => auto.disarm("Автозабирание остановлено: " + reason)
+    });
+    function renderCashout() {
+      if (!cashout || destroyed) return;
+      const state = cashout.state, sample = liveMonitor.read();
+      $2("#cashout-title").textContent = state.armed ? state.mode === "live" ? "Автозабирание включено" : "Тест счётчика включён" : "Автозабирание выключено";
+      $2("#cashout-toggle").textContent = state.armed ? "Выключить автозабирание" : requestedCashoutMode === "live" ? "Включить автозабирание" : "Включить тест счётчика";
+      $2("#cashout-toggle").classList.toggle("armed", state.armed);
+      $2("#cashout-message").textContent = state.message;
+      $2("#live-value").textContent = sample.state === "ready" ? "Сейчас " + number(sample.value) + "× · возраст изменения " + Math.max(0, Date.now() - sample.changedAt) + " мс" : sample.reason || "Счётчик не читается";
+      $2("#pick-live").disabled = state.pending.length > 0;
+      $2("#cashout-log").replaceChildren(...state.logs.slice(-5).map((entry) => {
+        const row = document.createElement("div");
+        row.textContent = clock(entry.at) + " · " + entry.text;
+        return row;
+      }));
+      launcher.dataset.cashout = state.armed ? state.mode : "off";
+    }
+    function watchManualInput(index, selection) {
+      manualListeners[index]?.();
+      const handler = (event) => {
+        if (!event.isTrusted || !cashout.state.armed) return;
+        cashout.disarm("Ручное действие — автоотслеживание выключено");
+        auto.disarm("Ручное действие — авто выключено");
+      };
+      selection.element.addEventListener("pointerdown", handler, true);
+      selection.element.addEventListener("click", handler, true);
+      manualListeners[index] = () => {
+        selection.element.removeEventListener("pointerdown", handler, true);
+        selection.element.removeEventListener("click", handler, true);
+      };
+    }
+    $2("#pick-live").onclick = () => {
+      if (cashout.state.pending.length) return;
+      cashout.disarm("Выбор счётчика — отслеживание выключено");
+      auto.disarm("Выбор счётчика — авто выключено");
+      panel.hidden = true;
+      launcher.hidden = true;
+      cancelPicker = pickLiveMultiplier(root, (selection) => {
+        cancelPicker = null;
+        layout();
+        $2(".auto-panel").hidden = false;
+        if (selection.element) {
+          liveSelection = selection;
+          liveMonitor.setSource(selection);
+          $2("#auto-diagnostic").textContent = "";
+        } else $2("#auto-diagnostic").textContent = selection.error || "Выбор отменён";
+        renderCashout();
+      });
+    };
+    $2("#cashout-mode").onchange = (event) => {
+      if (!event.isTrusted) {
+        event.target.value = requestedCashoutMode;
+        return;
+      }
+      requestedCashoutMode = event.target.value === "live" ? "live" : "test";
+      cashout.disarm("Режим изменён — отслеживание выключено");
+    };
+    $2("#cashout-toggle").onclick = () => {
+      if (cashout.state.armed) {
+        cashout.disarm();
+        return;
+      }
+      if (requestedCashoutMode === "live" && (!liveSelection || selectedButtons.some((button) => !button || button.document !== liveSelection.document))) {
+        $2("#cashout-message").textContent = "Выбери живой счётчик и оба поля в одном игровом документе";
+        return;
+      }
+      cashout.arm(requestedCashoutMode);
+    };
     function renderAuto() {
       const state = auto.state;
+      if (cashout?.state.armed && cashout.state.mode === "live" && (!state.armed || state.mode !== "live")) cashout.disarm("Автоставки выключены — автозабирание выключено");
       $2("#auto-title").textContent = state.armed ? state.mode === "live" ? "Автонажатия включены" : "Тест включён" : "Авто выключено";
       $2("#auto-message").textContent = state.message;
       $2("#auto-toggle").textContent = state.armed ? "Выключить" : requestedAutoMode === "live" ? "Включить автонажатия" : "Включить тест";
@@ -1817,6 +2549,11 @@
     });
     for (const index of [0, 1]) activate($2("#pick-" + index), (event) => {
       if (!event.isTrusted) return;
+      if (cashout.state.pending.length) {
+        $2("#auto-diagnostic").textContent = "Сначала выключи отслеживание активного поля";
+        return;
+      }
+      cashout.disarm("Выбор кнопки — отслеживание выключено");
       auto.disarm("Выбор кнопки — авто выключено");
       panel.hidden = true;
       launcher.hidden = true;
@@ -1828,6 +2565,7 @@
           try {
             auto.setButton(index, selection);
             selectedButtons[index] = selection;
+            watchManualInput(index, selection);
             frameSupport.invalidate();
             $2("#auto-diagnostic").textContent = "";
           } catch (error) {
@@ -2008,7 +2746,10 @@
       }
       $2("#result-label").textContent = completed ? (completed.status === "hit" ? "ЦЕЛЬ В ОКНЕ" : completed.status === "miss" ? "НИЖЕ ЦЕЛИ В ОКНЕ" : "НЕТ ДАННЫХ") + (completed.actual != null ? " · макс. окна " + number(completed.actual) + "×" : "") : "Проверка: достижение цели в окне";
       if (!$2(".history").hidden) renderHistory();
-      if (!$2(".auto-panel").hidden) renderAuto();
+      if (!$2(".auto-panel").hidden) {
+        renderAuto();
+        renderCashout();
+      }
     }
     const fetchImpl = createExtensionFetch(gm, SUPABASE_CONFIG);
     function startFeed() {
@@ -2029,7 +2770,10 @@
           if (destroyed) return;
           status = s.state;
           if (s.lastSuccess) lastSuccessAt = s.lastSuccess;
-          if (s.state === "error") auto.disarm("Ошибка связи — авто выключено");
+          if (s.state === "error") {
+            cashout.disarm("Ошибка связи — отслеживание выключено");
+            auto.disarm("Ошибка связи — авто выключено");
+          }
           if (s.message) host.dataset.error = s.message;
           render();
         }
@@ -2039,6 +2783,7 @@
     $2("#retry").onclick = startFeed;
     const onVisibility = () => {
       if (document.hidden) {
+        cashout.disarm("Safari ушёл в фон — отслеживание выключено");
         auto.disarm("Safari ушёл в фон — авто выключено");
         cancelPicker?.();
         feed?.stop();
@@ -2051,6 +2796,7 @@
       }
     };
     const onPageHide = () => {
+      cashout.disarm("Страница закрыта — отслеживание выключено");
       auto.disarm("Страница закрыта — авто выключено");
       cancelPicker?.();
       feed?.stop();
@@ -2080,7 +2826,29 @@
     const autoTick = setInterval(() => {
       void auto.tick().catch(() => auto.disarm("Ошибка авто — режим выключен"));
     }, 250);
+    let cashoutFrame = null, lastCashoutRender = 0;
+    function cashoutLoop() {
+      if (destroyed) return;
+      if (!document.hidden) {
+        try {
+          cashout.tick();
+        } catch {
+          cashout.disarm("Ошибка отслеживания — выключено");
+          auto.disarm("Ошибка отслеживания — авто выключено");
+        }
+        if (!$2(".auto-panel").hidden && performance.now() - lastCashoutRender > 250) {
+          renderCashout();
+          lastCashoutRender = performance.now();
+        }
+      }
+      cashoutFrame = requestAnimationFrame(cashoutLoop);
+    }
+    cashoutFrame = requestAnimationFrame(cashoutLoop);
     closeOverlay = $2("#close").onclick = () => {
+      cashout.disarm("Панель закрыта — отслеживание выключено");
+      liveMonitor.clear();
+      manualListeners.forEach((stop) => stop?.());
+      cancelAnimationFrame(cashoutFrame);
       auto.disarm("Панель закрыта — авто выключено");
       cancelPicker?.();
       destroyed = true;

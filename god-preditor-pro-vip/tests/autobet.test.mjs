@@ -8,7 +8,7 @@ function fixture(options = {}) {
   let time=T,mono=0,stored=options.stored||[],writes=0,releases=0;
   const clicked=[], buttons=[{element:{},state:'ready'},{element:{},state:'ready'}];
   const context={visible:true,fresh:true,forecasts:[7.35].map(target=>({model:MODEL,channel:'primary',key:'window-'+target,target,acceptedAt:T-1000,start:T+1000,end:T+30000,status:'pending'}))};
-  const controller=createAutoBet({model:options?.model??MODEL,now:()=>time,monotonic:()=>mono,context:()=>context,
+  const controller=createAutoBet({onBetDispatched:options?.onBetDispatched,beforeBet:options?.beforeBet,model:options?.model??MODEL,now:()=>time,monotonic:()=>mono,context:()=>context,
     inspect:b=>({state:b?.state||'missing',reason:b?.state||'not selected'}),
     click:b=>{clicked.push(buttons.indexOf(b));if(options.ack!==false)b.state='busy';},
     acquireLock:async()=>options.lock===false?null:{release(){releases++;}},
@@ -93,4 +93,28 @@ test('explicit Safari model identity accepts only matching v4 windows',async()=>
  assert.match(f.controller.state.message,/ТЕСТ 2/);assert.equal(f.clicked.length,0);
  const legacy=await prepared({model});await legacy.controller.arm('test');legacy.advance(1000);await legacy.controller.tick();
  assert.doesNotMatch(legacy.controller.state.message,/ТЕСТ [12]:/);assert.equal(legacy.clicked.length,0);
+});
+
+
+test('own dispatch callbacks follow exactly one simulated or real fixture action with frozen target',async()=>{
+ for(const mode of ['test','live']){
+  const events=[];const f=await prepared({onBetDispatched:receipt=>events.push(receipt)});
+  await f.controller.arm(mode);f.advance(1000);await f.controller.tick();
+  assert.equal(events.length,2);assert.equal(f.clicked.length,mode==='test'?0:2);
+  assert.ok(events.every(e=>e.mode===mode&&e.target===7.35&&Object.isFrozen(e)&&Object.isFrozen(e.button)&&e.windowKey==='window-7.35'));
+  f.context.forecasts[0].target=70;assert.equal(events[0].target,7.35);
+  await f.controller.tick();assert.equal(events.length,2);
+ }
+});
+test('failed tracking preflight blocks a new wager even after its durable reservation',async()=>{
+ for(const guard of [()=>false,()=>{throw Error('no counter');}]){
+  const events=[];const f=await prepared({beforeBet:guard,onBetDispatched:e=>events.push(e)});
+  await f.controller.arm('live');f.advance(1000);await f.controller.tick();
+  assert.deepEqual(f.clicked,[]);assert.equal(events.length,0);assert.equal(f.controller.state.armed,false);
+ }
+});
+test('postclick observer failure stops further actions and never retries dispatched wager',async()=>{
+ const f=await prepared({onBetDispatched:()=>{throw Error('observer');}});
+ await f.controller.arm('live');f.advance(1000);await f.controller.tick();assert.deepEqual(f.clicked,[0]);assert.equal(f.controller.state.armed,false);
+ await f.controller.tick();assert.deepEqual(f.clicked,[0]);
 });
