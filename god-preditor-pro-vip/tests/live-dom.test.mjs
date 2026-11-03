@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {parseLiveMultiplier, hitLiveMultiplier, createLiveMultiplierMonitor,
   inspectCashoutButton, clickCashoutButton, pickLiveMultiplier} from '../safari/src/live-dom.mjs';
+import {createAutoCashout} from '../safari/src/autocashout.mjs';
 
 function fixture() {
   let nativeClicks = 0, ownClicks = 0;
@@ -118,15 +119,105 @@ test('monitor preserves freshness on repeated numeric values and waiting, tracks
   monitor.setSource({element: f.counter, document: f.doc}); sample = monitor.read(); assert.equal(sample.epoch, 0); assert.equal(sample.changedAt, at);
 });
 
-test('monitor freezes source references, rejects detachment, foreign documents, hidden and drawn counters', () => {
+test('monitor freezes source references and rejects detachment, changed documents, background and drawn counters', () => {
   const f = fixture(), monitor = createLiveMultiplierMonitor({now: () => 1000});
   const source = {element: f.counter, document: f.doc}; monitor.setSource(source);
   source.element = f.element('span', '99x'); assert.equal(monitor.read().value, 1.74);
   f.counter.isConnected = false; assert.equal(monitor.read().state, 'unsafe');
   f.counter.isConnected = true; f.counter.ownerDocument = {}; assert.equal(monitor.read().state, 'unsafe');
-  f.counter.ownerDocument = f.doc; f.counter.styles.opacity = '0'; assert.equal(monitor.read().state, 'unsafe');
+  f.counter.ownerDocument = f.doc; f.counter.styles.opacity = '0'; assert.equal(monitor.read().state, 'waiting');
   f.counter.styles.opacity = '1'; f.doc.hidden = true; assert.equal(monitor.read().state, 'unsafe');
   f.doc.hidden = false; f.counter.localName = 'canvas'; assert.equal(monitor.read().state, 'unsafe');
+});
+
+test('same temporarily hidden counter is unknown waiting; hiding never creates a multiplier or round', () => {
+  const f = fixture(); let at = 1000;
+  const monitor = createLiveMultiplierMonitor({now: () => at});
+  monitor.setSource({element: f.counter, document: f.doc});
+  assert.equal(monitor.read().value, 1.74);
+  for (const styles of [{display: 'none'}, {visibility: 'hidden'}, {opacity: '0'}]) {
+    f.counter.styles = styles; at += 100;
+    const sample = monitor.read();
+    assert.equal(sample.state, 'waiting'); assert.equal(sample.value, null);
+    assert.equal(sample.epoch, 0); assert.equal(sample.changedAt, 1000);
+  }
+  f.counter.styles = {}; f.counter.rect.width = 0; at += 100;
+  assert.equal(monitor.read().state, 'waiting');
+  f.counter.rect.width = NaN; assert.equal(monitor.read().state, 'unsafe');
+  f.counter.rect.width = -1; assert.equal(monitor.read().state, 'unsafe');
+  f.counter.rect.width = 100; f.counter.rect.left = 700;
+  assert.equal(monitor.read().state, 'unsafe');
+  f.counter.rect.left = 20; at += 100;
+  assert.equal(monitor.read().epoch, 0); // Reappearance alone is not a new flight.
+  f.counter.innerText = '1.01×'; at += 100;
+  assert.equal(monitor.read().epoch, 1);
+});
+
+test('temporarily hidden counter never hides an invalid or hidden parent frame', () => {
+  const outer = fixture(), f = fixture();
+  const frame = outer.element('iframe', '', {contentDocument: f.doc, offsetWidth: 600, offsetHeight: 800,
+    clientLeft: 0, clientTop: 0});
+  f.win.top = outer.win; f.win.frameElement = frame;
+  const monitor = createLiveMultiplierMonitor({now: () => 1000});
+  monitor.setSource({element: f.counter, document: f.doc});
+  f.counter.styles.display = 'none';
+  assert.equal(monitor.read().state, 'waiting');
+  frame.styles.display = 'none'; assert.equal(monitor.read().state, 'unsafe');
+  frame.styles.display = 'block'; outer.doc.hidden = true; assert.equal(monitor.read().state, 'unsafe');
+});
+
+function idleCashoutFixture() {
+  const f = fixture(); let at = 10000;
+  const monitor = createLiveMultiplierMonitor({now: () => at}), fatals = [];
+  monitor.setSource({element: f.counter, document: f.doc});
+  const controller = createAutoCashout({now: () => at, monotonic: () => at,
+    context: () => ({visible: !f.doc.hidden, fresh: true, autoBetArmed: true, autoBetMode: 'live', buttonsConfigured: true}),
+    readMultiplier: monitor.read, inspectCashout: inspectCashoutButton, clickCashout: clickCashoutButton,
+    onFatal: reason => fatals.push(reason)});
+  assert.equal(controller.arm('live'), true);
+  return {...f, controller, fatals,
+    step(text, ms = 100) {at += ms; if (text != null) f.counter.innerText = text; controller.tick();},
+    dispatch() {return controller.onBetDispatched({index: 0, target: 2, windowKey: 'next-own-window', mode: 'live', at, button: f.selection});},
+    get at() {return at;}};
+}
+
+test('idle counter hide/show keeps cashout enabled through settings closure and next own flight', () => {
+  const f = idleCashoutFixture();
+  f.counter.styles.display = 'none'; f.button.innerText = 'Bet 100';
+  // There is no dependency on the settings panel. This used to fail on the
+  // first hidden read and propagate a fatal stop to auto betting.
+  for (let i = 0; i < 300; i++) f.step();
+  assert.equal(f.controller.state.armed, true); assert.equal(f.controller.state.pending.length, 0);
+  assert.deepEqual(f.fatals, []); assert.equal(f.nativeClicks(), 0);
+  assert.equal(f.controller.canTrackBet(0), true);
+  f.button.innerText = 'Cancel'; assert.equal(f.dispatch(), true); f.step();
+  f.counter.styles.display = 'block'; f.button.innerText = 'Cashout';
+  f.step('1.01×'); f.step('1.50×'); f.step('2.01×');
+  assert.equal(f.nativeClicks(), 1); assert.equal(f.controller.state.armed, true);
+});
+
+test('hidden active counter still stops; a hidden queued counter cannot outlive flight timeout', () => {
+  const active = idleCashoutFixture();
+  active.button.innerText = 'Cancel'; active.dispatch();
+  active.button.innerText = 'Cashout'; active.step('1.01×'); active.step('1.10×');
+  active.counter.styles.display = 'none'; active.step();
+  assert.equal(active.controller.state.armed, false); assert.equal(active.nativeClicks(), 0);
+  assert.equal(active.fatals.length, 1);
+
+  const queued = idleCashoutFixture();
+  queued.counter.styles.display = 'none'; queued.button.innerText = 'Cancel'; queued.dispatch();
+  for (let i = 0; i < 1201; i++) queued.step();
+  assert.equal(queued.controller.state.armed, false); assert.equal(queued.nativeClicks(), 0);
+  assert.equal(queued.fatals.length, 1);
+});
+
+test('counter reappearing high after hiding cannot enroll a queued bet without low/reset evidence', () => {
+  const f = idleCashoutFixture();
+  f.counter.styles.display = 'none'; f.button.innerText = 'Cancel'; f.dispatch(); f.step();
+  f.counter.styles.display = 'block'; f.button.innerText = 'Cashout';
+  f.step('1.80×'); f.step('2.50×'); f.step('3×');
+  assert.equal(f.controller.state.armed, true); assert.equal(f.nativeClicks(), 0);
+  assert.equal(f.controller.state.pending[0].phase, 'waiting');
 });
 
 test('monitor never reads input values and faults on invalid or backwards clocks until reselection', () => {

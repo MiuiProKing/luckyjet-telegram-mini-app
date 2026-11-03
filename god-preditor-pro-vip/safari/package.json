@@ -2,6 +2,12 @@
   "name": "god-preditor-safari-overlay",
   "private": true,
   "type": "module",
-  "scripts": {"build": "node build.mjs", "check": "node build.mjs --check"},
-  "devDependencies": {"esbuild": "0.28.2"}
+  "scripts": {
+    "build": "node build.mjs",
+    "check": "node build.mjs --check"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2",
+    "fake-indexeddb": "6.2.7"
+  }
 }

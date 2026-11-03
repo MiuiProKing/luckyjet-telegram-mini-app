@@ -67,6 +67,17 @@ test('existing valid big opportunity is preferred and can be accepted after gene
   assert.deepEqual(forecast, saved);
 });
 
+test('archive candidate retains its separate source model across saved journal reload', () => {
+  const archiveAnalysis = analysis(NOW, {candidate: candidate(NOW, {model: 'rare-window-archive-v1'})});
+  const issued = advance([], history(), NOW, {analysis: archiveAnalysis});
+  assert.equal(issued.active.sourceModel, 'rare-window-archive-v1');
+  const restored = advance(structuredClone(issued.journal), history(NOW + 1000), NOW + 1000,
+    {analysis: analysis(NOW + 1000, {candidate: null})});
+  assert.deepEqual(restored.active, issued.active);
+  assert.equal(restored.changed, false);
+  assert.equal(restored.active.channel, undefined);
+});
+
 test('invalid or historical big windows never resurrect and independent analysis can supply its own window', () => {
   for (const invalid of [
     big(NOW - 180000), big(NOW - 180001), big(NOW, {model: 'old-model'}),

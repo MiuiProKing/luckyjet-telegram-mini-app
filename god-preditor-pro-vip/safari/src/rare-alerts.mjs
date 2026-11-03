@@ -11,6 +11,7 @@ export const RESULT_GRACE_MS = 180000;
 export const MAX_ALERTS = 100;
 const BIG_MODEL = 'hardened-dynamic-windows-v4';
 const RARE_MODEL = 'rare-window-v1';
+const RARE_ARCHIVE_MODEL = 'rare-window-archive-v1';
 const BIG_SOURCE = 'existing-big-opportunity';
 const BETA_SOURCE = 'beta-window-frequency';
 const MINUTE = 60000;
@@ -47,12 +48,12 @@ function candidateFromBig(value, now) {
 }
 
 function candidateFromBeta(value, now) {
-  if (!record(value) || value.model !== RARE_MODEL || value.source !== BETA_SOURCE ||
+  if (!record(value) || ![RARE_MODEL, RARE_ARCHIVE_MODEL].includes(value.model) || value.source !== BETA_SOURCE ||
       value.evidenceStatus !== EVIDENCE_STATUS || value.target !== 100) return null;
   const candidate = {...value, windowMs: value.end - value.start};
   if (!validTimes(candidate) || candidate.generatedAt > now || candidate.start <= now) return null;
   return {
-    source: BETA_SOURCE, sourceModel: RARE_MODEL, target: candidate.target,
+    source: BETA_SOURCE, sourceModel: candidate.model, target: candidate.target,
     generatedAt: candidate.generatedAt, start: candidate.start, end: candidate.end,
     windowMs: candidate.windowMs,
   };
@@ -91,7 +92,7 @@ function validEntry(value, now) {
     return value.sourceModel === BIG_MODEL && value.start >= value.generatedAt + 3 * MINUTE &&
       value.windowMs <= 6 * MINUTE && value.end <= value.generatedAt + 9 * MINUTE;
   }
-  return value.source === BETA_SOURCE && value.sourceModel === RARE_MODEL && value.target === 100;
+  return value.source === BETA_SOURCE && [RARE_MODEL, RARE_ARCHIVE_MODEL].includes(value.sourceModel) && value.target === 100;
 }
 
 // Copy only this journal's primitive schema. Persisted unrelated fields cannot

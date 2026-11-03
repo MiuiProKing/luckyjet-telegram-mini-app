@@ -136,6 +136,20 @@ test('missing statistical support remains unknown and readiness reasons are Russ
   assert.ok(result.diagnostics.length <= 8);
 });
 
+test('insufficient recent hits still display both actual group counts and clarify nonconsecutive windows', () => {
+  const value = input();
+  value.analysis.bayesian.status = 'insufficient';
+  value.analysis.bayesian.reason = 'insufficient-hit-windows';
+  value.analysis.bayesian.recent.hitWindowCount = 3;
+  value.analysis.archive = {status: 'ready'};
+  value.alerts.active = null;
+  const view = formatRarePresentation(value);
+  assert.equal(view.banner, null);
+  assert.match(view.diagnostics.join('\n'), /3\/30 окон/);
+  assert.match(view.diagnostics.join('\n'), /Архив для сравнения, 60 окон/);
+  assert.match(view.diagnostics.join('\n'), /не обязательно подряд/);
+});
+
 test('journal labels report the target, frozen window, source and observed maximum', () => {
   for (const status of ['hit', 'miss', 'unknown']) {
     const value = input();

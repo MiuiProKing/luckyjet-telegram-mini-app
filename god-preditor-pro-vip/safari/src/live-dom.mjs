@@ -168,10 +168,17 @@ export function createLiveMultiplierMonitor({now = Date.now} = {}) {
       const hazard = counterHazard(element);
       if (hazard) return result('unsafe', hazard);
       const visibility = visibleElement(element, doc);
-      if (visibility) return result('unsafe', visibility);
+      // Games may hide this same counter between flights. That is an unknown
+      // value, not a lost binding: keep an idle observer waiting. A hidden
+      // document, detached source, changed document, off-screen element or
+      // hidden parent frame remains unsafe. Active tracking rejects waiting.
+      if (visibility && visibility !== 'элемент скрыт') return result('unsafe', visibility);
       const rect = element.getBoundingClientRect();
+      if (![rect.left, rect.top, rect.width, rect.height].every(Number.isFinite) || rect.width < 0 || rect.height < 0)
+        return result('unsafe', 'неверные размеры выбранного счётчика');
       const frame = frameChain(doc, rect.left + rect.width / 2, rect.top + rect.height / 2, false);
       if (frame) return result('unsafe', frame);
+      if (visibility) return result('waiting', 'счётчик временно скрыт — ждём новый полёт');
       const label = textOf(element);
       if (label.length > 40) return result('unsafe', 'выбранный текст изменился — выбери счётчик заново');
       const value = parseLiveMultiplier(label);
