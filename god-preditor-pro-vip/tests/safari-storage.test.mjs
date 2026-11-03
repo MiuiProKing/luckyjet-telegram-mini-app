@@ -21,3 +21,33 @@ test('malformed or missing storage does not restore executable or auto state',as
  const saved=await loadPanelState(memory({new:{model,journal:[null,false],rows:'bad',ui:[],legacyJournal:'bad',armed:true}}),model,options);
  assert.deepEqual(saved.rows,[]);assert.deepEqual(saved.journal,[]);assert.deepEqual(saved.legacyJournal,[]);assert.deepEqual(saved.ui,{});assert.equal(saved.armed,undefined);
 });
+test('current matching model restores only the newest 100 object rare entries without restoring auto state',async()=>{
+ const entries=Array.from({length:105},(_,i)=>({model:'rare-alert-v1',key:'rare-'+i,status:'pending'}));
+ const value={model,rareJournal:[null,false,[],42,'bad',...entries],journal:[{model,status:'hit'}],armed:true,autoMode:'live',autoBet:{armed:true}};
+ const original=structuredClone(value),gm=memory({new:value});
+ const saved=await loadPanelState(gm,model,options);
+ assert.deepEqual(gm.calls,['new']);assert.deepEqual(value,original);
+ assert.deepEqual(saved.rareJournal,entries.slice(-100));assert.deepEqual(saved.journal,value.journal);
+ assert.equal(saved.armed,undefined);assert.equal(saved.autoMode,undefined);assert.equal(saved.autoBet,undefined);
+});
+test('rare entries from legacy keys or another primary model never migrate into the current rare journal',async()=>{
+ const rareJournal=[{model:'rare-alert-v1',status:'hit'}];
+ for(const values of [
+  {old:{model,rareJournal,journal:[{model,status:'pending'}]}},
+  {old:{model:'old',rareJournal,journal:[{model:'old',status:'hit'}]}},
+  {new:{model:'old',rareJournal,journal:[{model:'old',status:'hit'}]},old:{model,rareJournal}},
+ ]){
+  const gm=memory(values),saved=await loadPanelState(gm,model,options);
+  assert.deepEqual(saved.rareJournal,[]);
+  assert.deepEqual(gm.calls,values.new?['new']:['new','old']);
+ }
+});
+test('missing or malformed current rare journal loads as an empty independent journal',async()=>{
+ for(const rareJournal of [undefined,null,{},'bad',false,42,[null,[],false,'bad']]){
+  const saved=await loadPanelState(memory({new:{model,rareJournal}}),model,options);
+  assert.deepEqual(saved.rareJournal,[]);
+ }
+ const candidate={unexpected:'deferred to rare alert schema validation'};
+ const saved=await loadPanelState(memory({new:{model,rareJournal:[candidate]}}),model,options);
+ assert.deepEqual(saved.rareJournal,[candidate]);
+});
