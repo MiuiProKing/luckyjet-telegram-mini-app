@@ -31,7 +31,7 @@
 [hidden]{display:none!important}@media(max-width:680px){.analysis-grid .signal-cell:first-child{grid-column:auto}.top,.section-head{flex-wrap:wrap}.status{white-space:normal;max-width:100%}}
 </style>
 
-<link rel="stylesheet" href="./AMOLED_ULTRA_VIVID.css?v=20261108"></head>
+<link rel="stylesheet" href="./AMOLED_ULTRA_VIVID.css?v=20261108-readable"></head>
 
 <body><section class="card" style="max-width:920px;margin:0 auto 18px"><h2>Классическая версия + BeeAI · Supabase LIVE</h2><p id="cloudConnection" aria-live="polite">Подключаю Supabase…</p><details><summary>Доступ к BeeAI</summary><p>Коэффициенты доступны без ПК. Для личных настроек ИИ используйте персональную ссылку или код доступа.</p><input id="beeAccess" type="password" autocomplete="off" aria-label="Код доступа к BeeAI"><button id="beeConnect" class="load" style="display:inline-block">Подключить ИИ</button></details></section><script src="runtime-config.js?v=20261029"></script><script src="cloud-transport.js"></script><script src="bee-cloud-api.js"></script>
 
@@ -170,7 +170,7 @@ function escapeText(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;',
 function fmtTime(t){const n=millis(t);return n?new Date(n).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit',second:'2-digit'}):'—'}
 function localDay(t){const d=new Date(t);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
 function zone(){return Intl.DateTimeFormat().resolvedOptions().timeZone}
-function color(n){return n<2?'#0799ed':n<10?'#a02bf1':'#ff7900'}
+function color(n){return n<2?'#009eea':n<10?'#d500ef':'#f07800'}
 function compareFeed(a,b){return (b._sequence||0)-(a._sequence||0)||((b.timestamp||0)-(a.timestamp||0))||(String(a.id)<String(b.id)?1:String(a.id)>String(b.id)?-1:0)}
 // Coefficient validity and event-clock validity are separate. Never discard a
 // valid result just because the provider's clock differs from this device.
@@ -361,7 +361,7 @@ function render(){
  const sample=rounds.slice(0,LIMIT),nums=sample.map(coefficient),grid=$('grid');grid.replaceChildren();
  if(!nums.length)grid.innerHTML='<div class="empty">Ожидаю данные из нашей базы.</div>';
  else{ $('avg').textContent=mean(nums).toFixed(2)+'×';$('max').textContent=Math.max(...nums).toFixed(2)+'×';$('rate2').textContent=Math.round(nums.filter(x=>x>=2).length*100/nums.length)+'%';$('rate10').textContent=Math.round(nums.filter(x=>x>=10).length*100/nums.length)+'%';
-  for(const r of sample){const item=document.createElement('div');item.className='coef';item.dataset&&(item.dataset.roundId=r.id);item.style.setProperty('--coef',color(r.coefficient));const strong=document.createElement('strong'),time=document.createElement('time');strong.textContent=r.coefficient.toFixed(2)+'×';time.textContent=fmtTime(r.timestamp)+(r.estimated?' ≈':'');item.title=r.timeIssue?'Время источника не подтверждено'+(r._observedAt?' · получено '+fmtTime(r._observedAt):''):'ID '+r.id;item.append(strong,time);grid.appendChild(item)}
+  for(const r of sample){const item=document.createElement('div');item.className='coef';item.dataset&&(item.dataset.roundId=r.id);item.style.setProperty('--coef',color(r.coefficient));const strong=document.createElement('strong'),time=document.createElement('time');strong.textContent=r.coefficient.toFixed(2)+'×';time.textContent=(r.timestamp?new Date(r.timestamp).toLocaleDateString('ru-RU'):'—')+'\n'+fmtTime(r.timestamp)+(r.estimated?' ≈':'');item.title=r.timeIssue?'Время источника не подтверждено'+(r._observedAt?' · получено '+fmtTime(r._observedAt):''):'ID '+r.id;item.append(strong,time);grid.appendChild(item)}
  }
  const exact=exactRounds().length;
  $('sampleQuality').textContent='В модели '+rounds.length+' / '+MODEL_LIMIT+' · точное время: '+exact+' · время ≈: '+(rounds.length-exact)+' · непроверенные часы: '+rounds.filter(r=>r.timeIssue).length+' · '+zone()+(invalidRows?' · некорректных ID/коэффициентов в ответах: '+invalidRows:'')+(conflictingRows?' · конфликтов ID: '+conflictingRows:'');

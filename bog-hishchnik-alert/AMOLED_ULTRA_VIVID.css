@@ -10,3 +10,12 @@ body > :is(#root,#__next,#app,main) {filter:saturate(1.85) contrast(1.18) bright
 :is(button,a,[role="button"]):focus-visible {outline:2px solid #a85cff!important;outline-offset:2px;}
 ::selection {background:#8632ff;color:white;}
 @media (prefers-reduced-motion:reduce){body::before{display:none;}}
+/* Compact history: five readable cards, saturated surfaces without text filters. */
+body > main.app { filter:none; }
+.history-grid { grid-template-columns:repeat(5,minmax(0,1fr))!important; gap:7px; align-items:start; }
+.history-grid .coef { min-width:0; min-height:68px; height:auto; padding:9px 3px; border-radius:15px; background:var(--coef); color:#fff; border:1px solid #ffffff30; box-shadow:0 0 13px color-mix(in srgb,var(--coef) 32%,transparent); }
+.history-grid .coef strong { font-size:clamp(13px,3.5vw,21px); font-weight:850; line-height:1.15; letter-spacing:-.03em; white-space:nowrap; text-shadow:0 1px 2px #0008; }
+.history-grid .coef time { display:block; margin-top:5px; font-size:10px; font-weight:650; line-height:1.3; color:#fff; white-space:pre-line; text-align:center; text-shadow:0 1px 2px #0009; }
+.section-head p,.signal-note,.meta { color:#cbd2e8; }
+@media(max-width:680px){ .history-card,#archive {padding:14px 9px;} .history-grid{gap:6px;} .history-grid .coef{min-height:57px;padding:7px 2px;border-radius:12px;} .history-grid .coef time{font-size:8px;letter-spacing:-.25px;} }
+@media(max-width:340px){.history-grid{gap:4px}.history-grid .coef strong{font-size:11px}.history-grid .coef time{font-size:7px}}
