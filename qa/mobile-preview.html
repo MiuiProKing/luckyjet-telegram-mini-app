@@ -3,6 +3,8 @@
 </style>
 <link rel="stylesheet" href="../god-vip-amoled.css?v=20261108" data-god-vip-theme="amoled-v1-local">
 <link rel="stylesheet" href="https://miuiproking.github.io/luckyjet-telegram-mini-app/god-vip-amoled.css?v=20261108" data-god-vip-theme="amoled-v1-shared">
+
+  <link rel="stylesheet" href="../god-vip-neon/AMOLED_ULTRA_VIVID.css" data-god-vip-theme="amoled-ultra-vivid-global">
 </head><body><main><h1>Проверка мобильной вёрстки</h1><p class="note">Служебный просмотр. Ширина внутреннего окна соответствует телефону; расчёты и игровые кнопки не запускаются этим просмотрщиком.</p><div><label>Страница <select id="page"><option value="../design/#/">Главная</option><option value="../design/#/catalogue">Каталог</option><option value="../design/#/history">История</option><option value="../design/#/settings">Настройки</option><option value="../index.html?qa=mobile2#luckyjet">Classic</option><option value="../pro-luckyjet.html?qa=mobile2">PRO</option></select></label><span id="widths"><button type="button" data-width="320">320 px</button><button type="button" data-width="360">360 px</button><button type="button" data-width="390" aria-pressed="true">390 px</button><button type="button" data-width="430">430 px</button></span></div><output id="report">Загрузка…</output><div id="screen"><iframe id="preview" title="Мобильный экран" src="../design/#/"></iframe></div><button id="inspect" type="button">Обновить проверку</button></main><script>
 const frame=document.getElementById('preview'),report=document.getElementById('report');
 document.getElementById('page').onchange=e=>{frame.src=e.target.value;report.textContent='Загрузка…'};
