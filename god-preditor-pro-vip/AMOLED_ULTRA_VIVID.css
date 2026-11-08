@@ -1,4 +1,4 @@
-/* GOD VIP — AMOLED ULTRA VIVID · CRYSTAL 4
+/* GOD VIP — AMOLED ULTRA VIVID · V2 REFERENCE PALETTE
    Same 1.85 / 1.18 / 1.10 color boost on artwork and card backgrounds.
    Text and viewport-bound controls are separate from filtered artwork. */
 :root {
@@ -8,8 +8,19 @@
   --vip-contrast:1.18;
   --vip-brightness:1.10;
   --vip-boost:saturate(var(--vip-saturation)) contrast(var(--vip-contrast)) brightness(var(--vip-brightness));
-  --vip-ink:#f9f8ff;
+  --vip-ink:#edfdf6;
   --vip-muted:#c4c0d7;
+  /* Exact sRGB palette used by the reference V2 page. */
+  --vip-lime:#a7ff32;--vip-emerald:#22ed91;--vip-teal:#26dae9;
+  --vip-blue:#488eff;--vip-violet:#ac5cff;--vip-orange:#ff982c;
+}
+/* Same wide-gamut palette as V2, with the sRGB colors above as fallback. */
+@supports (color:color(display-p3 1 0 0)) {
+  :root {
+    --vip-lime:color(display-p3 .62 1 .18);--vip-emerald:color(display-p3 .1 .94 .58);
+    --vip-teal:color(display-p3 .2 .88 .95);--vip-blue:color(display-p3 .2 .55 1);
+    --vip-violet:color(display-p3 .62 .32 1);--vip-orange:color(display-p3 1 .56 .12);
+  }
 }
 html {background:#000!important;}
 body {background:#000!important;color:var(--vip-ink)!important;}
@@ -34,7 +45,7 @@ body[data-phase=checking] #brain {filter:var(--vip-boost) drop-shadow(0 0 13px #
 /* One color surface, one crisp text layer. Five cards keep the existing data order. */
 :is(.history-grid,#feed.feed) {display:grid;grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:8px;}
 :is(.history-grid .coef,#feed .chip,#latest-five > span) {
-  --vip-tone:var(--coef,#008edb);
+  --vip-tone:var(--coef,var(--vip-blue));
   position:relative;isolation:isolate;container-type:inline-size;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   min-width:0;min-height:76px;padding:10px 3px 7px;gap:0;
@@ -44,17 +55,20 @@ body[data-phase=checking] #brain {filter:var(--vip-boost) drop-shadow(0 0 13px #
   filter:none!important;transform:none;overflow:hidden;
 }
 :is(.history-grid .coef,#feed .chip,#latest-five > span)::before {
-  content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;border-radius:inherit;
+  content:"";position:absolute;inset:0;width:auto;height:auto;z-index:-1;pointer-events:none;border-radius:inherit;
   background:linear-gradient(150deg,var(--vip-tone),#09172f);
   background:radial-gradient(ellipse at 18% -35%,#ffffff64,transparent 65%),
     linear-gradient(150deg,var(--vip-tone) 8%,color-mix(in srgb,var(--vip-tone) 76%,#061330) 65%,color-mix(in srgb,var(--vip-tone) 55%,#061330));
   filter:var(--vip-boost);
 }
-#feed .chip.mid {--vip-tone:#bd16dc;}
-#feed .chip.high {--vip-tone:#ec7700;}
-body[data-vip-skin="neural"] #feed .chip.high {--vip-tone:#bd16dc;}
-#latest-five > span {--vip-tone:#bd16dc;}
-#latest-five > span.below {--vip-tone:#008edb;}
+#feed .chip.mid {--vip-tone:var(--vip-violet);}
+#feed .chip.high {--vip-tone:var(--vip-orange);}
+body[data-vip-skin="neural"] #feed .chip.high {--vip-tone:var(--vip-violet);}
+#latest-five > span {--vip-tone:var(--vip-violet);}
+#latest-five > span.below {--vip-tone:var(--vip-blue);}
+.history-grid .coef:is([style*="#009eea"],[style*="#0799ed"]) {--vip-tone:var(--vip-blue);}
+.history-grid .coef:is([style*="#d500ef"],[style*="#a02bf1"]) {--vip-tone:var(--vip-violet);}
+.history-grid .coef:is([style*="#f07800"],[style*="#ff7900"]) {--vip-tone:var(--vip-orange);}
 :is(.history-grid .coef,#feed .chip,#latest-five > span) > :is(strong,b) {
   display:block;max-width:100%;margin:0;padding:0 1px;
   font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;
