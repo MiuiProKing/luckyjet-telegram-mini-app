@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#080806">
+  <meta name="description" content="Коэффициенты LuckyJet от 10× из нашей истории Supabase, упорядоченные по ближайшему времени суток по Киеву.">
+  <meta name="referrer" content="no-referrer">
+  <title>GOD PREDITOR · Golden History</title>
+  <link rel="stylesheet" href="../../god-vip-amoled.css?v=20261108">
+  <link rel="stylesheet" href="./styles.css?v=20261109-1">
+</head>
+<body>
+  <a class="skip-link" href="#timeline">К историческим событиям</a>
+  <div class="page-shell">
+    <header class="masthead">
+      <a class="brand" href="./" aria-label="GOD PREDITOR — Golden History">
+        <span class="brand-symbol" aria-hidden="true">✦</span>
+        <span><strong>GOD PREDITOR</strong><small>LUCKYJET · GOLDEN HISTORY</small></span>
+      </a>
+      <span class="edition">GOLD <span aria-hidden="true">✧</span></span>
+    </header>
+
+    <main>
+      <section class="intro" aria-labelledby="page-title">
+        <div class="intro-copy">
+          <div class="eyebrow"><span class="tiny-line"></span> НАША ИСТОРИЯ. БЛИЖАЙШИЕ ЧАСЫ.</div>
+          <h1 id="page-title">Большие X. <br><em>По времени.</em></h1>
+          <p>Результаты прошлых дней от 10× — в порядке ближайшего времени суток.</p>
+        </div>
+        <div class="clock-panel">
+          <span class="label">СЕЙЧАС · КИЕВ</span>
+          <time id="clock" class="wall-clock">--:--:--</time>
+          <span id="today-label" class="clock-date">Europe/Kyiv</span>
+          <div class="connection" id="connection" data-state="connecting"><i aria-hidden="true"></i><span id="connection-label" role="status">Подключаем Supabase</span></div>
+        </div>
+      </section>
+
+      <section class="live-strip" aria-label="Пять последних завершённых раундов">
+        <span class="live-caption"><span class="live-mark" aria-hidden="true"></span>СЕЙЧАС В ИГРЕ <small>завершённые раунды</small></span>
+        <ol id="recent" class="recent-list"><li class="recent-placeholder">Ожидаем коэффициенты…</li></ol>
+      </section>
+
+      <section class="timeline-section" id="timeline" aria-labelledby="timeline-title">
+        <div class="section-head">
+          <div><span class="eyebrow muted">ВРЕМЕННАЯ ЛЕНТА</span><h2 id="timeline-title">Впереди по часам <span class="count-badge" id="eligible-count">—</span></h2></div>
+          <div class="filters">
+            <label><span>Коэффициент</span><select id="threshold"><option value="10">От 10×</option><option value="20">От 20×</option><option value="50">От 50×</option><option value="100">От 100×</option><option value="500">От 500×</option></select></label>
+            <label><span>История</span><select id="days"><option value="0">Вся доступная</option><option value="7">Последние 7 дней</option><option value="30">Последние 30 дней</option><option value="90">Последние 90 дней</option></select></label>
+            <button id="refresh" class="refresh-button" type="button" aria-label="Обновить историю и последние коэффициенты" title="Обновить"><span aria-hidden="true">↻</span></button>
+          </div>
+        </div>
+
+        <div id="loading" class="loading-line" role="status"><span class="loading-dot" aria-hidden="true"></span><span id="loading-label">Загружаем историю от 10×…</span></div>
+        <p id="history-error" class="error-note" role="status" hidden></p>
+
+        <article id="spotlight" class="spotlight" aria-labelledby="spotlight-title" hidden>
+          <div class="spotlight-top"><span class="eyebrow" id="spotlight-title">БЛИЖАЙШАЯ ИСТОРИЧЕСКАЯ ОТМЕТКА</span><span class="day-pill" id="spotlight-day"></span></div>
+          <div class="spotlight-main">
+            <div class="time-side"><span class="label">ВРЕМЯ ПО КИЕВУ</span><time id="spotlight-time" class="spotlight-time"></time><span class="countdown-label">До этой отметки <b id="spotlight-countdown"></b></span></div>
+            <div class="value-side"><span class="coefficient hero-coefficient" id="spotlight-coefficient"></span><span class="label">ВЫПАЛ В ИСТОРИИ</span></div>
+          </div>
+          <div class="spotlight-bottom"><span><i aria-hidden="true">↶</i> <span id="spotlight-source"></span></span><span class="historical-tag">ИСТОРИЧЕСКОЕ СОБЫТИЕ</span></div>
+        </article>
+
+        <div id="empty" class="empty-state" hidden><span aria-hidden="true">✧</span><h3 id="empty-title">Подбираем события из истории</h3><p id="empty-text">Карточки появятся после загрузки реальных коэффициентов.</p></div>
+        <div id="cards" class="cards-grid" aria-label="Следующие исторические отметки"></div>
+        <button id="more" class="more-button" type="button" hidden>Ещё 24 события <span aria-hidden="true">↓</span></button>
+      </section>
+
+      <footer class="page-footer">
+        <p id="archive-summary">Источник: наша история Supabase · LuckyJet</p>
+        <p>Часы на карточке — ближайшее повторение времени суток. Коэффициент и дата взяты из прошлого события; повторение результата сегодня не предсказывается.</p>
+      </footer>
+    </main>
+  </div>
+
+  <template id="event-template">
+    <article class="echo-card">
+      <div class="echo-top"><span class="card-index"></span><span class="card-day"></span></div>
+      <time class="echo-time"></time>
+      <div class="coefficient echo-coefficient"></div>
+      <div class="echo-countdown">До отметки <span class="card-countdown"></span></div>
+      <div class="echo-source"><span class="source-label">В ИСТОРИИ</span><span class="source-date"></span></div>
+    </article>
+  </template>
+  <script type="module" src="./app.mjs?v=20261109-1"></script>
+</body>
+</html>
