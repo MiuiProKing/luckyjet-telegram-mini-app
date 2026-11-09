@@ -1,0 +1,30 @@
+name: Verify Golden History
+on:
+  pull_request:
+    paths:
+      - 'god-preditor-pro-vip/golden-history/**'
+      - '.github/workflows/golden-history.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'god-preditor-pro-vip/golden-history/**'
+      - '.github/workflows/golden-history.yml'
+permissions:
+  contents: read
+jobs:
+  history:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check syntax
+        run: |
+          node --check god-preditor-pro-vip/golden-history/app.mjs
+          node --check god-preditor-pro-vip/golden-history/data.mjs
+          node --check god-preditor-pro-vip/golden-history/clock.mjs
+      - name: Check history loading and clock projections
+        run: node --test god-preditor-pro-vip/golden-history/tests/*.test.mjs
+      - name: Check independence from browser timezone
+        run: TZ=America/Los_Angeles node --test god-preditor-pro-vip/golden-history/tests/clock.test.mjs
