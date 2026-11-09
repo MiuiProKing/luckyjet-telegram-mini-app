@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#080806">
-  <meta name="description" content="Коэффициенты LuckyJet от 10× из нашей истории Supabase, упорядоченные по ближайшему времени суток по Киеву.">
+  <meta name="description" content="Коэффициенты LuckyJet от 10× за одну сессию: с 08:00 вчера до 08:00 сегодня по Киеву, включая ночные раунды.">
   <meta name="referrer" content="no-referrer">
   <title>GOD PREDITOR · Golden History</title>
   <link rel="stylesheet" href="../../god-vip-amoled.css?v=20261108">
-  <link rel="stylesheet" href="./styles.css?v=20261109-1">
+  <link rel="stylesheet" href="./styles.css?v=20261109-2">
 </head>
 <body>
   <a class="skip-link" href="#timeline">К историческим событиям</a>
@@ -24,9 +24,9 @@
     <main>
       <section class="intro" aria-labelledby="page-title">
         <div class="intro-copy">
-          <div class="eyebrow"><span class="tiny-line"></span> НАША ИСТОРИЯ. БЛИЖАЙШИЕ ЧАСЫ.</div>
+          <div class="eyebrow"><span class="tiny-line"></span> ПРОШЛАЯ СЕССИЯ · 08:00 — 08:00</div>
           <h1 id="page-title">Большие X. <br><em>По времени.</em></h1>
-          <p>Результаты прошлых дней от 10× — в порядке ближайшего времени суток.</p>
+          <p>От 08:00 вчера до 08:00 сегодня, включая ночные раунды. События от 10× — по ближайшему времени суток.</p>
         </div>
         <div class="clock-panel">
           <span class="label">СЕЙЧАС · КИЕВ</span>
@@ -46,12 +46,12 @@
           <div><span class="eyebrow muted">ВРЕМЕННАЯ ЛЕНТА</span><h2 id="timeline-title">Впереди по часам <span class="count-badge" id="eligible-count">—</span></h2></div>
           <div class="filters">
             <label><span>Коэффициент</span><select id="threshold"><option value="10">От 10×</option><option value="20">От 20×</option><option value="50">От 50×</option><option value="100">От 100×</option><option value="500">От 500×</option></select></label>
-            <label><span>История</span><select id="days"><option value="0">Вся доступная</option><option value="7">Последние 7 дней</option><option value="30">Последние 30 дней</option><option value="90">Последние 90 дней</option></select></label>
+            <div class="session-filter"><span>Одна прошлая сессия · Киев</span><div class="session-range"><span id="session-start">—</span><i aria-hidden="true">→</i><span id="session-end">—</span></div></div>
             <button id="refresh" class="refresh-button" type="button" aria-label="Обновить историю и последние коэффициенты" title="Обновить"><span aria-hidden="true">↻</span></button>
           </div>
         </div>
 
-        <div id="loading" class="loading-line" role="status"><span class="loading-dot" aria-hidden="true"></span><span id="loading-label">Загружаем историю от 10×…</span></div>
+        <div id="loading" class="loading-line" role="status"><span class="loading-dot" aria-hidden="true"></span><span id="loading-label">Загружаем одну прошлую сессию от 10×…</span></div>
         <p id="history-error" class="error-note" role="status" hidden></p>
 
         <article id="spotlight" class="spotlight" aria-labelledby="spotlight-title" hidden>
@@ -70,7 +70,7 @@
 
       <footer class="page-footer">
         <p id="archive-summary">Источник: наша история Supabase · LuckyJet</p>
-        <p>Часы на карточке — ближайшее повторение времени суток. Коэффициент и дата взяты из прошлого события; повторение результата сегодня не предсказывается.</p>
+        <p>Источник карточек — только сессия с 08:00 вчера до 08:00 сегодня. Часы показывают ближайшую отметку времени суток; повторение исторического коэффициента не предсказывается.</p>
       </footer>
     </main>
   </div>
@@ -84,6 +84,6 @@
       <div class="echo-source"><span class="source-label">В ИСТОРИИ</span><span class="source-date"></span></div>
     </article>
   </template>
-  <script type="module" src="./app.mjs?v=20261109-1"></script>
+  <script type="module" src="./app.mjs?v=20261109-2"></script>
 </body>
 </html>

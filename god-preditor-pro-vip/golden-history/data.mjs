@@ -37,13 +37,19 @@ export function createReader(config, {fetchImpl = fetch, now = Date.now, timeout
   if (root.protocol !== 'https:' || !config.publishableKey?.startsWith('sb_publishable_') ||
       !/^[a-z_][a-z0-9_]*$/.test(config.table)) throw Error('Неверная публичная конфигурация Supabase');
 
-  async function page({minimum = null, after = null, before = null, ascending = false, limit = 1000, signal} = {}) {
+  async function page({minimum = null, after = null, before = null, ascending = false, limit = 1000,
+    start = null, end = null, signal} = {}) {
     const url = new URL(`/rest/v1/${config.table}`, root);
     const q = url.searchParams;
     q.set('select', COLUMNS); q.set('completed', 'eq.true'); q.set('estimated', 'eq.false');
     q.set('round_timestamp', 'not.is.null'); q.set('order', `source_seq.${ascending ? 'asc' : 'desc'}`);
     q.set('limit', String(limit));
     if (minimum !== null) q.set('coefficient', `gte.${minimum}`);
+    if (start !== null || end !== null) {
+      if (!Number.isFinite(start) || !Number.isFinite(end) || start >= end) throw Error('Неверный период сессии');
+      q.append('round_timestamp', `gte.${new Date(start).toISOString()}`);
+      q.append('round_timestamp', `lt.${new Date(end).toISOString()}`);
+    }
     for (const [value, operator] of [[after, 'gt'], [before, 'lt']]) {
       if (value !== null) {
         if (!sequence(value)) throw Error('Неверный курсор истории');
@@ -64,11 +70,11 @@ export function createReader(config, {fetchImpl = fetch, now = Date.now, timeout
     } finally {clearTimeout(timer); signal?.removeEventListener('abort', abort);}
   }
 
-  async function loadHistory({after = null, onBatch = () => {}, signal} = {}) {
+  async function loadHistory({after = null, start = null, end = null, onBatch = () => {}, signal} = {}) {
     let before = null, highWater = after, futureFloor = null, count = 0;
     while (true) {
       if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
-      const rows = await page({minimum: 10, after, before, signal});
+      const rows = await page({minimum: 10, after, before, start, end, signal});
       if (!rows.length) break;
       const seqs = rows.map(row => sequence(row.source_seq));
       if (seqs.some(x => !x)) throw Error('В истории отсутствует номер раунда');
@@ -84,7 +90,7 @@ export function createReader(config, {fetchImpl = fetch, now = Date.now, timeout
           if (futureFloor === null || BigInt(s) < BigInt(futureFloor)) futureFloor = s;
         }
         const mapped = mapRound(row, now());
-        if (mapped && mapped.coefficient >= 10) batch.push(mapped);
+        if (mapped && mapped.coefficient >= 10 && (start === null || (mapped.timestamp >= start && mapped.timestamp < end))) batch.push(mapped);
       }
       count += batch.length;
       await onBatch(batch, {count});

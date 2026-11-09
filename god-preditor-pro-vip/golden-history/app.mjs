@@ -1,13 +1,13 @@
 import {SUPABASE_CONFIG} from '../supabase-config.mjs';
-import {TIME_ZONE, zonedParts, prepareEvent, buildTimeline, formatClock, formatCountdown, formatOccurrenceDay} from './clock.mjs';
-import {createReader, readLivePage, readCache, writeCache, sequence} from './data.mjs';
+import {TIME_ZONE, zonedParts, prepareEvent, buildTimeline, formatClock, formatCountdown, formatOccurrenceDay, previousMorningWindow} from './clock.mjs?v=20261109-2';
+import {createReader, readLivePage, readCache, writeCache, sequence} from './data.mjs?v=20261109-2';
 
 const $ = id => document.getElementById(id);
 const reader = createReader(SUPABASE_CONFIG);
-const identity = `${SUPABASE_CONFIG.url}/${SUPABASE_CONFIG.table}/confirmed-10`;
+const cacheIdentity = () => `${SUPABASE_CONFIG.url}/${SUPABASE_CONFIG.table}/session-08-v2/${state.window.key}`;
 const state = {events: new Map(), recent: new Map(), cursor: null, highWater: null, complete: false,
   historyBusy: false, liveBusy: false, online: false, syncedAt: null, limit: 25, cards: [], total: 0,
-  day: null, renderTimer: null, pollTimer: null, saveTimer: null, cached: false};
+  day: null, window: previousMorningWindow(), renderTimer: null, pollTimer: null, saveTimer: null, cached: false};
 const coefficient = value => new Intl.NumberFormat('ru-RU', {minimumFractionDigits: 2, maximumFractionDigits: 2,
   ...(value >= 1000000 ? {notation: 'compact'} : {})}).format(value) + '×';
 const dateFormat = new Intl.DateTimeFormat('ru-RU', {timeZone: TIME_ZONE, day: '2-digit', month: '2-digit', year: 'numeric'});
@@ -15,14 +15,14 @@ const dateFormat = new Intl.DateTimeFormat('ru-RU', {timeZone: TIME_ZONE, day: '
 function sourceLabel(event) {
   const p = zonedParts(Date.now());
   const yesterday = new Date(Date.UTC(p.year, p.month - 1, p.day) - 86400000).toISOString().slice(0, 10);
-  return `${event.sourceDate === yesterday ? 'Вчера · ' : ''}${dateFormat.format(event.timestamp)}`;
+  return `${event.sourceDate === yesterday ? 'Вчера · ' : event.sourceDate === p.date ? 'Сегодня · ' : ''}${dateFormat.format(event.timestamp)}`;
 }
 
 function mergeRounds(rounds, isLive = false) {
   let changed = false;
   for (const round of rounds) {
     if (isLive) state.recent.set(round.id, round);
-    if (round.coefficient < 10 || state.events.has(round.id)) continue;
+    if (round.coefficient < 10 || state.events.has(round.id) || round.timestamp < state.window.start || round.timestamp >= state.window.end) continue;
     const event = prepareEvent(round);
     if (event) {state.events.set(event.id, event); changed = true;}
   }
@@ -52,7 +52,7 @@ function scheduleRender() {
 
 function render() {
   const now = Date.now();
-  const result = buildTimeline(state.events.values(), {now, threshold: Number($('threshold').value), days: Number($('days').value), limit: state.limit});
+  const result = buildTimeline(state.events.values(), {now, threshold: Number($('threshold').value), sourceWindow: state.window, limit: state.limit});
   state.cards = result.cards; state.total = result.total; state.day = result.today;
   $('eligible-count').textContent = result.total.toLocaleString('ru-RU');
   const first = state.cards[0];
@@ -66,7 +66,7 @@ function render() {
   } else {
     $('empty-title').textContent = state.historyBusy ? 'Загружаем реальные события' : 'Нет событий по этому фильтру';
     $('empty-text').textContent = state.historyBusy ? 'Карточки появятся по мере загрузки истории Supabase.' :
-      'Нужны завершённые раунды прошлых календарных дней. Попробуй снизить порог или выбрать всю доступную историю.';
+      'За эту сессию пока нет подходящих завершённых раундов. Попробуй снизить порог коэффициента.';
   }
   const fragment = document.createDocumentFragment();
   state.cards.slice(1).forEach((event, index) => {
@@ -91,28 +91,35 @@ function updateCountdowns(now) {
 }
 
 function renderSummary() {
-  let oldest = null;
-  for (const round of state.events.values()) if (oldest === null || round.timestamp < oldest) oldest = round.timestamp;
-  $('archive-summary').textContent = `Supabase · ${state.events.size.toLocaleString('ru-RU')} событий от 10×${oldest ? ` · с ${dateFormat.format(oldest)}` : ''}${state.complete ? ' · вся доступная история загружена' : ' · загрузка истории'}${state.syncedAt ? ` · обновлено ${formatClock(state.syncedAt)}` : ''}`;
+  const date = timestamp => dateFormat.format(timestamp).slice(0, 5);
+  $('session-start').textContent = `${date(state.window.start)} 08:00`;
+  $('session-end').textContent = `${date(state.window.end)} 08:00`;
+  $('archive-summary').textContent = `Supabase · ${dateFormat.format(state.window.start)} 08:00 → ${dateFormat.format(state.window.end)} 08:00 · ${state.events.size.toLocaleString('ru-RU')} событий от 10×${state.complete ? ' · период загружен' : ' · загрузка периода'}${Date.now() < state.window.end ? ' · ночная часть сессии ещё идёт' : ''}${state.syncedAt ? ` · обновлено ${formatClock(state.syncedAt)}` : ''}`;
 }
 
 function connection(stateName, label) {$('connection').dataset.state = stateName; $('connection-label').textContent = label;}
 
 async function syncHistory() {
   if (state.historyBusy) return;
+  const scope = state.window;
   state.historyBusy = true; $('refresh').disabled = true; $('loading').hidden = false; $('history-error').hidden = true;
-  $('loading-label').textContent = state.complete ? 'Проверяем новые события в истории…' : 'Загружаем всю историю от 10×…';
+  $('loading-label').textContent = state.complete ? 'Проверяем события выбранной сессии…' : 'Загружаем сессию: вчера 08:00 → сегодня 08:00…';
   try {
-    const result = await reader.loadHistory({after: state.complete ? state.highWater : null, onBatch: (batch, progress) => {
+    const result = await reader.loadHistory({after: state.complete ? state.highWater : null, start: scope.start, end: scope.end, onBatch: batch => {
+      if (scope.key !== state.window.key) return;
       mergeRounds(batch); $('loading-label').textContent = `Загружено ${state.events.size.toLocaleString('ru-RU')} событий от 10×…`;
     }});
+    if (scope.key !== state.window.key) return;
     state.highWater = result.highWater; state.complete = true; state.cached = false; state.syncedAt = result.syncedAt;
     saveSoon();
   } catch (error) {
+    if (scope.key !== state.window.key) return;
     $('history-error').hidden = false;
     $('history-error').textContent = `${error.message}. ${state.events.size ? 'Показана уже загруженная история.' : 'История пока недоступна.'} Нажми ↻ для повторной загрузки.`;
   } finally {
-    state.historyBusy = false; $('refresh').disabled = false; $('loading').hidden = true; render();
+    state.historyBusy = false;
+    if (scope.key !== state.window.key) {void syncHistory(); return;}
+    $('refresh').disabled = false; $('loading').hidden = true; render();
   }
 }
 
@@ -120,7 +127,7 @@ function saveSoon() {
   clearTimeout(state.saveTimer);
   if (!state.complete) return;
   state.saveTimer = setTimeout(() => {
-    void writeCache({identity, complete: true, highWater: state.highWater, syncedAt: state.syncedAt,
+    void writeCache({identity: cacheIdentity(), complete: true, highWater: state.highWater, syncedAt: state.syncedAt,
       rows: [...state.events.values()].map(({id, seq, coefficient, timestamp}) => ({id, seq, coefficient, timestamp}))});
   }, 800);
 }
@@ -151,6 +158,11 @@ async function pollLive() {
 
 function tick() {
   const now = Date.now();
+  const window = previousMorningWindow(now);
+  if (window.key !== state.window.key) {
+    state.window = window; state.events.clear(); state.cards = []; state.highWater = null; state.complete = false; state.syncedAt = null;
+    state.limit = 25; clearTimeout(state.saveTimer); render(); void syncHistory();
+  }
   $('clock').textContent = formatClock(now); $('clock').dateTime = new Date(now).toISOString();
   $('today-label').textContent = dateFormat.format(now);
   if (state.day !== zonedParts(now).date || (state.cards[0] && state.cards[0].nextAt < now)) render();
@@ -158,7 +170,6 @@ function tick() {
 }
 
 $('threshold').addEventListener('change', () => {state.limit = 25; render();});
-$('days').addEventListener('change', () => {state.limit = 25; render();});
 $('more').addEventListener('click', () => {state.limit += 24; render();});
 $('refresh').addEventListener('click', () => {void syncHistory(); void pollLive();});
 document.addEventListener('visibilitychange', () => {
@@ -170,8 +181,9 @@ window.addEventListener('pageshow', event => {if (event.persisted) {tick(); void
 
 tick(); setInterval(tick, 1000);
 void pollLive();
-const cached = await readCache(identity);
-if (cached) {
+const cacheScope = state.window.key;
+const cached = await readCache(cacheIdentity());
+if (cached && cacheScope === state.window.key) {
   const valid = cached.rows.filter(round => round && sequence(round.seq) && typeof round.id === 'string' &&
     Number.isFinite(round.coefficient) && round.coefficient >= 10 && Number.isFinite(round.timestamp) && round.timestamp > 0 && round.timestamp <= Date.now());
   mergeRounds(valid); state.highWater = cached.highWater; state.complete = true; state.cached = true; state.syncedAt = cached.syncedAt;
