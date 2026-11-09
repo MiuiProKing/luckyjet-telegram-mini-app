@@ -82,6 +82,14 @@ export function formatClock(timestamp, timeZone = TIME_ZONE) {
   return [p.hour, p.minute, p.second].map(x => String(x).padStart(2, '0')).join(':');
 }
 
+export function formatOccurrenceDay(nextAt, now = Date.now(), timeZone = TIME_ZONE) {
+  const today = zonedParts(now, timeZone), target = zonedParts(nextAt, timeZone);
+  if (target.date === today.date) return 'СЕГОДНЯ';
+  const tomorrow = new Date(Date.UTC(today.year, today.month - 1, today.day + 1)).toISOString().slice(0, 10);
+  if (target.date === tomorrow) return 'ЗАВТРА';
+  return new Intl.DateTimeFormat('ru-RU', {timeZone, day: '2-digit', month: '2-digit', year: 'numeric'}).format(nextAt);
+}
+
 export function formatCountdown(nextAt, now = Date.now()) {
   const seconds = Math.max(0, Math.ceil((nextAt - now) / 1000));
   const h = Math.floor(seconds / 3600), m = Math.floor(seconds % 3600 / 60), s = seconds % 60;

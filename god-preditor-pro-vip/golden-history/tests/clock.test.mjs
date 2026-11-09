@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {prepareEvent, buildTimeline, createClockProjection, zonedParts, formatCountdown} from '../clock.mjs';
+import {prepareEvent, buildTimeline, createClockProjection, zonedParts, formatCountdown, formatOccurrenceDay} from '../clock.mjs';
 
 const event = (id, coefficient, iso) => prepareEvent({id, coefficient, timestamp: Date.parse(iso)});
 
@@ -44,6 +44,15 @@ test('autumn DST: a smaller clock time can still be ahead in the repeated hour',
   ], {now});
   assert.deepEqual(result.cards.map(x => x.id), ['first-hour', 'repeated', 'four']);
   assert.equal(result.cards[1].nextAt, Date.parse('2026-10-25T01:20:00Z'));
+});
+
+test('a passed clock mark missing tomorrow during DST uses the actual day-after-tomorrow date label', () => {
+  const now = Date.parse('2026-03-28T02:00:00Z'); // 04:00 Kyiv
+  const nextAt = createClockProjection(now)(3 * 3600 + 30 * 60);
+  assert.equal(nextAt, Date.parse('2026-03-30T00:30:00Z'));
+  assert.equal(formatOccurrenceDay(nextAt, now), '30.03.2026');
+  assert.equal(formatOccurrenceDay(Date.parse('2026-03-28T02:01:00Z'), now), 'СЕГОДНЯ');
+  assert.equal(formatOccurrenceDay(Date.parse('2026-03-29T01:01:00Z'), now), 'ЗАВТРА');
 });
 
 test('today, future events, duplicate IDs and values below the selected threshold are excluded', () => {

@@ -1,5 +1,5 @@
 import {SUPABASE_CONFIG} from '../supabase-config.mjs';
-import {TIME_ZONE, zonedParts, prepareEvent, buildTimeline, formatClock, formatCountdown} from './clock.mjs';
+import {TIME_ZONE, zonedParts, prepareEvent, buildTimeline, formatClock, formatCountdown, formatOccurrenceDay} from './clock.mjs';
 import {createReader, readLivePage, readCache, writeCache, sequence} from './data.mjs';
 
 const $ = id => document.getElementById(id);
@@ -17,8 +17,6 @@ function sourceLabel(event) {
   const yesterday = new Date(Date.UTC(p.year, p.month - 1, p.day) - 86400000).toISOString().slice(0, 10);
   return `${event.sourceDate === yesterday ? 'Вчера · ' : ''}${dateFormat.format(event.timestamp)}`;
 }
-
-function nextDayLabel(nextAt) {return zonedParts(nextAt).date === zonedParts(Date.now()).date ? 'СЕГОДНЯ' : 'ЗАВТРА';}
 
 function mergeRounds(rounds, isLive = false) {
   let changed = false;
@@ -61,7 +59,7 @@ function render() {
   $('spotlight').hidden = !first;
   $('empty').hidden = Boolean(first);
   if (first) {
-    $('spotlight-day').textContent = nextDayLabel(first.nextAt);
+    $('spotlight-day').textContent = formatOccurrenceDay(first.nextAt, now);
     $('spotlight-time').textContent = formatClock(first.nextAt); $('spotlight-time').dateTime = new Date(first.nextAt).toISOString();
     $('spotlight-coefficient').textContent = coefficient(first.coefficient);
     $('spotlight-source').textContent = `${sourceLabel(first)} · ${formatClock(first.timestamp)}`;
@@ -75,7 +73,7 @@ function render() {
     const card = $('event-template').content.firstElementChild.cloneNode(true);
     card.dataset.mega = String(event.coefficient >= 100);
     card.querySelector('.card-index').textContent = `${String(index + 2).padStart(2, '0')} / ИСТОРИЯ`;
-    card.querySelector('.card-day').textContent = nextDayLabel(event.nextAt);
+    card.querySelector('.card-day').textContent = formatOccurrenceDay(event.nextAt, now);
     const time = card.querySelector('.echo-time'); time.textContent = formatClock(event.nextAt); time.dateTime = new Date(event.nextAt).toISOString();
     card.querySelector('.echo-coefficient').textContent = coefficient(event.coefficient);
     card.querySelector('.source-date').textContent = sourceLabel(event);
