@@ -1,13 +1,14 @@
 import {SUPABASE_CONFIG} from '../supabase-config.mjs';
-import {TIME_ZONE, zonedParts, prepareEvent, buildTimeline, formatClock, formatCountdown, formatOccurrenceDay, previousMorningWindow} from './clock.mjs?v=20261109-2';
-import {createReader, readLivePage, readCache, writeCache, sequence} from './data.mjs?v=20261109-2';
+import {TIME_ZONE, zonedParts, prepareEvent, buildTimeline, formatClock, formatCountdown, formatOccurrenceDay, previousMorningWindow} from './clock.mjs?v=20261109-3';
+import {createReader, readLivePage, readCache, writeCache, sequence} from './data.mjs?v=20261109-3';
+import {buildRecommendation} from './model.mjs?v=20261109-3';
 
 const $ = id => document.getElementById(id);
 const reader = createReader(SUPABASE_CONFIG);
 const cacheIdentity = () => `${SUPABASE_CONFIG.url}/${SUPABASE_CONFIG.table}/session-08-v2/${state.window.key}`;
 const state = {events: new Map(), recent: new Map(), cursor: null, highWater: null, complete: false,
   historyBusy: false, liveBusy: false, online: false, syncedAt: null, limit: 25, cards: [], total: 0,
-  day: null, window: previousMorningWindow(), renderTimer: null, pollTimer: null, saveTimer: null, cached: false};
+  day: null, window: previousMorningWindow(), recommendation: null, renderTimer: null, pollTimer: null, saveTimer: null, cached: false};
 const coefficient = value => new Intl.NumberFormat('ru-RU', {minimumFractionDigits: 2, maximumFractionDigits: 2,
   ...(value >= 1000000 ? {notation: 'compact'} : {})}).format(value) + '×';
 const dateFormat = new Intl.DateTimeFormat('ru-RU', {timeZone: TIME_ZONE, day: '2-digit', month: '2-digit', year: 'numeric'});
@@ -82,7 +83,29 @@ function render() {
   });
   $('cards').replaceChildren(fragment);
   $('more').hidden = state.cards.length >= state.total;
-  updateCountdowns(now); renderSummary();
+  renderRecommendation(now); updateCountdowns(now); renderSummary();
+}
+
+function renderRecommendation(now) {
+  const recommendation = buildRecommendation(state.events.values(), {now, filterThreshold: Number($('threshold').value), sourceWindow: state.window});
+  state.recommendation = recommendation;
+  const ready = state.complete && recommendation.goldenCount > 0;
+  $('model-ready').hidden = !ready; $('model-pending').hidden = ready;
+  $('model-pending').textContent = state.complete ? 'В этой сессии пока нет золотых раундов для ориентира.' : 'Загружаем сессию для модели…';
+  delete $('model-countdown').dataset.nextAt;
+  if (!ready) return;
+  $('model-target').textContent = coefficient(recommendation.target);
+  $('model-probability').textContent = `≈ ${new Intl.NumberFormat('ru-RU', {maximumFractionDigits: 1}).format(recommendation.modeledPct)}%`;
+  $('model-observed').textContent = `В этой сессии ≥${recommendation.target.toLocaleString('ru-RU')}×: ${recommendation.hits} из ${recommendation.goldenCount} золотых раундов.`;
+  const mark = recommendation.mark;
+  $('model-time').textContent = mark ? formatClock(mark.nextAt) : 'Нет отметки';
+  $('model-day').textContent = mark ? formatOccurrenceDay(mark.nextAt, now) : '';
+  $('model-time').removeAttribute('datetime');
+  if (mark) {
+    $('model-time').dateTime = new Date(mark.nextAt).toISOString();
+    $('model-countdown').dataset.nextAt = String(mark.nextAt);
+  } else $('model-countdown').textContent = '—';
+  $('model-source').textContent = mark ? `Было в сессии: ${sourceLabel(mark)} · ${formatClock(mark.timestamp)} · ${coefficient(mark.coefficient)}` : 'В выбранной сессии нет события, достигающего этого порога.';
 }
 
 function updateCountdowns(now) {
@@ -165,7 +188,8 @@ function tick() {
   }
   $('clock').textContent = formatClock(now); $('clock').dateTime = new Date(now).toISOString();
   $('today-label').textContent = dateFormat.format(now);
-  if (state.day !== zonedParts(now).date || (state.cards[0] && state.cards[0].nextAt < now)) render();
+  if (state.day !== zonedParts(now).date || (state.cards[0] && state.cards[0].nextAt < now) ||
+      (state.recommendation?.mark && state.recommendation.mark.nextAt < now)) render();
   else updateCountdowns(now);
 }
 
