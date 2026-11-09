@@ -24,6 +24,7 @@ jobs:
           node --check god-preditor-pro-vip/golden-history/app.mjs
           node --check god-preditor-pro-vip/golden-history/data.mjs
           node --check god-preditor-pro-vip/golden-history/clock.mjs
+          node --check god-preditor-pro-vip/golden-history/model.mjs
       - name: Check history loading and clock projections
         run: node --test god-preditor-pro-vip/golden-history/tests/*.test.mjs
       - name: Check independence from browser timezone

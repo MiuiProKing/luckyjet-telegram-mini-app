@@ -8,7 +8,7 @@
   <meta name="referrer" content="no-referrer">
   <title>GOD PREDITOR · Golden History</title>
   <link rel="stylesheet" href="../../god-vip-amoled.css?v=20261108">
-  <link rel="stylesheet" href="./styles.css?v=20261109-2">
+  <link rel="stylesheet" href="./styles.css?v=20261109-3">
 </head>
 <body>
   <a class="skip-link" href="#timeline">К историческим событиям</a>
@@ -54,6 +54,22 @@
         <div id="loading" class="loading-line" role="status"><span class="loading-dot" aria-hidden="true"></span><span id="loading-label">Загружаем одну прошлую сессию от 10×…</span></div>
         <p id="history-error" class="error-note" role="status" hidden></p>
 
+        <section id="model-recommendation" class="model-recommendation" aria-labelledby="model-title">
+          <div class="model-heading"><h3 id="model-title"><span aria-hidden="true">✧</span> Рекомендация модели</h3><span class="model-badge">10 / T</span></div>
+          <p id="model-pending" class="model-pending">Загружаем сессию для модели…</p>
+          <div id="model-ready" hidden>
+            <div class="model-metrics">
+              <div><span class="model-label">ОРИЕНТИР ПОРОГА</span><strong id="model-target" class="model-target coefficient"></strong></div>
+              <div><span class="model-label">ОЦЕНКА ПО МОДЕЛИ</span><strong id="model-probability" class="model-probability"></strong><small>среди раундов ≥10×</small></div>
+              <div class="model-time-box"><span class="model-label">БЛИЖАЙШЕЕ ВРЕМЯ ИЗ ИСТОРИИ · КИЕВ</span><div class="model-time-row"><time id="model-time"></time><span id="model-day"></span></div><small>До отметки <b id="model-countdown">—</b></small></div>
+            </div>
+            <p id="model-observed" class="model-observed"></p>
+            <p id="model-source" class="model-source"></p>
+            <p class="model-note">Время — исторический ориентир. Момент появления будущего X модель не рассчитывает.</p>
+            <details class="model-help"><summary>Как понимать рекомендацию</summary><p>При фильтре «От 10×» ориентир — 20×, приближённая середина золотых результатов. Для более высокого фильтра используется выбранный порог. Оценка: 100 × 10 / T, где T — этот порог.</p><p>Процент относится к раундам, уже достигшим 10×. Время взято из ближайшего исторического события выбранного порога. Модель не рассчитывает момент появления будущего большого коэффициента.</p></details>
+          </div>
+        </section>
+
         <article id="spotlight" class="spotlight" aria-labelledby="spotlight-title" hidden>
           <div class="spotlight-top"><span class="eyebrow" id="spotlight-title">БЛИЖАЙШАЯ ИСТОРИЧЕСКАЯ ОТМЕТКА</span><span class="day-pill" id="spotlight-day"></span></div>
           <div class="spotlight-main">
@@ -84,6 +100,6 @@
       <div class="echo-source"><span class="source-label">В ИСТОРИИ</span><span class="source-date"></span></div>
     </article>
   </template>
-  <script type="module" src="./app.mjs?v=20261109-2"></script>
+  <script type="module" src="./app.mjs?v=20261109-3"></script>
 </body>
 </html>
