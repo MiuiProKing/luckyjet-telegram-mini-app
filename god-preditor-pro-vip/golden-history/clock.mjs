@@ -18,6 +18,26 @@ function zoneOffset(timestamp, timeZone) {
   return Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute, p.second) - Math.floor(timestamp / 1000) * 1000;
 }
 
+function morningTimestamp(date, timeZone) {
+  const wall = Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), 8);
+  const expectedDate = date.toISOString().slice(0, 10);
+  for (const shift of [-DAY, 0, DAY]) {
+    const candidate = wall - zoneOffset(wall + shift, timeZone);
+    const p = zonedParts(candidate, timeZone);
+    if (p.date === expectedDate && p.hour === 8 && p.minute === 0 && p.second === 0) return candidate;
+  }
+  throw Error('Не удалось определить 08:00 по Киеву');
+}
+
+export function previousMorningWindow(now = Date.now(), timeZone = TIME_ZONE) {
+  const today = zonedParts(now, timeZone);
+  const date = new Date(Date.UTC(today.year, today.month - 1, today.day));
+  const yesterday = new Date(date.getTime() - DAY);
+  const start = morningTimestamp(yesterday, timeZone), end = morningTimestamp(date, timeZone);
+  return {start, end, key: `${start}:${end}`, startDate: yesterday.toISOString().slice(0, 10), endDate: today.date,
+    ongoing: now < end};
+}
+
 // Build constant-offset UTC segments once. This also handles Kyiv's missing
 // spring hour and repeated autumn hour; no fixed UTC+2/UTC+3 assumption is used.
 export function createClockProjection(now, timeZone = TIME_ZONE) {
@@ -56,25 +76,22 @@ export function prepareEvent(round, timeZone = TIME_ZONE) {
   return {...round, sourceDate: p.date, secondOfDay: p.secondOfDay};
 }
 
-export function buildTimeline(events, {now = Date.now(), threshold = 10, days = 0, limit = 25, timeZone = TIME_ZONE} = {}) {
+export function buildTimeline(events, {now = Date.now(), threshold = 10, limit = 25, timeZone = TIME_ZONE,
+  sourceWindow = previousMorningWindow(now, timeZone)} = {}) {
   const today = zonedParts(now, timeZone).date;
   const project = createClockProjection(now, timeZone);
-  const minimumDate = days > 0 ? (() => {
-    const p = zonedParts(now, timeZone);
-    return new Date(Date.UTC(p.year, p.month - 1, p.day) - days * DAY).toISOString().slice(0, 10);
-  })() : null;
   const rows = [], seen = new Set();
   for (const event of events) {
     if (!event || seen.has(event.id) || !Number.isFinite(event.coefficient) || event.coefficient < threshold ||
-        !Number.isFinite(event.timestamp) || event.timestamp > now || event.sourceDate >= today ||
-        (minimumDate && event.sourceDate < minimumDate)) continue;
+        !Number.isFinite(event.timestamp) || event.timestamp > now || event.timestamp < sourceWindow.start ||
+        event.timestamp >= sourceWindow.end) continue;
     const nextAt = project(event.secondOfDay);
     if (nextAt === null) continue;
     seen.add(event.id);
     rows.push({...event, nextAt});
   }
   rows.sort((a, b) => a.nextAt - b.nextAt || b.timestamp - a.timestamp || b.coefficient - a.coefficient || a.id.localeCompare(b.id));
-  return {total: rows.length, cards: rows.slice(0, limit), today};
+  return {total: rows.length, cards: rows.slice(0, limit), today, sourceWindow};
 }
 
 export function formatClock(timestamp, timeZone = TIME_ZONE) {

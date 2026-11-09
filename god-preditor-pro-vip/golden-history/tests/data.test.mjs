@@ -62,6 +62,25 @@ test('cached history catches up using both lower and upper sequence bounds', asy
   assert.equal(result.highWater, '8');
 });
 
+test('session boundaries are sent to Supabase and out-of-period responses are rejected locally', async () => {
+  const start = Date.parse('2026-11-08T06:00:00Z'), end = Date.parse('2026-11-09T06:00:00Z');
+  let calls = 0;const received = [];
+  const reader = createReader(config, {now: () => NOW, fetchImpl: async url => {
+    const bounds = url.searchParams.getAll('round_timestamp');
+    assert.ok(bounds.includes('gte.2026-11-08T06:00:00.000Z'));
+    assert.ok(bounds.includes('lt.2026-11-09T06:00:00.000Z'));
+    return ++calls === 1 ? json([
+      row(4, 10, {round_timestamp:'2026-11-08T06:00:00Z'}),
+      row(3, 100, {round_timestamp:'2026-11-09T03:00:00Z'}),
+      row(2, 50, {round_timestamp:'2026-11-09T06:00:00Z'}),
+      row(1, 500, {round_timestamp:'2026-11-07T18:00:00Z'}),
+    ]) : json([]);
+  }});
+  await reader.loadHistory({start, end, onBatch: batch => received.push(...batch)});
+  assert.deepEqual(received.map(r => r.seq), ['4','3']);
+  await assert.rejects(reader.page({start:end, end:start}), /период/);
+});
+
 test('an archive failure after page one is an error, not a complete history', async () => {
   let calls = 0, received = 0;
   const reader = createReader(config, {now: () => NOW, fetchImpl: async () => ++calls === 1 ? json([row(2)]) : new Response('', {status: 503})});
