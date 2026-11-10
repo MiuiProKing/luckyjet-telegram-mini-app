@@ -8,7 +8,7 @@
   <meta name="referrer" content="no-referrer">
   <title>GOD PREDITOR · Golden History</title>
   <link rel="stylesheet" href="../../god-vip-amoled.css?v=20261108">
-  <link rel="stylesheet" href="./styles.css?v=20261109-3">
+  <link rel="stylesheet" href="./styles.css?v=20261109-4">
 </head>
 <body>
   <a class="skip-link" href="#timeline">К историческим событиям</a>
@@ -68,6 +68,20 @@
             <p class="model-note">Время — исторический ориентир. Момент появления будущего X модель не рассчитывает.</p>
             <details class="model-help"><summary>Как понимать рекомендацию</summary><p>При фильтре «От 10×» ориентир — 20×, приближённая середина золотых результатов. Для более высокого фильтра используется выбранный порог. Оценка: 100 × 10 / T, где T — этот порог.</p><p>Процент относится к раундам, уже достигшим 10×. Время взято из ближайшего исторического события выбранного порога. Модель не рассчитывает момент появления будущего большого коэффициента.</p></details>
           </div>
+          <section class="attached-analysis" aria-labelledby="analysis-title">
+            <div class="model-heading"><h3 id="analysis-title">BASIC · история + новые раунды</h3><span id="analysis-state" class="model-badge">Загрузка</span></div>
+            <p id="analysis-history" class="model-source"></p><p id="analysis-current" class="model-source"></p>
+            <p id="analysis-comparison" class="model-observed"></p>
+            <p id="analysis-error" class="error-note" hidden></p>
+            <p id="basic-pending" class="model-pending">Загружаем все коэффициенты для анализа…</p>
+            <div id="basic-ready" hidden>
+              <div class="basic-metrics"><div><span class="model-label">ЭВРИСТИЧЕСКИЙ ОРИЕНТИР</span><strong id="basic-target" class="model-target coefficient"></strong></div><div><span class="model-label">БАЛЛ ПРАВИЛ · НЕ ШАНС ВЫИГРЫША</span><strong id="basic-score" class="model-probability"></strong></div></div>
+              <p class="model-label basic-window-label">РАСЧЁТНОЕ ОКНО BASIC · КИЕВ · ЭКСПЕРИМЕНТ</p><p id="basic-window" class="basic-window"></p><p id="basic-pattern" class="model-source"></p>
+              <p id="basic-big" class="model-observed" hidden></p>
+            </div>
+            <p id="analysis-poisson" class="model-source"></p>
+            <p class="model-note">Расчёт из прикреплённого публичного BASIC-кода: EMA, медиана/MAD, серии, циклы и кластеры. История сессии служит отдельным сравнением с текущими раундами. Окна и баллы — непроверенные эвристики; серверная VIP-формула в файлах отсутствует.</p>
+          </section>
         </section>
 
         <article id="spotlight" class="spotlight" aria-labelledby="spotlight-title" hidden>
@@ -100,6 +114,6 @@
       <div class="echo-source"><span class="source-label">В ИСТОРИИ</span><span class="source-date"></span></div>
     </article>
   </template>
-  <script type="module" src="./app.mjs?v=20261109-3"></script>
+  <script type="module" src="./app.mjs?v=20261109-4"></script>
 </body>
 </html>

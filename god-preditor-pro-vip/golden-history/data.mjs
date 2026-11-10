@@ -44,7 +44,10 @@ export function createReader(config, {fetchImpl = fetch, now = Date.now, timeout
     q.set('select', COLUMNS); q.set('completed', 'eq.true'); q.set('estimated', 'eq.false');
     q.set('round_timestamp', 'not.is.null'); q.set('order', `source_seq.${ascending ? 'asc' : 'desc'}`);
     q.set('limit', String(limit));
-    if (minimum !== null) q.set('coefficient', `gte.${minimum}`);
+    if (minimum !== null) {
+      if (!Number.isFinite(minimum) || minimum < 1) throw Error('Неверный минимальный коэффициент');
+      q.set('coefficient', `gte.${minimum}`);
+    }
     if (start !== null || end !== null) {
       if (!Number.isFinite(start) || !Number.isFinite(end) || start >= end) throw Error('Неверный период сессии');
       q.append('round_timestamp', `gte.${new Date(start).toISOString()}`);
@@ -70,11 +73,12 @@ export function createReader(config, {fetchImpl = fetch, now = Date.now, timeout
     } finally {clearTimeout(timer); signal?.removeEventListener('abort', abort);}
   }
 
-  async function loadHistory({after = null, start = null, end = null, onBatch = () => {}, signal} = {}) {
+  async function loadHistory({after = null, start = null, end = null, minimum = 10, onBatch = () => {}, signal} = {}) {
+    if (!Number.isFinite(minimum) || minimum < 1) throw Error('Неверный минимальный коэффициент');
     let before = null, highWater = after, futureFloor = null, count = 0;
     while (true) {
       if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
-      const rows = await page({minimum: 10, after, before, start, end, signal});
+      const rows = await page({minimum, after, before, start, end, signal});
       if (!rows.length) break;
       const seqs = rows.map(row => sequence(row.source_seq));
       if (seqs.some(x => !x)) throw Error('В истории отсутствует номер раунда');
@@ -90,7 +94,7 @@ export function createReader(config, {fetchImpl = fetch, now = Date.now, timeout
           if (futureFloor === null || BigInt(s) < BigInt(futureFloor)) futureFloor = s;
         }
         const mapped = mapRound(row, now());
-        if (mapped && mapped.coefficient >= 10 && (start === null || (mapped.timestamp >= start && mapped.timestamp < end))) batch.push(mapped);
+        if (mapped && mapped.coefficient >= minimum && (start === null || (mapped.timestamp >= start && mapped.timestamp < end))) batch.push(mapped);
       }
       count += batch.length;
       await onBatch(batch, {count});
@@ -103,7 +107,44 @@ export function createReader(config, {fetchImpl = fetch, now = Date.now, timeout
     }
     return {highWater, count, syncedAt: now()};
   }
-  return {page, loadHistory};
+
+  // A bounded newest-source-row snapshot for live analysis, not a full archive
+  // scan. Rejected/future rows count toward the scan bound; count is the number
+  // of valid, unique returned rounds and can therefore be lower than limit.
+  async function loadRecent({limit = 2000, onBatch = () => {}, signal} = {}) {
+    if (!Number.isInteger(limit) || limit < 1 || limit > 10000) throw Error('Лимит последних раундов должен быть от 1 до 10000');
+    let before = null, snapshotSeq = null, futureFloor = null, sourceCount = 0, exhausted = false;
+    const rounds = [], seen = new Set();
+    while (sourceCount < limit) {
+      if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
+      const requested = Math.min(1000, limit - sourceCount);
+      const rows = await page({minimum: 1, before, limit: requested, signal});
+      if (!rows.length) {exhausted = true; break;}
+      if (rows.length > requested) throw Error('Сервер превысил лимит последних раундов');
+      const seqs = rows.map(row => sequence(row.source_seq));
+      if (seqs.some(value => value === null)) throw Error('В последних раундах отсутствует номер');
+      const oldest = seqs.reduce((a, b) => BigInt(a) < BigInt(b) ? a : b);
+      const newest = seqs.reduce((a, b) => BigInt(a) > BigInt(b) ? a : b);
+      if ((before !== null && BigInt(newest) >= BigInt(before)) ||
+          (snapshotSeq !== null && BigInt(newest) > BigInt(snapshotSeq))) throw Error('Сервер не применил курсор последних раундов');
+      if (snapshotSeq === null) snapshotSeq = newest;
+      sourceCount += rows.length;
+      const batch = [];
+      const sorted = [...rows].sort((a, b) => BigInt(sequence(a.source_seq)) < BigInt(sequence(b.source_seq)) ? 1 : -1);
+      for (const row of sorted) {
+        const seq = sequence(row.source_seq);
+        if (Date.parse(row.round_timestamp) > now() && (futureFloor === null || BigInt(seq) < BigInt(futureFloor))) futureFloor = seq;
+        const mapped = mapRound(row, now());
+        if (mapped && !seen.has(mapped.id)) {seen.add(mapped.id); batch.push(mapped); rounds.push(mapped);}
+      }
+      await onBatch(batch, {count: rounds.length, sourceCount, snapshotSeq});
+      before = oldest;
+    }
+    const cursor = futureFloor !== null && snapshotSeq !== null && BigInt(snapshotSeq) >= BigInt(futureFloor)
+      ? String(BigInt(futureFloor) - 1n) : snapshotSeq;
+    return {rounds, count: rounds.length, cursor, snapshotSeq, sourceCount, exhausted};
+  }
+  return {page, loadHistory, loadRecent};
 }
 
 // Only completed historical coefficients are cached. No authentication session,
