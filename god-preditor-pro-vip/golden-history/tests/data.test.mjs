@@ -120,3 +120,86 @@ test('malformed JSON shapes and insecure/private-key configurations are rejected
   assert.throws(() => createReader({...config, publishableKey: 'service_role_secret'}));
   assert.throws(() => createReader({...config, url: 'http://example.com'}));
 });
+
+test('full session analysis can load sub-10 coefficients without relaxing validation or boundaries', async () => {
+  const start = Date.parse('2026-11-08T06:00:00Z'), end = Date.parse('2026-11-09T06:00:00Z');
+  let calls = 0;const received = [];
+  const reader = createReader(config, {now: () => NOW, fetchImpl: async url => {
+    assert.equal(url.searchParams.get('coefficient'), 'gte.1');
+    assert.equal(url.searchParams.get('completed'), 'eq.true');
+    assert.equal(url.searchParams.get('estimated'), 'eq.false');
+    return ++calls === 1 ? json([
+      row(8,1), row(7,1.5), row(6,2), row(5,10), row(4,0.5),
+      row(3,50,{estimated:true}),row(2,1.2,{completed:false}),
+      row(1,20,{round_timestamp:'2026-11-09T06:00:00Z'}),
+    ]) : json([]);
+  }});
+  const result = await reader.loadHistory({minimum:1,start,end,onBatch:batch=>received.push(...batch)});
+  assert.equal(result.count,4);
+  assert.deepEqual(received.map(r=>r.coefficient),[1,1.5,2,10]);
+  await assert.rejects(reader.loadHistory({minimum:0}),/минимальный/);
+});
+
+test('latest 2000 analysis rows page across server caps without scanning the full archive', async () => {
+  const source = Array.from({length:3500},(_,i)=>row(3500-i,i%2?1.2:20));
+  const requests=[];let first=true;
+  const reader = createReader(config,{now:()=>NOW,fetchImpl:async url=>{
+    assert.equal(url.searchParams.get('coefficient'),'gte.1');
+    assert.equal(url.searchParams.get('order'),'source_seq.desc');
+    const before=url.searchParams.get('source_seq');
+    const requested=Number(url.searchParams.get('limit'));requests.push(requested);
+    // The head moves after the first response. New arrivals must stay out of
+    // the bounded snapshot while older pages are fetched.
+    if(!first) source.unshift(row(4000+requests.length));
+    first=false;
+    return json(source.filter(r=>before===null||r.source_seq<Number(before.slice(3))).slice(0,Math.min(700,requested)));
+  }});
+  const result=await reader.loadRecent();
+  assert.deepEqual(requests,[1000,1000,600]);
+  assert.equal(result.count,2000);assert.equal(result.sourceCount,2000);
+  assert.equal(result.snapshotSeq,'3500');assert.equal(result.cursor,'3500');assert.equal(result.exhausted,false);
+  assert.equal(result.rounds[0].seq,'3500');assert.equal(result.rounds.at(-1).seq,'1501');
+  assert.ok(result.rounds.some(r=>r.coefficient===1.2));
+  assert.ok(result.rounds.every(r=>BigInt(r.seq)<=3500n));
+});
+
+test('latest analysis uses two 1000-row pages and stops at the requested limit', async () => {
+  const source=Array.from({length:5000},(_,i)=>row(5000-i));let calls=0;
+  const reader=createReader(config,{now:()=>NOW,fetchImpl:async url=>{
+    calls++;const before=url.searchParams.get('source_seq');
+    return json(source.filter(r=>before===null||r.source_seq<Number(before.slice(3))).slice(0,Number(url.searchParams.get('limit'))));
+  }});
+  const result=await reader.loadRecent({limit:2000});
+  assert.equal(calls,2);assert.equal(result.rounds.length,2000);
+  assert.equal(result.rounds.at(-1).seq,'3001');
+});
+
+test('latest snapshot rejects invalid/future rows and keeps its cursor below a future sequence', async () => {
+  const source=[row(6,1),row(5,20,{round_timestamp:'2026-11-09T17:46:10Z'}),
+    row(4,20,{estimated:true}),row(3,2),row(2,10,{completed:false}),row(1,0.5)];
+  let calls=0;
+  const reader=createReader(config,{now:()=>NOW,fetchImpl:async()=>{calls++;return json(source);}});
+  const result=await reader.loadRecent({limit:6});
+  assert.equal(calls,1);assert.equal(result.sourceCount,6);assert.equal(result.count,2);
+  assert.deepEqual(result.rounds.map(r=>r.seq),['6','3']);
+  assert.equal(result.snapshotSeq,'6');assert.equal(result.cursor,'4');
+});
+
+test('latest snapshot errors cannot masquerade as a successful partial analysis', async () => {
+  let calls=0,received=0;
+  const reader=createReader(config,{now:()=>NOW,fetchImpl:async()=>++calls===1?json([row(3),row(2)]):new Response('',{status:503})});
+  await assert.rejects(reader.loadRecent({limit:5,onBatch:batch=>{received+=batch.length;}}),/503/);
+  assert.equal(received,2);
+});
+
+test('latest snapshot validates limits, cursor progress and empty exhaustion', async () => {
+  let calls=0;
+  const reader=createReader(config,{now:()=>NOW,fetchImpl:async()=>{calls++;return json([row(2)]);}});
+  await assert.rejects(reader.loadRecent({limit:0}),/Лимит/);
+  await assert.rejects(reader.loadRecent({limit:10001}),/Лимит/);
+  assert.equal(calls,0);
+  await assert.rejects(reader.loadRecent({limit:5}),/курсор/);
+  assert.equal(calls,2);
+  const empty=await createReader(config,{fetchImpl:async()=>json([])}).loadRecent();
+  assert.equal(empty.count,0);assert.equal(empty.cursor,null);assert.equal(empty.exhausted,true);
+});

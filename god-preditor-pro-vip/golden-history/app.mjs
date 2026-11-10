@@ -1,14 +1,17 @@
 import {SUPABASE_CONFIG} from '../supabase-config.mjs';
-import {TIME_ZONE, zonedParts, prepareEvent, buildTimeline, formatClock, formatCountdown, formatOccurrenceDay, previousMorningWindow} from './clock.mjs?v=20261109-3';
-import {createReader, readLivePage, readCache, writeCache, sequence} from './data.mjs?v=20261109-3';
-import {buildRecommendation} from './model.mjs?v=20261109-3';
+import {TIME_ZONE, zonedParts, prepareEvent, buildTimeline, formatClock, formatCountdown, formatOccurrenceDay, previousMorningWindow} from './clock.mjs?v=20261109-4';
+import {createReader, readLivePage, readCache, writeCache, sequence} from './data.mjs?v=20261109-4';
+import {buildRecommendation} from './model.mjs?v=20261109-4';
+import {analyzeAttachedModels} from './attached-analysis.mjs?v=20261109-4';
 
 const $ = id => document.getElementById(id);
 const reader = createReader(SUPABASE_CONFIG);
-const cacheIdentity = () => `${SUPABASE_CONFIG.url}/${SUPABASE_CONFIG.table}/session-08-v2/${state.window.key}`;
+const cacheIdentity = () => `${SUPABASE_CONFIG.url}/${SUPABASE_CONFIG.table}/session-full-08-v4/${state.window.key}`;
 const state = {events: new Map(), recent: new Map(), cursor: null, highWater: null, complete: false,
   historyBusy: false, liveBusy: false, online: false, syncedAt: null, limit: 25, cards: [], total: 0,
-  day: null, window: previousMorningWindow(), recommendation: null, renderTimer: null, pollTimer: null, saveTimer: null, cached: false};
+  day: null, window: previousMorningWindow(), recommendation: null, renderTimer: null, pollTimer: null, saveTimer: null, cached: false,
+  historyRounds: new Map(), analysisRounds: new Map(), analysisBusy: false, analysisLoadedAt: null, analysisUpdatedAt: 0,
+  attachedForecast: null, attachedAnalysis: null};
 const coefficient = value => new Intl.NumberFormat('ru-RU', {minimumFractionDigits: 2, maximumFractionDigits: 2,
   ...(value >= 1000000 ? {notation: 'compact'} : {})}).format(value) + '×';
 const dateFormat = new Intl.DateTimeFormat('ru-RU', {timeZone: TIME_ZONE, day: '2-digit', month: '2-digit', year: 'numeric'});
@@ -22,7 +25,10 @@ function sourceLabel(event) {
 function mergeRounds(rounds, isLive = false) {
   let changed = false;
   for (const round of rounds) {
-    if (isLive) state.recent.set(round.id, round);
+    if (isLive) {state.recent.set(round.id, round); state.analysisRounds.set(round.id, round);}
+    if (round.timestamp >= state.window.start && round.timestamp < state.window.end && !state.historyRounds.has(round.id)) {
+      state.historyRounds.set(round.id, round); changed = true;
+    }
     if (round.coefficient < 10 || state.events.has(round.id) || round.timestamp < state.window.start || round.timestamp >= state.window.end) continue;
     const event = prepareEvent(round);
     if (event) {state.events.set(event.id, event); changed = true;}
@@ -30,7 +36,9 @@ function mergeRounds(rounds, isLive = false) {
   if (isLive) {
     const newest = [...state.recent.values()].sort((a, b) => b.timestamp - a.timestamp || (BigInt(a.seq) < BigInt(b.seq) ? 1 : -1)).slice(0, 20);
     state.recent = new Map(newest.map(round => [round.id, round]));
+    trimAnalysisRounds();
     renderRecent(newest.slice(0, 5));
+    if (rounds.length) renderAttachedAnalysis();
   }
   if (changed) scheduleRender();
 }
@@ -83,7 +91,52 @@ function render() {
   });
   $('cards').replaceChildren(fragment);
   $('more').hidden = state.cards.length >= state.total;
-  renderRecommendation(now); updateCountdowns(now); renderSummary();
+  renderRecommendation(now); renderAttachedAnalysis(now); updateCountdowns(now); renderSummary();
+}
+
+function trimAnalysisRounds() {
+  const newest = [...state.analysisRounds.values()].sort((a,b) => b.timestamp-a.timestamp || (BigInt(a.seq)<BigInt(b.seq)?1:-1)).slice(0,2000);
+  state.analysisRounds = new Map(newest.map(round => [round.id,round]));
+}
+
+async function refreshAnalysisRounds() {
+  if (state.analysisBusy) return;
+  state.analysisBusy = true; $('analysis-error').hidden = true;
+  try {
+    const snapshot = await reader.loadRecent({limit:2000});
+    for (const round of snapshot.rounds) state.analysisRounds.set(round.id,round);
+    trimAnalysisRounds(); state.analysisLoadedAt = Date.now();
+  } catch {
+    $('analysis-error').hidden = false;
+    $('analysis-error').textContent = 'Не удалось полностью загрузить текущую выборку. Доступные новые раунды продолжают учитываться.';
+  } finally {state.analysisBusy = false; renderAttachedAnalysis();}
+}
+
+function renderAttachedAnalysis(now = Date.now()) {
+  const analysis = analyzeAttachedModels({historyRounds:state.historyRounds.values(), liveRounds:state.analysisRounds.values(), now, previousForecast:state.attachedForecast});
+  state.attachedAnalysis = analysis; state.attachedForecast = analysis.forecast; state.analysisUpdatedAt = now;
+  const history = analysis.history, live = analysis.live;
+  const percent = value => Number.isFinite(value) ? `${value.toLocaleString('ru-RU',{maximumFractionDigits:1})}%` : '—';
+  $('analysis-history').textContent = state.complete ? `История сессии: ${history.count.toLocaleString('ru-RU')} раундов · медиана ${history.count ? coefficient(history.median) : '—'}` : `История сессии: загружаем все раунды (${history.count.toLocaleString('ru-RU')})…`;
+  $('analysis-current').textContent = `Текущая выборка: ${live.count.toLocaleString('ru-RU')} / 2000 · ${live.latestAt ? `последний ${formatClock(live.latestAt)}` : 'ожидаем раунды'}`;
+  const oldRate = history.frequencies?.['20']?.pct, newRate = live.frequencies?.['20']?.pct;
+  $('analysis-comparison').textContent = `Доля всех раундов ≥20×: история ${state.complete ? percent(oldRate) : '…'} · текущая выборка ${percent(newRate)}.`;
+  $('analysis-state').textContent = analysis.status==='ready' ? 'По свежим раундам' : analysis.status==='stale' ? 'Нет свежих данных' : state.analysisBusy ? 'Загружаем текущие раунды' : `Обучение: ${live.count} / 20`;
+  const forecast = analysis.forecast;
+  $('basic-ready').hidden = !forecast; $('basic-pending').hidden = Boolean(forecast);
+  $('basic-pending').textContent = analysis.status==='stale' ? 'Расчёт приостановлен: последний завершённый раунд старше 3 минут.' : 'Нужно минимум 20 свежих последовательных раундов, включая коэффициенты ниже 10×.';
+  if (forecast) {
+    $('basic-target').textContent = coefficient(forecast.estimatedCoef);
+    $('basic-score').textContent = `${forecast.reliability} / 100`;
+    const end = forecast.estimatedAt+forecast.windowMs;
+    const endLabel = zonedParts(end).date===zonedParts(forecast.estimatedAt).date ? '' : `${formatOccurrenceDay(end,now)} · `;
+    $('basic-window').textContent = `${formatOccurrenceDay(forecast.estimatedAt,now)} · ${formatClock(forecast.estimatedAt)} — ${endLabel}${formatClock(end)}`;
+    $('basic-pattern').textContent = forecast.patternRu;
+    $('basic-big').hidden = !forecast.bigOpportunity;
+    if (forecast.bigOpportunity) $('basic-big').textContent = `Дополнительная эвристика: ≥${forecast.bigOpportunity.estimatedCoef}× · ${formatClock(forecast.bigOpportunity.expectedAt)} — ${formatClock(forecast.bigOpportunity.expectedAt+forecast.bigOpportunity.windowMs)}.`;
+  }
+  const poisson = analysis.poisson;
+  $('analysis-poisson').textContent = poisson.status==='ready' ? `Poisson: оценка ≥100× за следующие 3 минуты ≈${percent(poisson.probabilityPct)} при постоянной интенсивности (${poisson.events} событий).` : 'Poisson ≥100×: для оценки нужны минимум 200 текущих раундов и 5 событий ≥100×.';
 }
 
 function renderRecommendation(now) {
@@ -128,9 +181,9 @@ async function syncHistory() {
   state.historyBusy = true; $('refresh').disabled = true; $('loading').hidden = false; $('history-error').hidden = true;
   $('loading-label').textContent = state.complete ? 'Проверяем события выбранной сессии…' : 'Загружаем сессию: вчера 08:00 → сегодня 08:00…';
   try {
-    const result = await reader.loadHistory({after: state.complete ? state.highWater : null, start: scope.start, end: scope.end, onBatch: batch => {
+    const result = await reader.loadHistory({minimum:1, after: state.complete ? state.highWater : null, start: scope.start, end: scope.end, onBatch: batch => {
       if (scope.key !== state.window.key) return;
-      mergeRounds(batch); $('loading-label').textContent = `Загружено ${state.events.size.toLocaleString('ru-RU')} событий от 10×…`;
+      mergeRounds(batch); $('loading-label').textContent = `Загружено ${state.historyRounds.size.toLocaleString('ru-RU')} раундов, из них ${state.events.size.toLocaleString('ru-RU')} от 10×…`;
     }});
     if (scope.key !== state.window.key) return;
     state.highWater = result.highWater; state.complete = true; state.cached = false; state.syncedAt = result.syncedAt;
@@ -151,7 +204,7 @@ function saveSoon() {
   if (!state.complete) return;
   state.saveTimer = setTimeout(() => {
     void writeCache({identity: cacheIdentity(), complete: true, highWater: state.highWater, syncedAt: state.syncedAt,
-      rows: [...state.events.values()].map(({id, seq, coefficient, timestamp}) => ({id, seq, coefficient, timestamp}))});
+      rows: [...state.historyRounds.values()].map(({id, seq, coefficient, timestamp}) => ({id, seq, coefficient, timestamp}))});
   }, 800);
 }
 
@@ -183,7 +236,7 @@ function tick() {
   const now = Date.now();
   const window = previousMorningWindow(now);
   if (window.key !== state.window.key) {
-    state.window = window; state.events.clear(); state.cards = []; state.highWater = null; state.complete = false; state.syncedAt = null;
+    state.window = window; state.events.clear(); state.historyRounds.clear(); state.cards = []; state.highWater = null; state.complete = false; state.syncedAt = null;
     state.limit = 25; clearTimeout(state.saveTimer); render(); void syncHistory();
   }
   $('clock').textContent = formatClock(now); $('clock').dateTime = new Date(now).toISOString();
@@ -191,25 +244,27 @@ function tick() {
   if (state.day !== zonedParts(now).date || (state.cards[0] && state.cards[0].nextAt < now) ||
       (state.recommendation?.mark && state.recommendation.mark.nextAt < now)) render();
   else updateCountdowns(now);
+  if (now-state.analysisUpdatedAt>=8000) renderAttachedAnalysis(now);
 }
 
 $('threshold').addEventListener('change', () => {state.limit = 25; render();});
 $('more').addEventListener('click', () => {state.limit += 24; render();});
-$('refresh').addEventListener('click', () => {void syncHistory(); void pollLive();});
+$('refresh').addEventListener('click', () => {void syncHistory(); void pollLive(); void refreshAnalysisRounds();});
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) clearTimeout(state.pollTimer);
-  else {tick(); void pollLive(); void syncHistory();}
+  else {tick(); void pollLive(); void syncHistory(); if (!state.analysisLoadedAt || Date.now()-state.analysisLoadedAt>60000) void refreshAnalysisRounds();}
 });
-window.addEventListener('online', () => {void pollLive(); void syncHistory();});
+window.addEventListener('online', () => {void pollLive(); void syncHistory(); void refreshAnalysisRounds();});
 window.addEventListener('pageshow', event => {if (event.persisted) {tick(); void pollLive(); void syncHistory();}});
 
 tick(); setInterval(tick, 1000);
 void pollLive();
+void refreshAnalysisRounds();
 const cacheScope = state.window.key;
 const cached = await readCache(cacheIdentity());
 if (cached && cacheScope === state.window.key) {
   const valid = cached.rows.filter(round => round && sequence(round.seq) && typeof round.id === 'string' &&
-    Number.isFinite(round.coefficient) && round.coefficient >= 10 && Number.isFinite(round.timestamp) && round.timestamp > 0 && round.timestamp <= Date.now());
+    Number.isFinite(round.coefficient) && round.coefficient >= 1 && Number.isFinite(round.timestamp) && round.timestamp > 0 && round.timestamp <= Date.now());
   mergeRounds(valid); state.highWater = cached.highWater; state.complete = true; state.cached = true; state.syncedAt = cached.syncedAt;
   $('loading-label').textContent = 'История из кэша · проверяем обновления…'; render();
 }
