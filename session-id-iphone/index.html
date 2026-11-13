@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="description" content="Код локального скрипта для просмотра session-id Lucky Jet в Safari на iPhone.">
+  <title>Session ID для iPhone · GOD PREDITOR</title>
+  <link rel="stylesheet" href="./session-reader.css">
+  <script type="module" src="./session-reader.js"></script>
+</head>
+<body>
+  <main>
+    <header class="topline">
+      <a class="brand" href="../">GOD <span>PREDITOR</span></a>
+      <a class="back" href="../">На главную ↗</a>
+    </header>
+
+    <section class="intro" aria-labelledby="page-title">
+      <p class="eyebrow">SAFARI · IPHONE</p>
+      <h1 id="page-title">Код скрипта<br><span>Session ID</span></h1>
+      <p class="lead">Скопируй код в Userscripts или Hyperweb либо скачай готовый файл.</p>
+      <div class="actions">
+        <button id="reader-copy" class="primary" type="button" disabled>Скопировать код</button>
+        <a class="button secondary" href="./session-id-reader.user.js" download="session-id-iphone.user.js">Скачать .user.js ↓</a>
+      </div>
+      <p id="reader-status" class="status" role="status" aria-live="polite">Загружаем код…</p>
+      <noscript><p>Для просмотра без JavaScript <a href="./session-id-reader.user.txt">открой текст скрипта</a>.</p></noscript>
+    </section>
+
+    <section class="code-panel" aria-labelledby="code-title">
+      <div class="panel-heading">
+        <h2 id="code-title">session-id-iphone.user.js</h2>
+        <a href="./session-id-reader.user.txt">Открыть текст ↗</a>
+      </div>
+      <label class="visually-hidden" for="reader-code">Полный код скрипта</label>
+      <textarea id="reader-code" readonly spellcheck="false" autocapitalize="off" autocomplete="off" wrap="off" rows="18" placeholder="Код появится после загрузки."></textarea>
+    </section>
+
+    <section class="instructions" aria-labelledby="steps-title">
+      <h2 id="steps-title">Как открыть на iPhone</h2>
+      <ol>
+        <li>Добавь файл или скопированный код в расширение <strong>Userscripts</strong> или <strong>Hyperweb</strong>.</li>
+        <li>В Safari разреши расширение для <code>one-vv1935.com</code> и <code>1play.gamedev-tech.cc</code>.</li>
+        <li>Войди в свой аккаунт, открой <a href="https://one-vv1935.com/casino/play/v_1wingames:luckyjet" target="_blank" rel="noopener noreferrer">Lucky Jet ↗</a> и нажми <strong>Session ID → Найти</strong>.</li>
+      </ol>
+      <p class="note">Скрипт ищет ключ только в адресах игры и iframe. Если он передаётся в заголовках запросов, этот способ его не покажет. Действительность сессии не проверяется, Supabase не обновляется.</p>
+      <p class="privacy">Найденный ключ остаётся на твоём устройстве. Не публикуй session-id и не присылай его в чат.</p>
+    </section>
+    <footer>Локальный просмотр · без отправки ключа</footer>
+  </main>
+</body>
+</html>
