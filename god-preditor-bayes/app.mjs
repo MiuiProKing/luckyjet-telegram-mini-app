@@ -63,7 +63,7 @@ function drawRoundHistory() {
   $('roundHistory')?.replaceChildren(fragment);
   text('historyStats', 'Загружено ' + count(state.rows.length) + ' раундов');
   text('historyNote', state.meta.complete ? 'Загружена вся доступная история за последние 90 дней.' : 'Архив загружается из Supabase. Новые раунды поступают параллельно.');
-  if ($('moreHistory')) { $('moreHistory').hidden = state.roundVisible >= state.rows.length; text('moreHistory', 'Показать ещё 150'); }
+  if ($('moreHistory')) { $('moreHistory').hidden = $('signalsTab')?.getAttribute('aria-selected') === 'true' || state.roundVisible >= state.rows.length; text('moreHistory', 'Показать ещё 150'); }
 }
 function windowStatus(w) {
   return ({pending:'Ожидает проверки',hit:'🟢 Зашло',miss:'🔴 Не зашло',unknown:'⚪ Неполные данные'})[w.status] || 'Ожидает проверки';
@@ -194,6 +194,7 @@ document.querySelectorAll('[data-target]').forEach(button => button.addEventList
   if (state.window?.target !== state.target) setTimeout(loadLedger,1000);
 }));
 $('openHistory')?.addEventListener('click',()=>{drawRoundHistory();drawSignals();});
+document.addEventListener('historytabchange',drawRoundHistory);
 $('moreHistory')?.addEventListener('click',()=>{state.roundVisible+=150;drawRoundHistory();});
 $('refreshData')?.addEventListener('click',()=>{feed.loadMore();loadLedger();});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden){renderClock();loadLedger();}});
