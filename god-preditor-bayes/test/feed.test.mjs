@@ -105,6 +105,16 @@ test('unavailable cache does not prevent actual network history', async () => {
   finally { feed.stop(); }
 });
 
+test('browser host fetch is invoked with the global receiver', async () => {
+  const browserFetch = async function () {
+    assert.equal(this, globalThis, 'Window.fetch rejects a feed instance as its receiver');
+    return response([raw(1)]);
+  };
+  const feed = new LuckyFeed(config, {cache: false, fetchImpl: browserFetch});
+  try { assert.equal((await feed.request()).length, 1); }
+  finally { feed.stop(); }
+});
+
 test('non-decreasing/crossed page cursor is rejected rather than silently skipped', async () => {
   const feed = new LuckyFeed(config, {cache: false, fetchImpl: async () => response([raw(5)])});
   await assert.rejects(feed.request({before: 5}), /порядок/);

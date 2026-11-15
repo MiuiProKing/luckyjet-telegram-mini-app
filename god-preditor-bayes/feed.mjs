@@ -113,7 +113,7 @@ export class LuckyFeed {
       catch (error) { if (error.message === 'SECRET_KEY') throw Error('Секретный ключ запрещён в браузере'); }
     }
     this.config = config; this.base = url.origin; this.table = config.TABLE || 'luckyjet_classic_history';
-    this.fetch = fetchImpl; this.onUpdate = onUpdate; this.onStatus = onStatus;
+    this.fetch = fetchImpl.bind(globalThis); this.onUpdate = onUpdate; this.onStatus = onStatus;
     this.store = new RoundStore(); this.pageSize = Math.max(1, Math.min(1000, config.PAGE_SIZE || 1000));
     this.days = Math.max(1, Math.min(90, config.HISTORY_DAYS || 90));
     this.cache = cache === false ? null : cache || new IndexedArchiveCache('god-bayes-history-v1-' + url.hostname + '-' + this.table);
