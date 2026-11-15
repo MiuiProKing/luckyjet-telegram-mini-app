@@ -1,0 +1,32 @@
+// ==UserScript==
+// @name GOD PREDITOR BAYES AIM 1.2 — Floating Overlay
+// @namespace https://miuiproking.github.io/luckyjet-telegram-mini-app/
+// @version 1.2.0
+// @description Floating predictor iframe, round observer and AIM switch (monitoring only)
+// @match https://one-vv1935.com/casino/play/*
+// @match https://one-vv1935.com/*
+// @run-at document-idle
+// @grant none
+// ==/UserScript==
+(()=>{'use strict';if(window.top!==window.self||document.getElementById('gp-aim-v12'))return;
+const PREDICTOR='https://god-preditor.allpredictor.com/';
+const root=document.createElement('section');root.id='gp-aim-v12';
+root.style.cssText='position:fixed!important;right:8px;top:100px;width:min(370px,95vw);height:490px;z-index:2147483647;background:#10081e;color:white;border:2px solid #ac55ff;border-radius:15px;box-shadow:0 0 35px #6f21cf99;overflow:hidden;font:13px system-ui;resize:both;min-width:240px;min-height:180px;max-width:100vw;max-height:95vh';
+root.innerHTML='<div id="gp-head" style="display:flex;gap:6px;align-items:center;background:#281144;padding:9px;cursor:move;touch-action:none"><b style="flex:1">GOD PREDITOR · AIM 1.2</b><button id="gp-min" title="Свернуть">−</button><button id="gp-max" title="Размер">□</button><button id="gp-close" title="Закрыть">×</button></div><div id="gp-body" style="height:calc(100% - 42px);display:flex;flex-direction:column"><div style="padding:8px;display:flex;flex-wrap:wrap;gap:5px"><button id="gp-ai">AIM: ВЫКЛ</button><button id="gp-open">Открыть сайт</button><button id="gp-refresh">↻</button><label>Цель <input id="gp-target" type="number" min="1.01" step=".01" value="2.00" style="width:65px"></label></div><div id="gp-state" style="padding:3px 9px;color:#e2baff">Фаза: поиск… · X: —</div><div id="gp-message" style="padding:3px 9px;color:#baa4d1;font-size:11px">AIM наблюдает за фазами, не ставит деньги</div><iframe id="gp-frame" title="GOD PREDITOR" referrerpolicy="no-referrer" style="width:100%;flex:1;border:0;background:#090512" src="'+PREDICTOR+'"></iframe><div style="font-size:10px;padding:4px 8px;color:#d5b7ef">Если рамка пуста, нажми «Открыть сайт». Сайт может запрещать iframe.</div></div>';
+document.body.append(root);
+const $=id=>root.querySelector('#'+id);const style=document.createElement('style');style.textContent='#gp-aim-v12 button{background:#7836cb;color:white;border:0;border-radius:7px;padding:5px 8px;font:inherit}#gp-aim-v12 input{background:#241436;color:white;border:1px solid #8050af;border-radius:5px}';document.head.append(style);
+let enabled=false,min=false,prev='',prevX=null,armedRound=false,hit=false,stopped=false;
+const launcher=document.createElement('button');launcher.textContent='GOD AIM';launcher.style.cssText='position:fixed;right:9px;bottom:90px;z-index:2147483646;background:#742acb;color:#fff;border:1px solid #c08bff;border-radius:25px;padding:11px;font:bold 13px system-ui;display:none';document.body.append(launcher);
+function disable(){enabled=false;$('gp-ai').textContent='AIM: ВЫКЛ';$('gp-message').textContent='Мониторинг выключен'}
+$('gp-ai').onclick=()=>{enabled=!enabled;hit=false;$('gp-ai').textContent=enabled?'AIM: ВКЛ (НАБЛЮДЕНИЕ)':'AIM: ВЫКЛ';$('gp-message').textContent=enabled?'Слежение активно; денежные ставки не отправляются':'Мониторинг выключен'};
+$('gp-open').onclick=()=>window.open(PREDICTOR,'_blank','noopener,noreferrer');
+$('gp-refresh').onclick=()=>{$('gp-frame').src=PREDICTOR};
+$('gp-close').onclick=()=>{disable();root.style.display='none';launcher.style.display='block'};
+launcher.onclick=()=>{root.style.display='block';launcher.style.display='none'};
+$('gp-min').onclick=()=>{min=!min;$('gp-body').style.display=min?'none':'flex';root.style.height=min?'auto':'490px';root.style.resize=min?'none':'both'};
+$('gp-max').onclick=()=>{root.style.width=root.style.width==='95vw'?'min(370px,95vw)':'95vw';root.style.height=root.style.height==='85vh'?'490px':'85vh'};
+let dragging=false,dx=0,dy=0;const head=$('gp-head');head.addEventListener('pointerdown',e=>{if(e.target.tagName==='BUTTON')return;dragging=true;dx=e.clientX-root.getBoundingClientRect().left;dy=e.clientY-root.getBoundingClientRect().top;head.setPointerCapture(e.pointerId)});head.addEventListener('pointermove',e=>{if(!dragging)return;root.style.left=Math.max(0,Math.min(innerWidth-60,e.clientX-dx))+'px';root.style.top=Math.max(0,Math.min(innerHeight-40,e.clientY-dy))+'px';root.style.right='auto'});head.addEventListener('pointerup',()=>dragging=false);head.addEventListener('pointercancel',()=>dragging=false);
+function scan(){if(stopped||document.hidden||!enabled)return;const candidates=[...document.querySelectorAll('body *')].filter(el=>!root.contains(el)&&el.children.length===0&&el.getClientRects().length);let waiting=false,live=null;for(const el of candidates){const t=(el.textContent||'').trim();if(t.length>75)continue;if(/ожидание следующего раунда/i.test(t))waiting=true;const m=t.match(/^(?:x|×)\s*(\d{1,5}[.,]\d{2})$/i);if(m){const v=Number(m[1].replace(',','.'));const r=el.getBoundingClientRect();if(v>=1&&v<100000&&r.width>35&&r.height>25&&(!live||r.width*r.height>live.area))live={x:v,area:r.width*r.height}}}
+const phase=waiting?'ОЖИДАНИЕ':live?'ВОЗМОЖНЫЙ ПОЛЁТ':'НЕ ОПРЕДЕЛЕНО';if(phase!==prev){prev=phase;hit=false;armedRound=phase==='ВОЗМОЖНЫЙ ПОЛЁТ'}const x=waiting?null:live?.x??null;$('gp-state').textContent='Фаза: '+phase+' · X: '+(x==null?'—':x.toFixed(2)+'×');if(phase==='ВОЗМОЖНЫЙ ПОЛЁТ'&&x!==null){const target=Number($('gp-target').value);if(Number.isFinite(target)&&x>=target&&!hit){hit=true;$('gp-message').textContent='Цель '+target+'× достигнута! Уведомление, без нажатия «Забрать»';}}prevX=x}
+const timer=setInterval(scan,400);window.addEventListener('pagehide',()=>{stopped=true;clearInterval(timer);disable()});document.addEventListener('visibilitychange',()=>{if(document.hidden)disable()});
+})();
