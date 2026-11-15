@@ -1,7 +1,7 @@
 {
   "app": "god-preditor-bayes",
   "version": "god-bayes-frequency-20261114-v1",
-  "build": 3,
+  "build": 4,
   "page": "../god-preditor-bayes/",
   "separate_page": true
 }
