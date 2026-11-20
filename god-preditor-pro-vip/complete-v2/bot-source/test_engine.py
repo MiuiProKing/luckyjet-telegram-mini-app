@@ -3,6 +3,8 @@ from pathlib import Path
 import engine
 NOW=1795208400000
 SITE=Path(__file__).resolve().parents[1]/'site'/'engine.mjs'
+if not SITE.exists():
+ SITE=Path(__file__).resolve().parents[1]/'engine.mjs'
 def rows(values,step=12000):
  return [dict(id=str(i),coefficient=x,timestamp=NOW-i*step,completed=True) for i,x in enumerate(values)]
 
