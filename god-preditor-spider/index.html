@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#080711">
+  <meta name="description" content="GOD PREDITOR — Lucky Jet Live Spider. Живая история коэффициентов и статистика больших X на базе Supabase.">
+  <title>GOD PREDITOR · SPIDER LIVE</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <div class="ambient glow-a"></div><div class="ambient glow-b"></div>
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="#top" aria-label="GOD PREDITOR главная">
+        <span class="brand-symbol" aria-hidden="true">✳</span>
+        <span class="brand-lines"><strong>GOD <em>PREDITOR</em></strong><small>LUCKY JET · SPIDER LIVE ENGINE</small></span>
+      </a>
+      <div class="top-actions">
+        <span class="timezone"><span class="clock-dot">◷</span> KYIV <span id="kyiv-clock">--:--:--</span></span>
+        <span class="status status-wait" id="connection-status"><i></i><span>ПОДКЛЮЧЕНИЕ</span></span>
+      </div>
+    </header>
+
+    <main id="top">
+      <div class="page-intro"><div><p class="overline">/ SYSTEM MONITOR / SUPABASE LIVE</p><h1>Охота за <span>большими X</span></h1><p class="intro-text">Реальные раунды Lucky Jet, временная история и анализ коэффициентов от 10× — в одном месте.</p></div><div class="version-tag">SPIDER ENGINE <b>V1.0</b></div></div>
+
+      <section class="hero-grid" aria-label="Живой мониторинг">
+        <div class="stage glass">
+          <div class="stage-top"><span class="eyebrow"><span class="live-led"></span> LIVE GAME MONITOR</span><span id="stream-label" class="mono subdued">Ждём раунды…</span></div>
+          <div class="vortex-scene"><canvas id="vortex-canvas" role="img" aria-label="Анимированный паук перемещается вокруг неоновой орбиты"></canvas>
+            <div class="orbit-hud"><small>ПОСЛЕДНИЙ ПОЛУЧЕННЫЙ X</small><strong id="current-coef">—</strong><span id="current-time">Нет данных</span></div>
+            <div class="scene-corner left"><span>SCANNER</span><b id="scanner-state">WAITING</b></div><div class="scene-corner right"><span>ROUNDS</span><b id="scanner-count">0</b></div>
+          </div>
+          <div class="stage-bottom"><div class="panel-title-row"><span class="eyebrow">ПОСЛЕДНИЕ 5 РАУНДОВ</span><span class="mono subdued">КОЭФФИЦИЕНТ / ВРЕМЯ</span></div><div class="recent-list" id="recent-list"><span class="empty-inline">Загрузка истории…</span></div></div>
+        </div>
+
+        <div class="hero-sidebar">
+          <article class="glass metric metric-accent"><div class="metric-icon purple">⌁</div><div><small>РАУНДОВ В ПАМЯТИ</small><strong id="metric-total">—</strong><span id="metric-source">Supabase / ждём</span></div></article>
+          <article class="glass metric"><div class="metric-icon gold">✦</div><div><small>МАКСИМАЛЬНЫЙ X</small><strong id="metric-max">—</strong><span id="metric-max-time">—</span></div></article>
+          <article class="glass metric"><div class="metric-icon pink">◈</div><div><small>СОБЫТИЙ ≥10×</small><strong id="metric-big-count">—</strong><span id="metric-big-rate">Частота —</span></div></article>
+          <article class="glass metric"><div class="metric-icon blue">◷</div><div><small>ПОСЛЕДНИЙ ≥100×</small><strong id="metric-last-100">—</strong><span id="metric-last-100-time">—</span></div></article>
+          <article class="glass feed-health"><div class="panel-title-row"><span class="eyebrow">СОСТОЯНИЕ ИСТОЧНИКА</span><span id="feed-health-pill" class="health-pill">CHECKING</span></div><p id="feed-explainer">Загружаем подтверждённые коэффициенты из Supabase…</p><div class="health-row"><span>Последняя синхронизация</span><b id="last-sync">—</b></div><div class="health-row"><span>Транспорт</span><b id="transport">REST · ожидание</b></div><button type="button" id="retry-button" class="minor-button">Обновить историю</button></article>
+        </div>
+      </section>
+
+      <section class="analysis-grid" id="analytics">
+        <article class="glass prediction-card">
+          <div class="section-heading"><div><p class="overline">/ TIMING ANALYSIS</p><h2>Расчёт окна больших X</h2></div><span class="subtag">3 МИНУТЫ</span></div>
+          <p class="muted">Выбери коэффициент. Расчёт использует подтверждённую историю, интервалы между событиями и наблюдаемую частоту.</p>
+          <div class="target-buttons" role="group" aria-label="Целевой коэффициент">
+            <button class="target active" data-target="20" aria-pressed="true">20<span>×</span></button>
+            <button class="target" data-target="40" aria-pressed="false">40<span>×</span></button>
+            <button class="target" data-target="200" aria-pressed="false">200<span>×</span></button>
+            <button class="target" data-target="500" aria-pressed="false">500<span>×</span></button>
+          </div>
+          <div class="forecast-panel" id="forecast-panel" aria-live="polite"><div class="forecast-empty">История ещё не загружена. Числа появятся только после реального ответа базы.</div></div>
+          <div class="prediction-controls"><button class="primary-button" id="signal-button" disabled>⌁ ПОЛУЧИТЬ РАСЧЁТ</button><button class="secondary-button" id="export-report" disabled>↓ CSV ОТЧЁТ</button></div>
+          <p class="fineprint">Время — ориентир статистической модели, а не гарантия появления X. Историческая частота не равна точности прогноза.</p>
+        </article>
+
+        <article class="glass history-summary">
+          <div class="section-heading"><div><p class="overline">/ BIG X TRACKER</p><h2>История и интервалы</h2></div><span class="subtag">≥<span id="summary-target">20</span>×</span></div>
+          <div class="detail-grid"><div><small>СОБЫТИЙ В ИСТОРИИ</small><strong id="detail-events">—</strong></div><div><small>СРЕДНИЙ ИНТЕРВАЛ</small><strong id="detail-average">—</strong></div><div><small>МЕДИАНА ИНТЕРВАЛА</small><strong id="detail-median">—</strong></div><div><small>ПОСЛЕДНИЙ БОЛЬШОЙ</small><strong id="detail-last">—</strong></div></div>
+          <div class="chart-head"><span class="eyebrow">ПОСЛЕДНИЕ 120 КОЭФФИЦИЕНТОВ</span><span class="mono subdued">ЛОГАРИФМИЧЕСКАЯ ШКАЛА</span></div>
+          <canvas class="history-chart" id="history-chart" aria-label="График коэффициентов по времени"></canvas>
+          <div class="legend"><span><i class="legend-dot violet"></i> &lt;10×</span><span><i class="legend-dot orange"></i> 10×–99×</span><span><i class="legend-dot hot"></i> ≥100×</span></div>
+        </article>
+      </section>
+
+      <section class="glass heatmap-section" id="heatmap-section">
+        <div class="section-heading"><div><p class="overline">/ TIME PATTERN RESEARCH</p><h2>В какие минуты встречались большие X</h2></div><span class="subtag">ВРЕМЯ КИЕВА</span></div>
+        <p class="muted">Для каждой минуты часа показываем долю раундов, достигших выбранного порога, относительно всех раундов этой минуты. Это описание прошлых событий, а не доказательство повторения.</p>
+        <div class="heatmap-scale"><span>МЕНЬШЕ</span><i></i><i></i><i></i><i></i><i></i><span>БОЛЬШЕ</span></div>
+        <div class="heatmap" id="minute-heatmap"><p class="muted">Ожидаем историю…</p></div>
+        <div class="heatmap-bottom"><div><h3>Минуты с наибольшей долей X</h3><ol id="top-minutes" class="ranking"><li>—</li></ol></div><div><h3>Секунды появления больших X</h3><div id="seconds-distribution" class="second-bars"><span class="muted">Ожидаем историю…</span></div></div></div>
+      </section>
+
+      <section class="glass history-section" id="history-section">
+        <div class="section-heading"><div><p class="overline">/ VERIFIED ROUNDS</p><h2>История коэффициентов Lucky Jet</h2></div><div class="history-actions"><select id="history-filter" aria-label="Фильтр коэффициентов"><option value="10">≥10×</option><option value="20">≥20×</option><option value="40">≥40×</option><option value="100">≥100×</option><option value="200">≥200×</option><option value="500">≥500×</option><option value="all">Все раунды</option></select><button id="download-history" class="secondary-button" disabled>↓ ВЫГРУЗИТЬ CSV</button></div></div>
+        <div class="table-wrap"><table><thead><tr><th>КОЭФФИЦИЕНТ</th><th>ДАТА</th><th>ВРЕМЯ, КИЕВ</th><th>СОБЫТИЕ</th></tr></thead><tbody id="rounds-tbody"><tr><td colspan="4" class="empty-table">Реальные данные появятся после подключения Supabase</td></tr></tbody></table></div>
+        <div class="table-footer"><span id="shown-count">0 записей</span><button id="show-more" class="minor-button" hidden>Показать ещё</button></div>
+      </section>
+    </main>
+    <footer class="footer"><div><b>GOD <span>PREDITOR</span></b> <small>· SPIDER LIVE · ORIGINAL HISTORY</small></div><span>SUPABASE REST + REALTIME · EUROPE/KYIV · <span id="footer-timestamp">—</span></span></footer>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+</body>
+</html>
