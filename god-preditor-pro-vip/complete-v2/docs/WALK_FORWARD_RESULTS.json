@@ -1,0 +1,322 @@
+{
+  "version": "20261120-prior-only-v1",
+  "inputRows": 12000,
+  "cleanRows": 11999,
+  "source": "Saved exact completed records from own Supabase; no estimated coefficients",
+  "first": "2026-11-18T02:48:59.359000+00:00",
+  "last": "2026-11-20T20:45:27.017000+00:00",
+  "initialTrainRows": 5000,
+  "trainEnd": "2026-11-19T06:32:45.235000+00:00",
+  "rollingTrainRows": 5000,
+  "stepSeconds": 180,
+  "parametersTunedOnTest": false,
+  "windowOutcome": "Any completed round >= target inside window",
+  "unknownPolicy": "Unknown excluded from hit rate and Brier; retained in all counts",
+  "timed": {
+    "original_3_6s": {
+      "summary": {
+        "windows": 763,
+        "checked": 742,
+        "hits": 276,
+        "misses": 466,
+        "unknown": 21,
+        "allWindowHitRateBounds": [
+          0.3617300131061599,
+          0.3892529488859764
+        ],
+        "observed": 0.3719676549865229,
+        "observedInterval95": [
+          0.3379330735077761,
+          0.40732114669125796
+        ],
+        "meanForecast": 0.41178751010227527,
+        "brier": 0.212432191149819,
+        "frozenBaselineBrier": 0.20885652186145187
+      },
+      "byTarget": {
+        "5": {
+          "windows": 82,
+          "checked": 80,
+          "hits": 60,
+          "misses": 20,
+          "unknown": 2,
+          "allWindowHitRateBounds": [
+            0.7317073170731707,
+            0.7560975609756098
+          ],
+          "observed": 0.75,
+          "observedInterval95": [
+            0.6451511899886556,
+            0.8319389418790569
+          ],
+          "meanForecast": 0.739241612029656,
+          "brier": 0.18814278270644622,
+          "frozenBaselineBrier": 0.1875264737219963
+        },
+        "10": {
+          "windows": 13,
+          "checked": 13,
+          "hits": 12,
+          "misses": 1,
+          "unknown": 0,
+          "allWindowHitRateBounds": [
+            0.9230769230769231,
+            0.9230769230769231
+          ],
+          "observed": 0.9230769230769231,
+          "observedInterval95": [
+            0.6668546607175265,
+            0.9862899336203037
+          ],
+          "meanForecast": 0.7056239129873764,
+          "brier": 0.12109835526624751,
+          "frozenBaselineBrier": 0.11926892200251529
+        },
+        "20": {
+          "windows": 668,
+          "checked": 649,
+          "hits": 204,
+          "misses": 445,
+          "unknown": 19,
+          "allWindowHitRateBounds": [
+            0.30538922155688625,
+            0.3338323353293413
+          ],
+          "observed": 0.31432973805855163,
+          "observedInterval95": [
+            0.279793038487981,
+            0.35105156455202136
+          ],
+          "meanForecast": 0.3655375849995067,
+          "brier": 0.21725575438858058,
+          "frozenBaselineBrier": 0.2132803163904544
+        }
+      }
+    },
+    "notification_45s": {
+      "summary": {
+        "windows": 763,
+        "checked": 738,
+        "hits": 291,
+        "misses": 447,
+        "unknown": 25,
+        "allWindowHitRateBounds": [
+          0.381389252948886,
+          0.41415465268676277
+        ],
+        "observed": 0.3943089430894309,
+        "observedInterval95": [
+          0.35968426868481895,
+          0.43002825215520946
+        ],
+        "meanForecast": 0.41106259105834436,
+        "brier": 0.21292139495645424,
+        "frozenBaselineBrier": 0.21040158925213573
+      },
+      "byTarget": {
+        "5": {
+          "windows": 82,
+          "checked": 78,
+          "hits": 64,
+          "misses": 14,
+          "unknown": 4,
+          "allWindowHitRateBounds": [
+            0.7804878048780488,
+            0.8292682926829268
+          ],
+          "observed": 0.8205128205128205,
+          "observedInterval95": [
+            0.7209744070847772,
+            0.8899618404959151
+          ],
+          "meanForecast": 0.7391968893268177,
+          "brier": 0.15363715691670202,
+          "frozenBaselineBrier": 0.15299567735036812
+        },
+        "10": {
+          "windows": 13,
+          "checked": 13,
+          "hits": 12,
+          "misses": 1,
+          "unknown": 0,
+          "allWindowHitRateBounds": [
+            0.9230769230769231,
+            0.9230769230769231
+          ],
+          "observed": 0.9230769230769231,
+          "observedInterval95": [
+            0.6668546607175265,
+            0.9862899336203037
+          ],
+          "meanForecast": 0.7056239129873764,
+          "brier": 0.12109835526624751,
+          "frozenBaselineBrier": 0.11926892200251529
+        },
+        "20": {
+          "windows": 668,
+          "checked": 647,
+          "hits": 215,
+          "misses": 432,
+          "unknown": 21,
+          "allWindowHitRateBounds": [
+            0.3218562874251497,
+            0.3532934131736527
+          ],
+          "observed": 0.3323029366306028,
+          "observedInterval95": [
+            0.2970903477978129,
+            0.3694951931387223
+          ],
+          "meanForecast": 0.365585353886755,
+          "brier": 0.2219134661822245,
+          "frozenBaselineBrier": 0.21915334474299036
+        }
+      }
+    }
+  },
+  "bayesianThresholds": {
+    "10": {
+      "windows": 763,
+      "checked": 752,
+      "hits": 518,
+      "misses": 234,
+      "unknown": 11,
+      "allWindowHitRateBounds": [
+        0.6788990825688074,
+        0.6933158584534731
+      ],
+      "observed": 0.6888297872340425,
+      "observedInterval95": [
+        0.6548498918034971,
+        0.7208902103554737
+      ],
+      "meanForecast": 0.6157792894958128,
+      "brier": 0.2198860455935302,
+      "frozenBaselineBrier": 0.2204665358833062
+    },
+    "20": {
+      "windows": 763,
+      "checked": 750,
+      "hits": 323,
+      "misses": 427,
+      "unknown": 13,
+      "allWindowHitRateBounds": [
+        0.4233289646133683,
+        0.44036697247706424
+      ],
+      "observed": 0.43066666666666664,
+      "observedInterval95": [
+        0.39566980973894444,
+        0.4663701731964626
+      ],
+      "meanForecast": 0.3865367574540891,
+      "brier": 0.24765140538510252,
+      "frozenBaselineBrier": 0.2490082917514513
+    },
+    "40": {
+      "windows": 763,
+      "checked": 743,
+      "hits": 186,
+      "misses": 557,
+      "unknown": 20,
+      "allWindowHitRateBounds": [
+        0.2437745740498034,
+        0.2699868938401048
+      ],
+      "observed": 0.2503364737550471,
+      "observedInterval95": [
+        0.22052446124684155,
+        0.28271692220046507
+      ],
+      "meanForecast": 0.23676625266493936,
+      "brier": 0.1885281175251116,
+      "frozenBaselineBrier": 0.18824049735920412
+    },
+    "50": {
+      "windows": 763,
+      "checked": 742,
+      "hits": 151,
+      "misses": 591,
+      "unknown": 21,
+      "allWindowHitRateBounds": [
+        0.19790301441677588,
+        0.2254259501965924
+      ],
+      "observed": 0.20350404312668463,
+      "observedInterval95": [
+        0.1760966457848009,
+        0.23396575888664678
+      ],
+      "meanForecast": 0.19493238236575558,
+      "brier": 0.16280077533105541,
+      "frozenBaselineBrier": 0.16261908336622347
+    },
+    "100": {
+      "windows": 763,
+      "checked": 734,
+      "hits": 81,
+      "misses": 653,
+      "unknown": 29,
+      "allWindowHitRateBounds": [
+        0.10615989515072084,
+        0.14416775884665792
+      ],
+      "observed": 0.11035422343324251,
+      "observedInterval95": [
+        0.08968329102190395,
+        0.1350825665822214
+      ],
+      "meanForecast": 0.11013192578078031,
+      "brier": 0.09848202439679467,
+      "frozenBaselineBrier": 0.09819112176981379
+    },
+    "200": {
+      "windows": 763,
+      "checked": 706,
+      "hits": 40,
+      "misses": 666,
+      "unknown": 57,
+      "allWindowHitRateBounds": [
+        0.05242463958060288,
+        0.127129750982962
+      ],
+      "observed": 0.056657223796033995,
+      "observedInterval95": [
+        0.0418807522998907,
+        0.0762323591322936
+      ],
+      "meanForecast": 0.06124168973862453,
+      "brier": 0.05346531208351634,
+      "frozenBaselineBrier": 0.05345082532151954
+    },
+    "500": {
+      "windows": 763,
+      "checked": 688,
+      "hits": 16,
+      "misses": 672,
+      "unknown": 75,
+      "allWindowHitRateBounds": [
+        0.020969855832241154,
+        0.11926605504587157
+      ],
+      "observed": 0.023255813953488372,
+      "observedInterval95": [
+        0.01436451047706069,
+        0.03744156767724516
+      ],
+      "meanForecast": 0.024743365491928924,
+      "brier": 0.022767813649622763,
+      "frozenBaselineBrier": 0.02271557596291014
+    }
+  },
+  "limitations": [
+    "Only about three calendar days are present in this snapshot.",
+    "Rolling models may train on earlier evaluation-period records after they become historical.",
+    "No selection thresholds were tuned; no proof of future predictability or profitability.",
+    "Hit windows can be verified despite gaps; misses require conservative bracketing and gap coverage.",
+    "Frozen baseline uses only the initial 5000 records. Brier comparisons are descriptive on this period.",
+    "Checked-only rates can have verification selection bias; all-window bounds retain unknown outcomes.",
+    "This is a fixed decision-grid rule audit, not a simulation of the original UI 40-second cooldown.",
+    "Provider sequence continuity has not been independently verified; feed IDs are not assumed consecutive."
+  ]
+}

@@ -1,0 +1,1 @@
+Публичные исходники не содержат токен Telegram. Для запуска скопируйте private-config.example.json в private-config.json и укажите свои данные. Установите зависимости из requirements.txt, затем python runtime.py --check и python runtime.py. Личный готовый однофайловый бот выдан владельцу отдельно.

@@ -1,0 +1,9 @@
+{
+  "SUPABASE_URL": "https://stzrirukuxcyalrsstxx.supabase.co",
+  "SUPABASE_KEY": "sb_publishable_ZhoUzbPBM33K3qoL-HY20Q_oVU4ebc7",
+  "SUPABASE_HISTORY_TABLE": "god_bayes_rounds_v1",
+  "TELEGRAM_BOT_TOKEN": "ВСТАВЬТЕ_СВОЙ_ТОКЕН",
+  "TELEGRAM_CHAT_IDS": "ВСТАВЬТЕ_ID_ГРУППЫ",
+  "POLL_SECONDS": 5,
+  "HISTORY_DAYS": 90
+}
