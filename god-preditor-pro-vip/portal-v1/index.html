@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#09060f"><meta name="description" content="GOD PREDITOR — личный доступ к версиям Lucky Jet.">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://stzrirukuxcyalrsstxx.supabase.co; object-src 'none'; base-uri 'none'; form-action 'self'">
+  <title>GOD PREDITOR · Личный доступ</title>
+  <link rel="icon" href="./icon.svg" type="image/svg+xml"><link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+<svg class="symbols" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+ <symbol id="i-star" viewBox="0 0 24 24"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3l-5.6 2.9 1.1-6.2L3 9.6l6.2-.9Z"/></symbol>
+ <symbol id="i-casino" viewBox="0 0 24 24"><path d="M12 3C8.8 7.6 3 9 3 13.4a4.4 4.4 0 0 0 7.3 3.3L9 21h6l-1.3-4.3a4.4 4.4 0 0 0 7.3-3.3C21 9 15.2 7.6 12 3Z"/></symbol>
+ <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="11" rx="3"/><path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3"/></symbol>
+ <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14m-6-6 6 6-6 6"/></symbol>
+ <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></symbol>
+ <symbol id="i-person" viewBox="0 0 24 24"><circle cx="12" cy="7" r="4"/><path d="M4 22v-3a8 8 0 0 1 16 0v3"/></symbol>
+ <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 5h16M4 12h16M4 19h16"/></symbol>
+ <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M3 11a9 9 0 0 1 16-6l2 3M21 3v5h-5M21 13a9 9 0 0 1-16 6l-2-3M3 21v-5h5"/></symbol>
+ <symbol id="i-out" viewBox="0 0 24 24"><path d="M10 3H4v18h6m-1-9h13m-5-5 5 5-5 5"/></symbol>
+ <symbol id="i-shield" viewBox="0 0 24 24"><path d="m12 2 9 4v6c0 5-5 9-9 10-4-1-9-5-9-10V6Z"/><path d="m8 12 3 3 5-6"/></symbol>
+ <symbol id="i-check" viewBox="0 0 24 24"><path d="m4 12 5 5L20 6"/></symbol>
+</svg>
+
+<div id="authView" class="auth-view">
+ <header class="auth-top"><a class="brand" href="./">GOD <span>PREDITOR</span><small>PRIVATE ACCESS <b>VIP</b></small></a><span class="secure-note"><svg><use href="#i-shield"/></svg>Личный доступ</span></header>
+ <main class="auth-layout">
+  <section class="auth-story" aria-label="GOD PREDITOR">
+   <span class="story-pill"><i></i> LUCKY JET · COLLECTION</span>
+   <h1>Твои версии.<br>Один <span>доступ.</span></h1>
+   <p>Все версии GOD PREDITOR собраны в одном месте. Выбирай привычный экран и открывай Lucky Jet.</p>
+   <div class="orbit-art" aria-hidden="true"><div class="orbit orbit-one"></div><div class="orbit orbit-two"></div><div class="orbit orbit-three"></div><div class="orbit-core"><span>GP</span><small>GOD PREDITOR</small></div><span class="star s1">✦</span><span class="star s2">✧</span><span class="star s3">✦</span><span class="star s4">✧</span></div>
+   <div class="story-bottom"><svg><use href="#i-lock"/></svg><span>Аккаунт GOD PREDITOR<br><b>Одобрение администратора</b></span></div>
+  </section>
+  <section class="auth-card" aria-labelledby="authTitle">
+   <div class="auth-heading"><span class="overline" id="authKicker">ДОБРО ПОЖАЛОВАТЬ</span><h2 id="authTitle">Вход в GOD PREDITOR</h2><p id="authDescription">Введи свой логин, пароль и полученный код доступа.</p></div>
+   <div class="auth-tabs" id="authTabs" role="tablist" aria-label="Доступ"><button id="loginTab" class="selected" role="tab" aria-selected="true" type="button">Войти</button><button id="registerTab" role="tab" aria-selected="false" type="button">Подать заявку</button></div>
+   <form id="loginForm" novalidate>
+    <label class="field"><span>Логин GOD PREDITOR</span><div class="input-wrap"><svg><use href="#i-person"/></svg><input id="loginUsername" name="username" autocomplete="username" required minlength="3" maxlength="64" placeholder="Твой логин"></div></label>
+    <label class="field"><span>Пароль GOD PREDITOR</span><div class="input-wrap"><svg><use href="#i-lock"/></svg><input id="loginPassword" name="password" type="password" autocomplete="current-password" required maxlength="128" placeholder="Введи пароль"><button type="button" class="password-toggle" data-toggle="loginPassword" aria-label="Показать пароль"><svg><use href="#i-eye"/></svg></button></div></label>
+    <label class="field" id="codeField"><span>Код доступа</span><div class="input-wrap"><svg><use href="#i-shield"/></svg><input id="accessCode" name="accessCode" type="password" autocomplete="off" maxlength="128" placeholder="Код от администратора"><button type="button" class="password-toggle" data-toggle="accessCode" aria-label="Показать код"><svg><use href="#i-eye"/></svg></button></div><small>Код выдаётся после одобрения заявки.</small></label>
+    <button type="submit" class="primary" id="loginSubmit"><span>Войти</span></button>
+   </form>
+   <form id="registerForm" hidden novalidate>
+    <label class="field"><span>Придумай логин</span><div class="input-wrap"><svg><use href="#i-person"/></svg><input id="registerUsername" name="username" autocomplete="username" required minlength="3" maxlength="64" placeholder="Для входа в GOD PREDITOR"></div></label>
+    <label class="field"><span>Твоя почта</span><div class="input-wrap"><span class="at">@</span><input id="registerEmail" name="email" type="email" autocomplete="email" required maxlength="254" placeholder="name@example.com"></div></label>
+    <label class="field"><span>Пароль GOD PREDITOR</span><div class="input-wrap"><svg><use href="#i-lock"/></svg><input id="registerPassword" name="password" type="password" autocomplete="new-password" required minlength="10" maxlength="128" placeholder="Не менее 10 символов"><button type="button" class="password-toggle" data-toggle="registerPassword" aria-label="Показать пароль"><svg><use href="#i-eye"/></svg></button></div></label>
+    <label class="field"><span>Повтори пароль</span><div class="input-wrap"><svg><use href="#i-lock"/></svg><input id="registerConfirm" type="password" autocomplete="new-password" required minlength="10" maxlength="128" placeholder="Ещё раз"></div></label>
+    <p class="form-note">Заявка поступит администратору. После одобрения ты получишь код доступа.</p>
+    <button type="submit" class="primary" id="registerSubmit"><span>Отправить заявку</span></button>
+   </form>
+   <div id="pendingPanel" class="pending-panel" hidden><span class="pending-icon"><svg><use href="#i-shield"/></svg></span><h3>Заявка на проверке</h3><p id="pendingText">Администратор проверит заявку и выдаст код доступа.</p><button type="button" id="backToLogin" class="secondary">Вернуться ко входу</button></div>
+   <div class="form-message" id="authMessage" role="status" aria-live="polite" hidden></div>
+   <p class="auth-footer"><button id="adminLogin" type="button">Вход администратора</button><button id="userLogin" type="button" hidden>Обычный вход</button></p>
+  </section>
+ </main>
+ <footer class="login-footer"><span>© <span id="year">2026</span> GOD PREDITOR</span><span>Личный кабинет · PRO VIP</span></footer>
+</div>
+
+<div id="appView" class="app-view" hidden>
+ <aside class="sidebar"><a class="brand" href="./">GOD <span>PREDITOR</span><small>PRO VERSION <b>VIP</b></small></a><div class="side-caption">ТВОЁ ПРОСТРАНСТВО</div><nav aria-label="Разделы"><button data-section="popular" class="selected"><svg><use href="#i-star"/></svg>Популярное<span>03</span></button><button data-section="casino"><svg><use href="#i-casino"/></svg>Казино<span>02</span></button><button data-section="admin" id="adminNav" hidden><svg><use href="#i-shield"/></svg>Заявки<span id="pendingBadge">0</span></button></nav><div class="side-bottom"><div class="access-badge"><svg><use href="#i-check"/></svg><span>Доступ открыт<small>GOD PREDITOR</small></span></div><button class="logout-button" data-logout><svg><use href="#i-out"/></svg>Выйти</button></div></aside>
+ <div class="content-column"><header class="app-header"><div class="profile"><span class="avatar">GP</span><div><span class="welcome">Добро пожаловать,</span><strong id="profileName">GOD PREDITOR</strong></div><b class="vip-badge">VIP</b></div><div class="header-actions"><button id="refreshApp" class="icon-button" aria-label="Обновить"><svg><use href="#i-refresh"/></svg></button><button id="openMenu" class="icon-button mobile-only" aria-label="Открыть меню"><svg><use href="#i-menu"/></svg></button></div></header>
+  <nav class="category-nav" aria-label="Категории"><button data-section="popular" class="selected"><svg><use href="#i-star"/></svg>Популярное</button><button data-section="casino"><svg><use href="#i-casino"/></svg>Казино</button><button data-section="admin" id="adminCategory" hidden><svg><use href="#i-shield"/></svg>Заявки</button></nav>
+  <main class="main-content">
+   <section class="collection-heading" id="collectionHeading"><div><span class="overline">GOD PREDITOR · LUCKY JET</span><h1 id="sectionTitle">Популярное<span>✦</span></h1><p id="sectionDescription">Выбирай свою версию Lucky Jet.</p></div><span class="collection-count" id="collectionCount">03 <small>ВЕРСИИ</small></span></section>
+   <div id="appMessage" class="app-message" role="status" aria-live="polite" hidden></div>
+   <section id="catalogGrid" class="catalog-grid" aria-label="Версии Lucky Jet"></section>
+   <section id="adminPanel" class="admin-panel" hidden><div class="admin-stats" id="adminStats"></div><div class="admin-toolbar"><label>Показать<select id="adminFilter"><option value="pending">Новые заявки</option><option value="approved">Одобренные</option><option value="rejected">Отклонённые</option><option value="revoked">Доступ отозван</option><option value="all">Все пользователи</option></select></label><button id="refreshUsers" class="secondary"><svg><use href="#i-refresh"/></svg>Обновить</button></div><div id="usersList" class="users-list"></div><p class="admin-hint">Одобри заявку и передай пользователю код доступа. Отзыв доступа завершает его активные сеансы.</p></section>
+   <div class="catalog-note" id="catalogNote"><svg><use href="#i-lock"/></svg><p>Каждая версия открывается в новой вкладке.<br><span>Твой вход в GOD PREDITOR останется открыт.</span></p></div>
+  </main>
+  <footer class="app-footer"><span>© <span id="appYear">2026</span> GOD PREDITOR</span><span>PRO <b>VIP</b></span></footer>
+ </div>
+ <nav class="bottom-nav" aria-label="Навигация"><button data-section="popular" class="selected"><svg><use href="#i-star"/></svg><span>Популярное</span></button><button data-section="casino" class="bottom-center"><span class="center-icon"><svg><use href="#i-casino"/></svg></span><span>Казино</span></button><button id="bottomAccount"><svg><use href="#i-person"/></svg><span>Аккаунт</span></button></nav>
+</div>
+
+<dialog id="menuDialog" class="menu-dialog"><div class="sheet-handle"></div><header><h2>Аккаунт</h2><button id="closeMenu" class="icon-button" aria-label="Закрыть">×</button></header><p id="menuUsername"></p><button data-section="popular"><svg><use href="#i-star"/></svg>Популярное</button><button data-section="casino"><svg><use href="#i-casino"/></svg>Казино</button><button data-section="admin" id="adminMenu" hidden><svg><use href="#i-shield"/></svg>Заявки</button><button data-logout class="danger"><svg><use href="#i-out"/></svg>Выйти</button></dialog>
+<script type="module" src="./app.mjs"></script>
+</body></html>

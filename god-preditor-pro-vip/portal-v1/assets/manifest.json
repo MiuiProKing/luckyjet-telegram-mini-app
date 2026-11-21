@@ -1,0 +1,48 @@
+{
+  "popular_orb": {
+    "path": "assets/popular_orb.jpg",
+    "source": "https://share.google/images/Q8lokjg9vfqUglHg2",
+    "original": "https://casinoreview.in.ua/wp-content/uploads/2025/07/lucky-jet.jpg",
+    "width": 900,
+    "height": 900,
+    "bytes": 93008,
+    "sha256": "e763f9beb5bfc4cd7a7b7538cda6181a27a9f699ac183bfb01b0168a2e973dc0"
+  },
+  "popular_pro": {
+    "path": "assets/popular_pro.webp",
+    "source": "https://share.google/images/4jZOqw5BQGmc1rF47",
+    "original": "https://play-lh.googleusercontent.com/LFUI5DBILgwQRU4jYcZ286p14jT9unl0MwqoWhR2Xfy07Hje1AOnZ4ywN9FyCVaUCw=w2560-h1440-rw",
+    "width": 640,
+    "height": 360,
+    "bytes": 408512,
+    "sha256": "444b16947b557ae2e9e969ec942384a6c79bee17b4f1ecd2838f0fd71c4dfb5f",
+    "responsiveSource": "https://play-lh.googleusercontent.com/LFUI5DBILgwQRU4jYcZ286p14jT9unl0MwqoWhR2Xfy07Hje1AOnZ4ywN9FyCVaUCw=w640-h360-rw"
+  },
+  "popular_spider": {
+    "path": "assets/popular_spider.jpg",
+    "source": "https://share.google/images/LVoF9bZ0GFWBDtIgr",
+    "original": "https://cntime.cn.ua/media/CACHE/images/blog/a8230edf-0d61-4939-8bd5-16e622b92a7e/87433a0bf42ace412a1a8dd54bc3c33c.jpg",
+    "width": 1100,
+    "height": 665,
+    "bytes": 191127,
+    "sha256": "4c25da72e048c1a7982a8043ad03e1493e86d3c212610032a0acf06672614a49"
+  },
+  "casino_v2": {
+    "path": "assets/casino_v2.webp",
+    "source": "https://share.google/images/y1sl9iTbE2ebj7j5l",
+    "original": "https://metaratings.by/_images/insecure/w-1040:h-1920/aHR0cHM6Ly9zdG9yYWdlLnlhbmRleGNsb3VkLm5ldC9zMy1rOHMtbWV0YXJhdGluZ3Mtc3RvcmFnZS9pbWFnZXMvOWQvOTQvOWQ5NDdkZTFhMDM1ZTk2Nzk5NWJjNWU4MzE5NDkyYzUuanBn.webp",
+    "width": 900,
+    "height": 900,
+    "bytes": 36638,
+    "sha256": "7fead25d962267c27d0e19178b0cad69169cc449cc25c16b4af3ca128337e64b"
+  },
+  "casino_v3": {
+    "path": "assets/casino_v3.png",
+    "source": "https://share.google/images/dsh1mgU3BaWJ0x6oz",
+    "original": "https://s.032.ua/section/promoIcon/upload/images/promo/icon/000/055/702/pasted-image-0-3_65411c79565c6.png",
+    "width": 880,
+    "height": 500,
+    "bytes": 233565,
+    "sha256": "07953d17f591adc52e250afb2ef2ef299f80e69d6235c3cc206d68644417d8c5"
+  }
+}
