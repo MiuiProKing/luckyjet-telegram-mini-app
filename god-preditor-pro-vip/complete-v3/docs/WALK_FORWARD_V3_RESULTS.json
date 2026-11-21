@@ -1,0 +1,215 @@
+{
+  "snapshot": {
+    "raw": 12000,
+    "uniqueExactCompleted": 11999,
+    "first": "2026-11-18T02:48:59.359000+00:00",
+    "last": "2026-11-20T20:45:27.017000+00:00"
+  },
+  "training": {
+    "initial": 5000,
+    "last": "2026-11-19T06:32:45.235000+00:00",
+    "policy": "expanding prior-only full snapshot; latest 5000 for Vortex tempo/p20"
+  },
+  "execution": {
+    "tickSeconds": 15,
+    "timeOutcomes": "after_close",
+    "roundOutcomes": "first_reached_in_N_observed_rounds_or_N_completed",
+    "premiumCooldownSeconds": 40,
+    "futureDataUsedForTuning": false,
+    "coverageMaxGapSeconds": 60,
+    "liveDeliverySimulated": false,
+    "externalSourceGlobalsUsed": false,
+    "adjacentWindowOverlapCounts": {
+      "premium_live": 0,
+      "duration_3": 543,
+      "duration_6": 269,
+      "duration_7": 229,
+      "duration_10": 161,
+      "duration_30": 52,
+      "duration_61": 23,
+      "rounds_5": 0,
+      "rounds_10": 0,
+      "rounds_100": 0
+    }
+  },
+  "channels": {
+    "premium_live": {
+      "created": 811,
+      "hit": 303,
+      "miss": 483,
+      "unknown": 24,
+      "censored": 1,
+      "observedRoundBasis": true,
+      "providerCompletenessVerified": false,
+      "checkedHitRate": 0.38549618320610685,
+      "meanModelProbability": 0.41289004453708655,
+      "brier": 0.21918211441561414,
+      "frozenBaselineBrier": 0.21938666514304891,
+      "allClosedWindowHitRateBounds": [
+        0.37407407407407406,
+        0.40370370370370373
+      ]
+    },
+    "duration_3": {
+      "created": 797,
+      "hit": 726,
+      "miss": 67,
+      "unknown": 3,
+      "censored": 1,
+      "observedRoundBasis": true,
+      "providerCompletenessVerified": false,
+      "checkedHitRate": 0.9155107187894073,
+      "meanModelProbability": 0.8691980844633101,
+      "brier": 0.07955740218303232,
+      "frozenBaselineBrier": 0.07932126611435587,
+      "allClosedWindowHitRateBounds": [
+        0.9120603015075377,
+        0.9158291457286433
+      ]
+    },
+    "duration_6": {
+      "created": 390,
+      "hit": 341,
+      "miss": 44,
+      "unknown": 4,
+      "censored": 1,
+      "observedRoundBasis": true,
+      "providerCompletenessVerified": false,
+      "checkedHitRate": 0.8857142857142857,
+      "meanModelProbability": 0.8646419398432694,
+      "brier": 0.1018299684893224,
+      "frozenBaselineBrier": 0.10173453055559657,
+      "allClosedWindowHitRateBounds": [
+        0.8766066838046273,
+        0.8868894601542416
+      ]
+    },
+    "duration_7": {
+      "created": 334,
+      "hit": 311,
+      "miss": 20,
+      "unknown": 2,
+      "censored": 1,
+      "observedRoundBasis": true,
+      "providerCompletenessVerified": false,
+      "checkedHitRate": 0.9395770392749244,
+      "meanModelProbability": 0.9029846580420057,
+      "brier": 0.058138159451339384,
+      "frozenBaselineBrier": 0.05820336216687747,
+      "allClosedWindowHitRateBounds": [
+        0.933933933933934,
+        0.93993993993994
+      ]
+    },
+    "duration_10": {
+      "created": 233,
+      "hit": 225,
+      "miss": 7,
+      "unknown": 0,
+      "censored": 1,
+      "observedRoundBasis": true,
+      "providerCompletenessVerified": false,
+      "checkedHitRate": 0.9698275862068966,
+      "meanModelProbability": 0.9642877789732077,
+      "brier": 0.029361314931717213,
+      "frozenBaselineBrier": 0.029300210379821494,
+      "allClosedWindowHitRateBounds": [
+        0.9698275862068966,
+        0.9698275862068966
+      ]
+    },
+    "duration_30": {
+      "created": 77,
+      "hit": 65,
+      "miss": 10,
+      "unknown": 1,
+      "censored": 1,
+      "observedRoundBasis": true,
+      "providerCompletenessVerified": false,
+      "checkedHitRate": 0.8666666666666667,
+      "meanModelProbability": 0.8751835733402428,
+      "brier": 0.09049677909812244,
+      "frozenBaselineBrier": 0.09032566090540259,
+      "allClosedWindowHitRateBounds": [
+        0.8552631578947368,
+        0.868421052631579
+      ]
+    },
+    "duration_61": {
+      "created": 38,
+      "hit": 33,
+      "miss": 2,
+      "unknown": 2,
+      "censored": 1,
+      "observedRoundBasis": true,
+      "providerCompletenessVerified": false,
+      "checkedHitRate": 0.9428571428571428,
+      "meanModelProbability": 0.9052847257967406,
+      "brier": 0.05535548814105704,
+      "frozenBaselineBrier": 0.05588419289645817,
+      "allClosedWindowHitRateBounds": [
+        0.8918918918918919,
+        0.9459459459459459
+      ]
+    },
+    "rounds_5": {
+      "created": 1882,
+      "hit": 1401,
+      "miss": 480,
+      "unknown": 0,
+      "censored": 1,
+      "observedRoundBasis": true,
+      "providerCompletenessVerified": false,
+      "checkedHitRate": 0.74481658692185,
+      "meanModelProbability": 0.7423438003504474,
+      "brier": 0.19012526692935253,
+      "frozenBaselineBrier": 0.19006484022343395,
+      "allClosedWindowHitRateBounds": [
+        0.74481658692185,
+        0.74481658692185
+      ]
+    },
+    "rounds_10": {
+      "created": 1032,
+      "hit": 721,
+      "miss": 310,
+      "unknown": 0,
+      "censored": 1,
+      "observedRoundBasis": true,
+      "providerCompletenessVerified": false,
+      "checkedHitRate": 0.6993210475266731,
+      "meanModelProbability": 0.7054548883009829,
+      "brier": 0.2103152787574659,
+      "frozenBaselineBrier": 0.2102876641527075,
+      "allClosedWindowHitRateBounds": [
+        0.6993210475266731,
+        0.6993210475266731
+      ]
+    },
+    "rounds_100": {
+      "created": 127,
+      "hit": 83,
+      "miss": 38,
+      "unknown": 5,
+      "censored": 1,
+      "observedRoundBasis": true,
+      "providerCompletenessVerified": false,
+      "checkedHitRate": 0.6859504132231405,
+      "meanModelProbability": 0.6920476080684292,
+      "brier": 0.21540558978568877,
+      "frozenBaselineBrier": 0.21458471160080145,
+      "allClosedWindowHitRateBounds": [
+        0.6587301587301587,
+        0.6984126984126984
+      ]
+    }
+  },
+  "limitations": [
+    "A short retained snapshot is not the whole 211k-row live database.",
+    "Per-channel mathematical replay, not full deployment load or financial profit.",
+    "Unknown/censored outcomes are not losses; checked-only rates can be biased by missingness.",
+    "Provider-contiguous round IDs are not verified.",
+    "Theoretical 1000x baseline 0.095% is labelled, not estimated from this snapshot.",
+    "Last-completed-round anchors can slightly overlap adjacent clock intervals. No independent-trial confidence interval is claimed."
+  ]
+}

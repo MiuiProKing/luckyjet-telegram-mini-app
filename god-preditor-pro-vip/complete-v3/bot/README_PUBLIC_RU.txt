@@ -1,0 +1,1 @@
+Публичные исходники: скопируйте private-config.example.json в private-config.json и впишите свой токен и группу. Установите requirements.txt, затем python canonical_runtime.py --check и python canonical_runtime.py. Личный готовый однофайловый бот выдан владельцу отдельно. Старый runtime.py сохранён как модуль совместимости; V3 запускает canonical_runtime.py.

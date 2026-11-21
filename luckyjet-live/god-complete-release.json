@@ -1,8 +1,9 @@
 {
-  "version": "complete-history-20261121",
-  "page": "god-preditor-pro-vip/complete-v2/",
-  "history": "god-preditor-pro-vip/complete-v2/historique/",
-  "branch": "feature/god-history-auth-20261121",
-  "sourceReview": "authenticated-premium-and-history",
-  "preservedForecastCode": true
+  "version": "complete-v3-20261121",
+  "page": "god-preditor-pro-vip/complete-v3/",
+  "history": "god-preditor-pro-vip/complete-v3/historique/",
+  "analytics": "god-preditor-pro-vip/complete-v3/analyse-approfondie/",
+  "branch": "feature/god-complete-v3-20261121",
+  "server": "god-complete-v3",
+  "verifiedTests": 85
 }

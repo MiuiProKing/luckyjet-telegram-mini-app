@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#08030f"><meta name="description" content="GOD PREDITOR — история Lucky Jet, временные окна и проверка результатов из Supabase.">
+  <title>GOD PREDITOR · Lucky Jet Premium</title>
+  <link rel="icon" href="./icon.svg" type="image/svg+xml"><link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <main class="premium-stage" id="app">
+    <canvas id="vortex" aria-hidden="true"></canvas><canvas id="spider" aria-hidden="true"></canvas>
+    <header>
+      <a class="brand" href="./" aria-label="GOD PREDITOR — главная">GOD <span>PREDITOR</span><small>LUCKY JET <b>PRO <em>♛ VIP</em></b></small></a>
+      <button id="openHistory" class="quiet">◷ <span>История</span></button>
+    </header>
+    <section class="recent-wrap" aria-label="Последние пять раундов">
+      <div class="source-line"><span><i id="liveDot"></i><span id="connection">Подключение к Supabase…</span></span><time id="clock">--:--:--</time></div>
+      <div class="premium-recent" id="recent"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
+    </section>
+
+    <section class="premium-vortex-overlay" id="signal" aria-live="polite" aria-atomic="true">
+      <div class="signal-content"><div class="scan-reticle"></div><p class="eyebrow">GOD PREDITOR</p><p class="analysis-label">Загрузка истории…</p></div>
+    </section>
+    <div class="bottom-bar"><p id="streamState"><i></i> Измерение частот по истории</p><p class="disclaimer">Статистическая оценка окна · результат не гарантирован</p><button class="quiet insights-button" id="openInsights">Статистика и данные <span>＋</span></button></div>
+  </main>
+  <footer><a href="./analyse-approfondie/">Глубокая аналитика ↗</a><a href="https://t.me/GOD_PREDITOR" target="_blank" rel="noopener noreferrer">Telegram · GOD PREDITOR ↗</a><span>Разработчик <a href="https://t.me/V0xFF3" target="_blank" rel="noopener noreferrer">Telegram</a> · <a href="https://www.instagram.com/vyacheslavvya?utm_source=qr" target="_blank" rel="noopener noreferrer">Instagram</a></span></footer>
+
+  <dialog id="historyDialog" class="drawer"><div class="drawer-head"><div><p class="eyebrow">LUCKY JET · SUPABASE</p><h2>История коэффициентов</h2></div><button data-close="historyDialog" class="close" aria-label="Закрыть историю">×</button></div><div class="history-tools"><label>От коэффициента <select id="historyTarget"><option value="1">Все</option><option value="10">10×</option><option value="20">20×</option><option value="40">40×</option><option value="100">100×</option><option value="200">200×</option><option value="500">500×</option></select></label><button class="quiet" id="exportHistory">↓ CSV</button><a class="quiet" href="./historique/">Полная страница истории ↗</a></div><p class="muted" id="historyCount">Загрузка…</p><div id="historyRows" class="history-rows"></div><div class="history-more"><button id="moreHistory" class="quiet">Загрузить ещё 1 000</button><button id="allHistory" class="quiet">Всю историю</button><button id="stopHistory" class="quiet" hidden>Остановить загрузку</button></div><p class="muted" id="historyProgress"></p></dialog>
+
+  <dialog id="insightsDialog" class="drawer wide"><div class="drawer-head"><div><p class="eyebrow">GOD PREDITOR · COMPLETE V3</p><h2>Статистика и данные</h2></div><button data-close="insightsDialog" class="close" aria-label="Закрыть статистику">×</button></div>
+    <nav class="tabs" aria-label="Подробности"><button data-tab="results" class="selected">Результаты</button><button data-tab="analysis">Расчёты</button><button data-tab="data">Данные</button><button data-tab="view">Вид</button></nav>
+    <section data-panel="results"><p class="muted">Общий серверный журнал сайта и бота. Созданные окна сохраняются до проверки; пропуски истории не считаются проигрышем.</p><p id="statScope" class="muted"></p><div id="statTiles" class="stat-tiles"></div><p class="muted" id="statRate"></p><div class="table-scroll"><table><thead><tr><th>Цель</th><th>Зашло</th><th>Не зашло</th><th>Нет данных</th><th>Ожидают</th></tr></thead><tbody id="targetStats"></tbody></table></div><div id="journalRows" class="journal-rows"></div><button class="quiet" id="exportJournal">Скачать журнал JSON ↓</button></section>
+    <section data-panel="analysis" hidden>    <nav class="modes" aria-label="Режим отображения">
+      <button data-mode="premium" class="selected" aria-pressed="true">PREMIUM</button><button data-mode="basic" aria-pressed="false">ОБЫЧНЫЙ</button><button data-mode="large" aria-pressed="false">10–500×</button>
+    </nav><div id="modelSummary"></div><div id="thresholdCards" class="threshold-cards"></div><div id="ordinaryCard" class="model-card"></div><details><summary>Что означают оценки и «страховка»</summary><p class="muted">Проценты показывают оценку вероятности хотя бы одного события внутри окна по исторической частоте. Они не являются проверенной точностью следующего раунда. Уровень уверенности обычного анализа — балл правил, а не вероятность выигрыша.</p><p class="muted">В предоставленных модулях французское «Niveau d’assurance» означает уровень уверенности. Отдельной формулы страховочной ставки в них нет.</p></details></section>
+    <section data-panel="data" hidden><dl class="telemetry"><div><dt>Источник</dt><dd>Свой Supabase · завершённые точные раунды</dd></div><div><dt>Последний раунд</dt><dd id="dataAge">—</dd></div><div><dt>Успешный опрос</dt><dd id="pollAge">—</dd></div><div><dt>Ответ сервера</dt><dd id="responseTime">—</dd></div><div><dt>Загружено</dt><dd id="sampleCount">0</dd></div><div><dt>Границы истории</dt><dd id="archiveCoverage">—</dd></div><div><dt>История для текущих частот</dt><dd id="workingSample">—</dd></div><div><dt>Часовой пояс</dt><dd>Europe/Kyiv</dd></div></dl><p class="muted" id="dataError"></p><button class="quiet" id="refreshData">Обновить данные ↻</button><p class="muted">Обновление каждые 5 секунд. Для старых коэффициентов используется постраничная загрузка без скрытого ограничения REST в 1 000 записей. Полная история доступна по кнопке «Всю историю».</p></section>
+    <section data-panel="view" hidden><label class="setting">Паук <input type="checkbox" id="spiderVisible" checked></label><label class="setting">Экономный режим <input type="checkbox" id="economyMode"></label><label class="setting">AMOLED · насыщенные цвета <input type="checkbox" id="vividMode" checked></label><label class="setting brightness">Яркость <input type="range" id="pageBrightness" min="80" max="120" value="100"><output id="brightnessValue">100%</output></label><p class="muted">Меняется оформление страницы. Системные настройки экрана и устройства не изменяются.</p></section>
+  </dialog>
+  <script type="module" src="./app.mjs"></script>
+</body></html>
