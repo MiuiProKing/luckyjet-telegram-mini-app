@@ -1,6 +1,8 @@
 {
-  "version": "complete-premium-20261120",
+  "version": "complete-history-20261121",
   "page": "god-preditor-pro-vip/complete-v2/",
-  "branch": "feature/god-complete-premium-20261120",
-  "packagedTests": "portable-site-and-project-layout"
+  "history": "god-preditor-pro-vip/complete-v2/historique/",
+  "branch": "feature/god-history-auth-20261121",
+  "sourceReview": "authenticated-premium-and-history",
+  "preservedForecastCode": true
 }
